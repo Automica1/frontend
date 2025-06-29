@@ -1,0 +1,143 @@
+'use client';
+import React, { useState } from 'react';
+import { ChevronDown, ChevronUp, HelpCircle, Shield, Zap, Users, Clock, Globe } from 'lucide-react';
+
+export default function FrequentlyAskedQuestions() {
+  const [openIndex, setOpenIndex] = useState(null);
+
+  const faqData = [
+    {
+      question: "What documents types are supported?",
+      answer: "We support a wide range of document formats including PDF, DOCX, PNG, JPG, TIFF, and more. Our AI can process invoices, contracts, forms, certificates, and various business documents with high accuracy."
+    },
+    {
+      question: "Is my document data secure and private?",
+      answer: "Absolutely. We use enterprise-grade encryption (AES-256) for data in transit and at rest. Your documents are processed securely and deleted immediately after processing. We're GDPR compliant and never store your sensitive data."
+    },
+    {
+      question: "What about pricing?",
+      answer: "We offer flexible pricing plans starting from $29/month for small businesses to enterprise solutions. You can process up to 1,000 documents monthly on our basic plan, with higher volumes available on premium tiers."
+    },
+    {
+      question: "How fast is the processing?",
+      answer: "Most documents are processed within 2-5 seconds. Complex documents with multiple pages may take up to 15 seconds. Our AI infrastructure is optimized for speed without compromising accuracy."
+    },
+    {
+      question: "Do you offer API integration?",
+      answer: "Yes! We provide comprehensive REST APIs with detailed documentation, SDKs for popular programming languages, and webhook support for seamless integration into your existing workflows."
+    }
+  ];
+
+  const comingSoonFeatures = [
+    { icon: Shield, text: "Advanced security features" },
+    { icon: Globe, text: "Multi-language support" },
+    { icon: Zap, text: "Real-time processing" },
+    { icon: Users, text: "Team collaboration tools" },
+    { icon: Clock, text: "Batch processing" },
+    { icon: HelpCircle, text: "24/7 premium support" }
+  ];
+
+  const toggleFAQ = (index) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
+
+  return (
+    <section className="min-h-screen bg-[#0b0b0d] text-white py-20 relative overflow-hidden">
+      {/* Background Effects */}
+      
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-black to-black"></div>
+      
+      {/* Grid pattern overlay */}
+      <div className="absolute inset-0 opacity-5" style={{
+        backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)`,
+        backgroundSize: '40px 40px'
+      }}></div>
+
+      <div className="relative z-10 max-w-4xl mx-auto px-6">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <h2 className="text-4xl lg:text-6xl font-light text-white tracking-tighter leading-tight mb-6">
+            Frequently Asked Questions
+          </h2>
+          <p className="text-xl text-gray-300 max-w-2xl mx-auto font-light opacity-90">
+            Everything you need to know about Antifraud.ai
+          </p>
+        </div>
+
+        {/* FAQ Items */}
+        <div className="space-y-4 mb-20">
+          {faqData.map((faq, index) => (
+            <div 
+              key={index}
+              className="bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-sm border border-gray-800/50 rounded-2xl overflow-hidden transition-all duration-300 hover:border-purple-500/30"
+            >
+              <button
+                onClick={() => toggleFAQ(index)}
+                className="w-full px-8 py-6 text-left flex items-center justify-between hover:bg-white/5 transition-colors duration-200"
+              >
+                <span className="text-lg text-white font-medium pr-4">
+                  {faq.question}
+                </span>
+                <div className="flex-shrink-0">
+                  {openIndex === index ? (
+                    <ChevronUp className="w-6 h-6 text-purple-400 transition-transform duration-200" />
+                  ) : (
+                    <ChevronDown className="w-6 h-6 text-purple-400 transition-transform duration-200" />
+                  )}
+                </div>
+              </button>
+              
+              <div className={`transition-all duration-300 ease-in-out ${
+                openIndex === index 
+                  ? 'max-h-96 opacity-100' 
+                  : 'max-h-0 opacity-0'
+              } overflow-hidden`}>
+                <div className="px-8 pb-6">
+                  <div className="w-full h-px bg-gradient-to-r from-purple-500/20 to-transparent mb-4"></div>
+                  <p className="text-gray-300 leading-relaxed">
+                    {faq.answer}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Coming Soon Section */}
+        <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 backdrop-blur-sm border border-gray-800/50 rounded-3xl p-8 relative overflow-hidden">
+          {/* Background Effects */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/5 to-transparent rounded-3xl"></div>
+          <div className="absolute inset-0 opacity-5 rounded-3xl" style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(147,51,234,0.3) 1px, transparent 0)`,
+            backgroundSize: '30px 30px'
+          }}></div>
+
+          <div className="relative z-10 text-center">
+            <h3 className="text-3xl lg:text-4xl font-light text-white tracking-tighter leading-tight mb-8">
+              Coming Soon
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {comingSoonFeatures.map((feature, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center space-x-3 bg-gradient-to-r from-purple-900/20 to-purple-800/20 backdrop-blur-sm border border-purple-500/20 rounded-xl px-4 py-3 hover:border-purple-400/30 transition-colors duration-200"
+                >
+                  <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <feature.icon className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-gray-300 font-light text-sm">
+                    {feature.text}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom accent line */}
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-purple-700 rounded-b-3xl opacity-60"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
