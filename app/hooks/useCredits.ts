@@ -4,7 +4,7 @@ import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { apiService } from '../lib/apiService';
 
 interface CreditsData {
-  message: string;
+  message?: string;
   userId: string;
   credits: number;
 }
