@@ -38,7 +38,6 @@ export default async function SolutionPage({ params }: SolutionPageProps) {
       description: useCase.description,
       // Don't include the icon - it will be resolved on the client side
     })),
-    pricing: solution.pricing,
     documentation: solution.documentation,
     heroImage: solution.heroImage,
   };

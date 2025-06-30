@@ -35,19 +35,6 @@ export interface SignatureVerificationResponse extends ApiResponse {
   };
 }
 
-export interface IdCropResponse {
-  message: string;
-  userId: string;
-  remainingCredits: number;
-  cropResult: {
-    req_id: string;
-    success: boolean;
-    status: string;
-    result: string;
-    message: string;
-  };
-  processedAt: string;
-}
 
 // If you want to make it more specific, you could also define:
 export interface CropResult {
@@ -64,4 +51,25 @@ export interface IdCropResponse {
   remainingCredits: number;
   cropResult: CropResult;
   processedAt: string; // ISO 8601 date string
+}
+
+export interface FaceVerificationResponse extends ApiResponse {
+  data?: {
+    similarity_score: number;
+    is_match: boolean;
+    confidence: number;
+    processing_time: string;
+    file_names: string[];
+    file_sizes: string[];
+  };
+}
+
+export interface FaceDetectionResponse extends ApiResponse {
+  data?: {
+    face_detected: boolean;
+    face_count: number;
+    processing_time: string;
+    file_names: string[];
+    file_sizes: string[];
+  };
 }
