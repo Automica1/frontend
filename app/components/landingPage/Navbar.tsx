@@ -252,7 +252,7 @@ export default function Navbar() {
                   </div>
                   
                   <div className="border-t border-white/10 pt-1">
-                    <LogoutLink className="flex items-center w-full px-4 py-2 text-gray-300 hover:text-white hover:bg-red-500/20 transition-colors duration-200">
+                    <LogoutLink postLogoutRedirectURL="/" className="flex items-center w-full px-4 py-2 text-gray-300 hover:text-white hover:bg-red-500/20 transition-colors duration-200">
                       <LogOut className="w-4 h-4 mr-3" />
                       Sign Out
                     </LogoutLink>
@@ -394,6 +394,7 @@ export default function Navbar() {
               
               {!isLoading && isAuthenticated && (
                 <LogoutLink 
+                  postLogoutRedirectURL="/"
                   onClick={closeMobileMenu}
                   className="flex items-center justify-center space-x-3 w-full px-6 py-4 text-white font-medium hover:text-red-400 hover:bg-red-500/20 backdrop-blur-sm transition-colors duration-200 rounded-xl border-2 border-red-500/50" style={{ backdropFilter: 'blur(8px)' }}
                 >
