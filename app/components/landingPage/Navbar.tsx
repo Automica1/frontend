@@ -8,8 +8,6 @@ import { useCredits } from '../../hooks/useCredits';
 import Link from 'next/link';
 
 export default function Navbar() {
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -22,25 +20,15 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
       const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = (currentScrollY / documentHeight) * 100;
-      
+      const progress = (window.scrollY / documentHeight) * 100;
       setScrollProgress(progress);
-      
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        setIsVisible(false);
-      } else {
-        setIsVisible(true);
-      }
-      
-      setLastScrollY(currentScrollY);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -78,9 +66,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-      isVisible ? 'translate-y-0' : '-translate-y-full'
-    }`}>
+    <nav className="fixed top-0 left-0 right-0 z-50">
       {/* Glassmorphism background */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-xl border-b border-white/10"></div>
       
@@ -92,30 +78,20 @@ export default function Navbar() {
       
       <div className="relative flex items-center justify-between px-4 sm:px-6 py-4 max-w-7xl mx-auto">
         {/* Logo */}
-
         <div className="flex items-center animate-[slideInLeft_0.8s_ease-out] z-50">
-  <Link href="/">
-    <span className="flex items-center space-x-2">
-      <Image
-        src="/logo.svg"
-        alt="Automica.ai Logo"
-        width={32}
-        height={32}
-        priority
-      />
-      <span className="text-xl font-semibold text-white  hover:text-purple-400 transition-all duration-300 hover:scale-105">Automica.ai</span>
-    </span>
-  </Link>
-</div>
-
-        {/* <div className="flex items-center space-x-2 animate-[slideInLeft_0.8s_ease-out] z-50">
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg flex items-center justify-center shadow-lg">
-            <Brain className="w-4 h-4 text-white" />
-          </div>
           <Link href="/">
-            <span className="text-xl font-semibold text-white">Automica.ai</span>
+            <span className="flex items-center space-x-2">
+              <Image
+                src="/logo.svg"
+                alt="Automica.ai Logo"
+                width={32}
+                height={32}
+                priority
+              />
+              <span className="text-xl font-semibold text-white  hover:text-purple-400 transition-all duration-300 hover:scale-105">Automica.ai</span>
+            </span>
           </Link>
-        </div> */}
+        </div>
         
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8 animate-[slideInDown_0.8s_ease-out_0.2s_both]">
@@ -133,10 +109,13 @@ export default function Navbar() {
         
         {/* Desktop Auth Section */}
         <div className="hidden md:flex items-center space-x-4 animate-[slideInRight_0.8s_ease-out_0.4s_both]">
-          <button className="flex items-center space-x-2 text-gray-300 hover:text-purple-400 transition-all duration-300 hover:scale-105">
-            <Coins className="w-4 h-4" />
-            <span> {creditsLoading ? '...' : credits !== null ? credits.toLocaleString() : '99'}</span>
-          </button>
+          {/* Only show credits if user is authenticated */}
+          {!isLoading && isAuthenticated && (
+            <button className="flex items-center space-x-2 text-gray-300 hover:text-purple-400 transition-all duration-300 hover:scale-105">
+              <Coins className="w-4 h-4" />
+              <span>{creditsLoading ? '...' : credits !== null ? credits.toLocaleString() : ''}</span>
+            </button>
+          )}
           
           {/* Show loading state */}
           {isLoading && (
@@ -265,12 +244,12 @@ export default function Navbar() {
 
         {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center space-x-2">
-          {/* Mobile Credits Display (when authenticated) */}
+          {/* Mobile Credits Display (only when authenticated) */}
           {!isLoading && isAuthenticated && (
             <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-purple-500/20 to-purple-700/20 backdrop-blur-sm border border-purple-500/30 rounded-md">
               <Coins className="w-3 h-3 text-yellow-500" />
               <span className="text-white text-xs font-medium">
-                {creditsLoading ? '...' : credits !== null ? credits.toLocaleString() : '99'}
+                {creditsLoading ? '...' : credits !== null ? credits.toLocaleString() : ''}
               </span>
             </div>
           )}

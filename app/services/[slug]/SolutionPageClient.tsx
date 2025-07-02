@@ -96,7 +96,7 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
     {
       title: "About",
       icon: (
-        <IconHome className="h-full w-full text-neutral-500 dark:text-neutral-300" />
+        <IconHome className="w-full text-neutral-500 dark:text-neutral-300" />
       ),
       href: "#",
       onClick: () => setActiveSection('about'),
@@ -104,7 +104,7 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
     {
       title: "Try API",
       icon: (
-        <IconTerminal2 className="h-full w-full text-neutral-500 dark:text-neutral-300" />
+        <IconTerminal2 className="w-full text-neutral-500 dark:text-neutral-300" />
       ),
       href: "#",
       onClick: () => setActiveSection('try-api'),
@@ -112,7 +112,7 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
     {
       title: "Docs",
       icon: (
-        <IconNewSection className="h-full w-full text-neutral-500 dark:text-neutral-300" />
+        <IconNewSection className="w-full text-neutral-500 dark:text-neutral-300" />
       ),
       href: "#",
       onClick: () => setActiveSection('documentation'),

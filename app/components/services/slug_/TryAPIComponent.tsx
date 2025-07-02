@@ -7,9 +7,7 @@ import { useSolutionApi } from '../../../hooks/useSolutionApi';
 import { getFileRequirementText } from '../../../../utils/solutionHelpers';
 import { fileToBase64, filesToBase64 } from '@/utils/fileUtils';
 import { FileUploadSection } from '../../FileUploadSection';
-import { ApiResponseSection } from '../../ApiResponseSection';
-import { ProcessedImageViewer } from '../../ProcessedImageViewer';
-import { ResponseDetails } from '../../ResponseDetails';
+import { TabbedResponseSection } from '../../TabbedResponseSection';
 
 interface TryAPIComponentProps {
   solution: Solution;
@@ -154,7 +152,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const maskedBase64 = getMaskedBase64();
 
   return (
-    <div className="min-h-screen pt-24 pb-16 px-4">
+    <div className="pt-16 pb-16 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
@@ -185,52 +183,19 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
             />
           </div>
 
-          {/* Right Column - Results */}
+          {/* Right Column - Tabbed Results */}
           <div className="space-y-6">
-            <ApiResponseSection
+            <TabbedResponseSection
               solution={solution}
               solutionType={solutionType}
               data={currentApi.data}
               loading={currentApi.loading}
               error={currentApi.error}
+              maskedBase64={maskedBase64}
+              fileName={files[0]?.name}
             />
           </div>
         </div>
-
-        {/* Results Section - Full Width */}
-        {(currentApi.data || maskedBase64) && (
-          <div className="mt-12 space-y-8">
-            {/* Response Details */}
-            <ResponseDetails
-              solutionType={solutionType}
-              data={currentApi.data}
-            />
-
-            {/* Processed Image Viewer */}
-            {maskedBase64 && (
-              <ProcessedImageViewer
-                solutionType={solutionType}
-                base64Image={maskedBase64}
-                fileName={files[0]?.name}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Debug Information (only in development) */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-8 p-4 bg-gray-900 rounded-lg border border-gray-700">
-            <h4 className="text-sm font-semibold text-gray-400 mb-2">Debug Info</h4>
-            <div className="text-xs text-gray-500 space-y-1">
-              <div>Solution Type: {solutionType}</div>
-              <div>Files Count: {files.length}</div>
-              <div>API Loading: {currentApi.loading ? 'Yes' : 'No'}</div>
-              <div>Has Data: {currentApi.data ? 'Yes' : 'No'}</div>
-              <div>Has Error: {currentApi.error ? 'Yes' : 'No'}</div>
-              <div>Has Masked Base64: {maskedBase64 ? 'Yes' : 'No'}</div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

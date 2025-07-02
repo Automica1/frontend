@@ -774,7 +774,7 @@ export default function ThemedAtomicHero() {
           </h1>
           
           <p className="text-xl lg:text-2xl text-gray-300 mb-12 max-w-3xl font-light leading-relaxed opacity-90">
-            Automica.ai serves as an all-in-one AI platform for
+            Automica.ai delivers AI solutions engineered for
             <br />
             QR masking, face verification, sign extraction, and document intelligence.
           </p>

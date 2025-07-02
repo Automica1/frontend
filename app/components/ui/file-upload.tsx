@@ -1,7 +1,7 @@
 import { cn } from "@/app/lib/utils";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { IconUpload } from "@tabler/icons-react";
+import { IconUpload, IconX, IconFile } from "@tabler/icons-react";
 import { useDropzone } from "react-dropzone";
 
 const mainVariant = {
@@ -25,17 +25,55 @@ const secondaryVariant = {
   },
 };
 
+interface FileWithPreview extends File {
+  preview?: string;
+}
+
 export const FileUpload = ({
   onChange,
 }: {
   onChange?: (files: File[]) => void;
 }) => {
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<FileWithPreview[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Create preview URLs for image files
+  const createPreview = (file: File): FileWithPreview => {
+    if (file.type.startsWith('image/')) {
+      const fileWithPreview = file as FileWithPreview;
+      fileWithPreview.preview = URL.createObjectURL(file);
+      return fileWithPreview;
+    }
+    return file as FileWithPreview;
+  };
+
+  // Clean up preview URLs when component unmounts or files change
+  useEffect(() => {
+    return () => {
+      files.forEach(file => {
+        if (file.preview) {
+          URL.revokeObjectURL(file.preview);
+        }
+      });
+    };
+  }, [files]);
+
   const handleFileChange = (newFiles: File[]) => {
-    setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+    const filesWithPreviews = newFiles.map(createPreview);
+    setFiles((prevFiles) => [...prevFiles, ...filesWithPreviews]);
     onChange && onChange(newFiles);
+  };
+
+  const handleRemoveFile = (indexToRemove: number) => {
+    // Clean up preview URL for removed file
+    const fileToRemove = files[indexToRemove];
+    if (fileToRemove.preview) {
+      URL.revokeObjectURL(fileToRemove.preview);
+    }
+    
+    const updatedFiles = files.filter((_, index) => index !== indexToRemove);
+    setFiles(updatedFiles);
+    onChange && onChange(updatedFiles.map(f => f as File));
   };
 
   const handleClick = () => {
@@ -50,6 +88,10 @@ export const FileUpload = ({
       console.log(error);
     },
   });
+
+  const isImageFile = (file: FileWithPreview) => {
+    return file.type.startsWith('image/');
+  };
 
   return (
     <div className="w-full" {...getRootProps()}>
@@ -69,56 +111,109 @@ export const FileUpload = ({
           <GridPattern />
         </div>
         <div className="flex flex-col items-center justify-center">
-          <p className="relative z-20 font-sans font-bold text-neutral-700 dark:text-neutral-300 text-base">
-            Upload file
-          </p>
-          <p className="relative z-20 font-sans font-normal text-neutral-400 dark:text-neutral-400 text-base mt-2">
-            Drag or drop your files here or click to upload
-          </p>
-          <div className="relative w-full mt-10 max-w-xl mx-auto">
+          <div className="flex items-center justify-between w-full max-w-xl mx-auto mb-4">
+            <div className="flex-1 flex flex-col items-center justify-center space-y-2">
+              <p className="relative z-20 font-sans font-bold text-neutral-700 dark:text-neutral-300 text-base">
+                Upload file
+              </p>
+              <p className="relative z-20 font-sans font-normal text-neutral-400 dark:text-neutral-400 text-base mt-2">
+                Drag or drop your files here or click to upload
+              </p>
+            </div>
+          </div>
+          
+          <div className="relative w-full mt-6 max-w-xl mx-auto">
             {files.length > 0 &&
               files.map((file, idx) => (
                 <motion.div
                   key={"file" + idx}
                   layoutId={idx === 0 ? "file-upload" : "file-upload-" + idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
                   className={cn(
-                    "relative overflow-hidden z-40 bg-white dark:bg-neutral-900 flex flex-col items-start justify-start md:h-24 p-4 mt-4 w-full mx-auto rounded-md",
-                    "shadow-sm"
+                    "relative overflow-hidden z-40 bg-white dark:bg-neutral-900 flex flex-col items-start justify-start p-4 mt-4 w-full mx-auto rounded-md",
+                    "shadow-sm border border-neutral-200 dark:border-neutral-700",
+                    isImageFile(file) ? "md:h-32" : "md:h-24"
                   )}
                 >
-                  <div className="flex justify-between w-full items-center gap-4">
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      layout
-                      className="text-base text-neutral-700 dark:text-neutral-300 truncate max-w-xs"
-                    >
-                      {file.name}
-                    </motion.p>
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      layout
-                      className="rounded-lg px-2 py-1 w-fit shrink-0 text-sm text-neutral-600 dark:bg-neutral-800 dark:text-white shadow-input"
-                    >
-                      {(file.size / (1024 * 1024)).toFixed(2)} MB
-                    </motion.p>
+                  {/* Remove button for individual file */}
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveFile(idx);
+                    }}
+                    className="absolute top-2 right-2 p-1 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-full transition-colors duration-200 group z-50"
+                  >
+                    <IconX className="h-4 w-4 text-neutral-400 group-hover:text-red-500" />
+                  </motion.button>
+
+                  <div className="flex justify-between w-full items-start gap-4 pr-8">
+                    {/* File preview or icon */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {isImageFile(file) && file.preview ? (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="flex-shrink-0"
+                        >
+                          <img
+                            src={file.preview}
+                            alt={file.name}
+                            className="w-16 h-16 object-cover rounded-md border border-neutral-200 dark:border-neutral-700"
+                            onLoad={() => {
+                              // Optional: Add any loading complete logic here
+                            }}
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="flex-shrink-0 w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-md flex items-center justify-center"
+                        >
+                          <IconFile className="h-8 w-8 text-neutral-400" />
+                        </motion.div>
+                      )}
+                      
+                      <div className="flex-1 min-w-0">
+                        <motion.p
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          layout
+                          className="text-base text-neutral-700 dark:text-neutral-300 truncate"
+                        >
+                          {file.name}
+                        </motion.p>
+                        <motion.p
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          layout
+                          className="text-sm text-neutral-500 dark:text-neutral-400 mt-1"
+                        >
+                          {(file.size / (1024 * 1024)).toFixed(2)} MB
+                        </motion.p>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex text-sm md:flex-row flex-col items-start md:items-center w-full mt-2 justify-between text-neutral-600 dark:text-neutral-400">
+                  <div className="flex text-sm md:flex-row flex-col items-start md:items-center w-full mt-2 justify-between text-neutral-600 dark:text-neutral-400 pr-8">
                     <motion.p
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       layout
-                      className="px-1 py-0.5 rounded-md bg-gray-100 dark:bg-neutral-800 "
+                      className="px-2 py-1 rounded-md bg-gray-100 dark:bg-neutral-800 text-xs"
                     >
-                      {file.type}
+                      {file.type || 'Unknown type'}
                     </motion.p>
 
                     <motion.p
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       layout
+                      className="text-xs"
                     >
                       modified{" "}
                       {new Date(file.lastModified).toLocaleDateString()}

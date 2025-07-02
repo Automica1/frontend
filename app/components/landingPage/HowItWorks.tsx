@@ -114,21 +114,21 @@ export default function HowItWorks() {
       id: '01',
       icon: Upload,
       title: 'Upload Your Document',
-      description: 'Simply drag and drop or upload your document to our secure platform. We support all major formats.',
+      description: 'Easily upload scanned or digital documents in any format. Our secure platform supports images, PDFs, and more—whether it’s a single page or a bulk upload..',
       bgGradient: 'from-purple-500/10 to-purple-900/10'
     },
     {
       id: '02',
       icon: ScanLine,
-      title: 'Select QR Masking',
-      description: 'Choose from our advanced QR masking options or let our AI automatically detect and process QR codes.',
+      title: 'AI-Powered Processing',
+      description: 'Our intelligent system analyzes the document to perform a wide range of tasks such as data extraction, redaction, pattern detection, or validation—tailored to your specific use case.',
       bgGradient: 'from-blue-500/10 to-purple-700/10'
     },
     {
       id: '03',
       icon: Download,
-      title: 'Extract or Verify',
-      description: 'Get instant results with our AI-powered extraction and verification tools. Download or integrate via API.',
+      title: 'Get Actionable Results',
+      description: 'Receive clean, structured results ready for review or integration. You can download outputs, view reports, or connect to your systems via API—all within seconds.',
       bgGradient: 'from-purple-600/10 to-pink-500/10'
     }
   ];
@@ -150,8 +150,9 @@ export default function HowItWorks() {
           <h2 className="text-4xl lg:text-6xl font-light text-white tracking-tighter leading-tight mb-6">
             How It Works
           </h2>
-          <p className="text-xl text-gray-400 max-w-2xl mx-auto font-light opacity-80">
-            Three simple steps to transform your document processing workflow
+          <p className="text-xl text-gray-400 max-w-3xl mx-auto font-light opacity-80">
+            Three simple steps to transform how you handle documents using AI.
+From compliance checks to data extraction, the process is fast, secure, and fully automated.
           </p>
         </div>
 
@@ -198,7 +199,7 @@ export default function HowItWorks() {
                   
                   {/* Hover indicator */}
                   <p className="text-sm border font-light border-gray-600/50 dark:border-white/[0.2] rounded-full text-gray-300 px-3 py-1.5 self-start opacity-70 group-hover:opacity-100 group-hover:border-purple-400/50 transition-all duration-300">
-                    Hover to reveal effect
+                    Built for Enterprise
                   </p>
                 </div>
 

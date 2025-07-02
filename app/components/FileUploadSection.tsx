@@ -14,6 +14,17 @@ interface FileUploadSectionProps {
   loading: boolean;
 }
 
+// Helper function to truncate filename
+const truncateFilename = (filename: string, maxLength = 25) => {
+  if (filename.length <= maxLength) return filename;
+  
+  const extension = filename.split('.').pop();
+  const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+  const truncatedName = nameWithoutExt.substring(0, maxLength - extension!.length - 4);
+  
+  return `${truncatedName}...${extension}`;
+};
+
 export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
   solution,
   solutionType,
@@ -51,34 +62,43 @@ export const FileUploadSection: React.FC<FileUploadSectionProps> = ({
       {files.length > 0 && (
         <div className="mt-4 space-y-2">
           {files.map((file, index) => (
-            <div key={index} className="p-4 bg-gray-800 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">
-                    {isSignatureVerification ? `Signature ${index + 1}: ` : ''}{file.name}
+            <div key={index} className="p-3 sm:p-4 bg-transparent border border-dashed border-neutral-800 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                {/* File Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm sm:text-base truncate" title={file.name}>
+                    {isSignatureVerification ? `Signature ${index + 1}: ` : ''}
+                    <span className="text-gray-300">
+                      {truncateFilename(file.name)}
+                    </span>
                   </p>
-                  <p className="text-sm text-gray-400">
+                  <p className="text-xs sm:text-sm text-gray-400">
                     {(file.size / 1024).toFixed(2)} KB
                   </p>
                 </div>
+                
+                {/* Submit Button - only show on last file */}
                 {index === files.length - 1 && (
-                  <button
-                    onClick={onSubmit}
-                    disabled={loading || (isSignatureVerification && files.length !== 2)}
-                    className={`px-6 py-2 bg-gradient-to-r ${solution.gradient} rounded-lg font-semibold transition-all duration-300 hover:scale-105 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    {loading ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                        <span>Processing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        <span>{getButtonText(solutionType)}</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="flex-shrink-0">
+                    <button
+                      onClick={onSubmit}
+                      disabled={loading || (isSignatureVerification && files.length !== 2)}
+                      className={`w-full sm:w-auto px-4 sm:px-6 py-2 bg-gradient-to-r ${solution.gradient} rounded-lg font-semibold text-sm sm:text-base transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
+                      {loading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                          <span className="hidden sm:inline">Processing...</span>
+                          <span className="sm:hidden">...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          <span className="truncate">{getButtonText(solutionType)}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
