@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, ScanLine, Download } from 'lucide-react';
 import { useMotionValue, useMotionTemplate, motion } from 'framer-motion';
+import {LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
 
 // Evervault Card Components
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -220,7 +221,7 @@ From compliance checks to data extraction, the process is fast, secure, and full
         {/* CTA Section */}
         <div className="text-center mt-16">
           <button className="group relative inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500/90 to-purple-800/90 rounded-lg text-white font-medium text-lg hover:from-purple-600/90 hover:to-purple-900/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
-            <span className="mr-3">Get Started Now</span>
+            <LoginLink postLoginRedirectURL="/services" className="mr-3">Get Started Now</LoginLink>
             <div className="w-5 h-5 group-hover:translate-x-1 transition-transform">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />

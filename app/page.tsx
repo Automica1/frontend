@@ -15,6 +15,7 @@ import {TabsDemo} from "./components/landingPage/TabsDemo";
 import StickyScrollRevealDemo from "./components/landingPage/StickyScrollRevealDemo";
 import { SpotlightNewDemo } from "./components/landingPage/SpotlightNewDemo";
 import { FeaturesSectionDemo } from "./components/landingPage/FeatureSectionDemo";
+import { CanvasRevealEffectDemo } from './components/services/Demo'
 
 export default function Home() {
   return (
@@ -26,12 +27,13 @@ export default function Home() {
     {/* <Test/> */}
     {/* <Hero /> */}
     <Hero2 />
-    <LogoMarque />
+    {/* <LogoMarque /> */}
     {/* <div className="px-40 bg-[#101312]"> */}
     <HowItWorks/>
     <SpotlightNewDemo />
+    {/* <CanvasRevealEffectDemo/> */}
     {/* <WhatWeDo /> */}
-    <FeaturedSolutions />
+    {/* <FeaturedSolutions /> */}
     {/* <StickyScrollRevealDemo /> */}
     <FeaturesSectionDemo/>
     {/* <TabsDemo /> */}

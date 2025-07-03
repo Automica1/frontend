@@ -97,11 +97,11 @@ export default function Navbar() {
         <div className="hidden md:flex items-center space-x-8 animate-[slideInDown_0.8s_ease-out_0.2s_both]">
           <Link href="/services" className="text-gray-300 hover:text-purple-400 transition-all duration-300 hover:scale-105">Services</Link>
           <div className="flex items-center space-x-1 text-gray-300 hover:text-purple-400 transition-all duration-300 cursor-pointer hover:scale-105">
-            <span>Industries</span>
+            <span>Contact Us</span>
             <ChevronDown className="w-4 h-4" />
           </div>
           <div className="flex items-center space-x-1 text-gray-300 hover:text-purple-400 transition-all duration-300 cursor-pointer hover:scale-105">
-            <span>Solutions</span>
+            <span>About Us</span>
             <ChevronDown className="w-4 h-4" />
           </div>
           <Link href="/pricing" className="text-gray-300 hover:text-purple-400 transition-all duration-300 hover:scale-105">Pricing</Link>
@@ -112,7 +112,7 @@ export default function Navbar() {
           {/* Only show credits if user is authenticated */}
           {!isLoading && isAuthenticated && (
             <button className="flex items-center space-x-2 text-gray-300 hover:text-purple-400 transition-all duration-300 hover:scale-105">
-              <Coins className="w-4 h-4" />
+              <Coins className="w-4 h-4 text-yellow-500" />
               <span>{creditsLoading ? '...' : credits !== null ? credits.toLocaleString() : ''}</span>
             </button>
           )}
@@ -278,19 +278,19 @@ export default function Navbar() {
                 Services
               </Link>
               
-              <div className="text-2xl font-medium text-white py-3 border-b border-gray-800/50">
+              {/* <div className="text-2xl font-medium text-white py-3 border-b border-gray-800/50">
                 <div className="flex items-center justify-between cursor-pointer hover:text-purple-400 transition-colors duration-200">
                   <span>Industries</span>
                   <ChevronDown className="w-6 h-6" />
                 </div>
-              </div>
+              </div> */}
               
-              <div className="text-2xl font-medium text-white py-3 border-b border-gray-800/50">
+              {/* <div className="text-2xl font-medium text-white py-3 border-b border-gray-800/50">
                 <div className="flex items-center justify-between cursor-pointer hover:text-purple-400 transition-colors duration-200">
                   <span>Solutions</span>
                   <ChevronDown className="w-6 h-6" />
                 </div>
-              </div>
+              </div> */}
               
               <Link 
                 href="/pricing" 

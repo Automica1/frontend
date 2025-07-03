@@ -13,9 +13,9 @@ const CTASection = () => {
           Join thousands of developers already using our APIs to build amazing applications.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25">
+          {/* <button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25">
             View Documentation
-          </button>
+          </button> */}
           <button className="border border-purple-500 text-purple-400 hover:bg-purple-500/10 px-8 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105">
             Contact Sales
           </button>

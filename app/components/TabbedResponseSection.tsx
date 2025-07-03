@@ -30,8 +30,9 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   
   const Icon = solution.IconComponent;
 
-  // Show processed image tab only if we have a processed image
-  const showProcessedImageTab = maskedBase64 && maskedBase64.length > 0;
+  // Always show processed image tab, but handle empty state
+  const showProcessedImageTab = true;
+  const hasProcessedImage = maskedBase64 && maskedBase64.length > 0;
 
   const base64ToBlob = (base64: string, mimeType: string = 'image/png'): Blob => {
     const byteCharacters = atob(base64);
@@ -117,7 +118,23 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
       );
     }
 
-    if (activeTab === 'processed-image' && maskedBase64) {
+    if (activeTab === 'processed-image') {
+      if (!hasProcessedImage) {
+        return (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ImageIcon className="w-8 h-8 text-gray-600" />
+            </div>
+            <p className="text-gray-400">
+              {loading ? getProcessingMessage(solutionType) : `${getFileRequirementText(solutionType)} to see the processed image`}
+            </p>
+            {loading && (
+              <div className="w-16 h-16 border-4 border-gray-700 border-t-purple-500 rounded-full animate-spin mx-auto mt-4" />
+            )}
+          </div>
+        );
+      }
+
       return (
         <div className="space-y-4">
           {/* Preview Image */}
@@ -181,6 +198,17 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
       {/* Tab Navigation */}
       <div className="flex border-b border-gray-700">
         <button
+          onClick={() => setActiveTab('processed-image')}
+          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 font-medium transition-colors duration-200 ${
+            activeTab === 'processed-image'
+              ? 'bg-purple-600 text-white border-b-2 border-purple-400'
+              : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800'
+          }`}
+        >
+          <ImageIcon className="w-4 h-4" />
+          <span>Processed Image</span>
+        </button>
+        <button
           onClick={() => setActiveTab('api-response')}
           className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 font-medium transition-colors duration-200 ${
             activeTab === 'api-response'
@@ -191,20 +219,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
           <Code className="w-4 h-4" />
           <span>API Response</span>
         </button>
-        <button
-          onClick={() => setActiveTab('processed-image')}
-          disabled={!showProcessedImageTab}
-          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 font-medium transition-colors duration-200 ${
-            activeTab === 'processed-image' && showProcessedImageTab
-              ? 'bg-purple-600 text-white border-b-2 border-purple-400'
-              : showProcessedImageTab
-              ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800'
-              : 'text-gray-600 cursor-not-allowed'
-          }`}
-        >
-          <ImageIcon className="w-4 h-4" />
-          <span>Processed Image</span>
-        </button>
+        
       </div>
 
       {/* Tab Content */}

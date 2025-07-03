@@ -9,6 +9,7 @@ import AvailableSolutions from '../components/services/AvailableSolutions'
 import ComingSoon from '../components/services/ComingSoon'
 import CTASection from '../components/services/CTASection'
 import Footer from '../components/landingPage/Footer'
+import SolutionsHero from '../components/services/ServicesHero'
 
 export default function page() {
   return (
@@ -16,8 +17,8 @@ export default function page() {
       {/* <Navbar /> */}
       {/* <Hero />       */}
       
-      <CanvasRevealEffectDemo />
-      
+      {/* <CanvasRevealEffectDemo /> */}
+      <SolutionsHero/>
       {/* Option 1: Use the complete ServicesShowcase component */}
       <ServicesShowcase />
       {/* <Footer/> */}
