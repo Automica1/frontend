@@ -3,12 +3,6 @@
 import React, { useState } from 'react';
 import Navbar from '../../components/landingPage/Navbar';
 import Footer from '../../components/landingPage/Footer';
-import { FloatingDock } from '@/app/components/ui/floating-dock';
-import {
-  IconHome,
-  IconNewSection,
-  IconTerminal2,
-} from "@tabler/icons-react";
 
 // Import icons that might be used
 import { 
@@ -21,7 +15,10 @@ import {
   Camera,
   Search,
   Shield,
-  Zap
+  Zap,
+  Home,
+  Terminal,
+  FileCode
 } from 'lucide-react';
 
 // Import separate components
@@ -92,30 +89,21 @@ const getUseCaseIcon = (title: string) => {
 export default function SolutionPageClient({ solution }: SolutionPageClientProps) {
   const [activeSection, setActiveSection] = useState<ActiveSection>('about');
 
-  const links = [
+  const navItems = [
     {
-      title: "About",
-      icon: (
-        <IconHome className="w-full text-neutral-500 dark:text-neutral-300" />
-      ),
-      href: "#",
-      onClick: () => setActiveSection('about'),
+      id: 'about' as ActiveSection,
+      label: 'Home',
+      icon: Home,
     },
     {
-      title: "Try API",
-      icon: (
-        <IconTerminal2 className="w-full text-neutral-500 dark:text-neutral-300" />
-      ),
-      href: "#",
-      onClick: () => setActiveSection('try-api'),
+      id: 'try-api' as ActiveSection,
+      label: 'Try The Api',
+      icon: Terminal,
     },
     {
-      title: "Docs",
-      icon: (
-        <IconNewSection className="w-full text-neutral-500 dark:text-neutral-300" />
-      ),
-      href: "#",
-      onClick: () => setActiveSection('documentation'),
+      id: 'documentation' as ActiveSection,
+      label: 'Documentation',
+      icon: FileCode,
     },
   ];
 
@@ -152,18 +140,37 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
   };
 
   return (
-    <div className=" bg-black text-white">
-      {/* Main Content Area */}
-      <div className="pt-20">
-        {renderActiveComponent()}
+    <div className="bg-black text-white">
+      {/* Navigation Bar - Fixed positioning below main navbar */}
+      <div className="fixed top-16 left-0 right-0 z-40 bg-black border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <nav className="flex space-x-8">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSection === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
+                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    isActive
+                      ? 'border-blue-500 text-blue-400'
+                      : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
       </div>
 
-      {/* Floating Dock with Text Labels */}
-      <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2 z-50">
-        <FloatingDock
-          mobileClassName="translate-y-20"
-          items={links}
-        />
+      {/* Main Content Area - Add top padding to account for both navbars */}
+      <div className="pt-32">
+        {renderActiveComponent()}
       </div>
     </div>
   );

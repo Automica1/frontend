@@ -25,9 +25,9 @@ const AvailableSolutions: React.FC<AvailableSolutionsProps> = ({
 
   return (
     <div className="mb-20">
-      <h3 className="text-2xl font-bold text-white mb-8 text-center">
+      {/* <h3 className="text-2xl font-bold text-white mb-8 text-center">
         Available Now
-      </h3>
+      </h3> */}
       {/* Changed from grid to vertical stack with full width */}
       <div className="space-y-6 max-w-7xl mx-auto">
         {solutions.map((solution, index) => (

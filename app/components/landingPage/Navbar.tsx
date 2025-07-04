@@ -278,19 +278,19 @@ export default function Navbar() {
                 Services
               </Link>
               
-              {/* <div className="text-2xl font-medium text-white py-3 border-b border-gray-800/50">
+              <div className="text-2xl font-medium text-white py-3 border-b border-gray-800/50">
                 <div className="flex items-center justify-between cursor-pointer hover:text-purple-400 transition-colors duration-200">
-                  <span>Industries</span>
+                  <span>contact</span>
                   <ChevronDown className="w-6 h-6" />
                 </div>
-              </div> */}
+              </div>
               
-              {/* <div className="text-2xl font-medium text-white py-3 border-b border-gray-800/50">
+              <div className="text-2xl font-medium text-white py-3 border-b border-gray-800/50">
                 <div className="flex items-center justify-between cursor-pointer hover:text-purple-400 transition-colors duration-200">
-                  <span>Solutions</span>
+                  <span>About</span>
                   <ChevronDown className="w-6 h-6" />
                 </div>
-              </div> */}
+              </div>
               
               <Link 
                 href="/pricing" 

@@ -1,7 +1,160 @@
 'use client';
 import { ArrowRight, Network, Database, Cpu } from 'lucide-react';
 import { motion } from 'framer-motion';
-import NetworkAnimation from './NetworkAnimation';
+import React, { useEffect, useRef } from 'react';
+
+// NetworkAnimation component embedded
+type Particle = {
+  x: number;
+  y: number;
+  size: number;
+  speedX: number;
+  speedY: number;
+  color: string;
+  alpha: number;
+  connections: number[];
+};
+
+const NetworkAnimation = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const particlesRef = useRef<Particle[]>([]);
+  const mouseRef = useRef({ x: 0, y: 0, radius: 150 });
+  const animationFrameRef = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initParticles();
+    };
+
+    const initParticles = () => {
+      const particleCount = Math.min(Math.floor(window.innerWidth / 15), 100);
+      const particles: Particle[] = [];
+      
+      const colors = ['#0EA5E9', '#8B5CF6', '#33C3F0', '#A78BFA'];
+      
+      for (let i = 0; i < particleCount; i++) {
+        const size = Math.random() * 2 + 1;
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size,
+          speedX: (Math.random() - 0.5) * 0.5,
+          speedY: (Math.random() - 0.5) * 0.5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          alpha: Math.random() * 0.5 + 0.1,
+          connections: [],
+        });
+      }
+      
+      particlesRef.current = particles;
+    };
+
+    const drawParticles = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Update and draw particles
+      for (let i = 0; i < particlesRef.current.length; i++) {
+        const p = particlesRef.current[i];
+        p.connections = [];
+        
+        // Move particles
+        p.x += p.speedX;
+        p.y += p.speedY;
+        
+        // Boundary check
+        if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
+        
+        // Draw particle
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.alpha;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      
+      // Connect particles with lines
+      connectParticles();
+      
+      // Continue animation
+      animationFrameRef.current = requestAnimationFrame(drawParticles);
+    };
+    
+    const connectParticles = () => {
+      const maxDistance = Math.min(canvas.width, canvas.height) * 0.15;
+      
+      for (let i = 0; i < particlesRef.current.length; i++) {
+        for (let j = i + 1; j < particlesRef.current.length; j++) {
+          const p1 = particlesRef.current[i];
+          const p2 = particlesRef.current[j];
+          
+          const dx = p1.x - p2.x;
+          const dy = p1.y - p2.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < maxDistance) {
+            // Calculate connection strength (more transparent as distance increases)
+            const alpha = 1 - (distance / maxDistance);
+            
+            // Draw line between particles
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            
+            // Create gradient for line
+            const gradient = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
+            gradient.addColorStop(0, p1.color.replace(')', `, ${alpha})`).replace('rgb', 'rgba'));
+            gradient.addColorStop(1, p2.color.replace(')', `, ${alpha})`).replace('rgb', 'rgba'));
+            
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+            
+            // Track connections for each particle
+            p1.connections.push(j);
+            p2.connections.push(i);
+          }
+        }
+      }
+    };
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseRef.current.x = e.clientX;
+      mouseRef.current.y = e.clientY;
+    };
+    
+    // Initialize canvas and start animation
+    resizeCanvas();
+    drawParticles();
+    
+    // Handle window resize
+    window.addEventListener('resize', resizeCanvas);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, []);
+  
+  return (
+    <canvas 
+      ref={canvasRef} 
+      className="absolute inset-0 w-full h-full z-0 pointer-events-none"
+    />
+  );
+};
 
 const SolutionsHero = () => {
   const titleVariants = {
@@ -20,13 +173,13 @@ const SolutionsHero = () => {
   };
   
   return (
-    <section className="hero-gradient text-white pt-32 pb-20 md:pt-40 md:pb-28 relative overflow-hidden">
+    <section className="bg-black text-white pt-40 pb-20 relative overflow-hidden flex items-center">
       <NetworkAnimation />
       
-      {/* Floating icons */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Floating icons - hidden on mobile, properly positioned on larger screens */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none hidden lg:block">
         <motion.div 
-          className="absolute top-1/4 left-[10%] p-3 rounded-full bg-white/5 backdrop-blur-sm"
+          className="absolute top-1/4 left-[8%] xl:left-[12%] p-3 rounded-full bg-white/5 backdrop-blur-sm"
           animate={{ 
             y: [0, -15, 0],
             rotate: [0, 5, 0]
@@ -37,11 +190,11 @@ const SolutionsHero = () => {
             ease: "easeInOut"
           }}
         >
-          <Network className="text-automica-blue/70" size={24} />
+          <Network className="text-blue-400/70" size={20} />
         </motion.div>
         
         <motion.div 
-          className="absolute top-2/3 right-[15%] p-3 rounded-full bg-white/5 backdrop-blur-sm"
+          className="absolute top-2/3 right-[8%] xl:right-[12%] p-3 rounded-full bg-white/5 backdrop-blur-sm"
           animate={{ 
             y: [0, -20, 0],
             rotate: [0, -5, 0]
@@ -53,11 +206,11 @@ const SolutionsHero = () => {
             delay: 1
           }}
         >
-          <Database className="text-automica-purple/70" size={24} />
+          <Database className="text-purple-400/70" size={20} />
         </motion.div>
         
         <motion.div 
-          className="absolute top-1/2 left-[20%] p-3 rounded-full bg-white/5 backdrop-blur-sm"
+          className="absolute top-1/2 left-[15%] xl:left-[20%] p-3 rounded-full bg-white/5 backdrop-blur-sm"
           animate={{ 
             y: [0, -10, 0],
             rotate: [0, 3, 0]
@@ -69,13 +222,14 @@ const SolutionsHero = () => {
             delay: 2
           }}
         >
-          <Cpu className="text-automica-blue/70" size={24} />
+          <Cpu className="text-blue-400/70" size={20} />
         </motion.div>
       </div>
       
-      <div className="container text-center relative z-10">
+      {/* Content - Full width centered layout */}
+      <div className="w-full text-center relative z-10 px-4 sm:px-6 md:px-8 lg:px-16">
         <motion.h1 
-          className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 max-w-4xl mx-auto"
+          className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 md:mb-6 max-w-5xl mx-auto leading-tight"
           variants={titleVariants} 
           initial="hidden"
           animate="visible"
@@ -84,19 +238,19 @@ const SolutionsHero = () => {
             ease: "easeInOut"
           }}
         >
-          <span className="relative">
+          <span className="relative inline-block">
             Powerful AI APIs Built for Real-World Use
-            <motion.span 
-              className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-automica-blue to-automica-purple"
+            {/* <motion.span 
+              className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-400"
               initial={{ width: 0, opacity: 0 }}
               animate={{ width: "100%", opacity: 1 }}
               transition={{ delay: 1, duration: 1 }}
-            />
+            /> */}
           </span>
         </motion.h1>
         
         <motion.p 
-          className="text-lg md:text-xl text-gray-300 max-w-2xl mx-auto mb-10"
+          className="text-base md:text-lg lg:text-xl text-gray-300 max-w-3xl mx-auto mb-8 md:mb-10"
           variants={subtitleVariants}
           initial="hidden"
           animate="visible"
@@ -111,7 +265,7 @@ const SolutionsHero = () => {
         
         {/* Animated arrow down indicator */}
         <motion.div 
-          className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
+          className="absolute bottom-6 md:bottom-10 left-1/2 transform -translate-x-1/2"
           animate={{ 
             y: [0, 10, 0],
             opacity: [0.3, 1, 0.3]
@@ -122,7 +276,7 @@ const SolutionsHero = () => {
             ease: "easeInOut"
           }}
         >
-          <ArrowRight className="transform rotate-90 text-white/70" size={28} />
+          <ArrowRight className="transform rotate-90 text-white/70" size={24} />
         </motion.div>
       </div>
     </section>

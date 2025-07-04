@@ -1,3 +1,4 @@
+// How it works
 'use client';
 import React, { useState, useEffect } from 'react';
 import { Upload, ScanLine, Download } from 'lucide-react';
@@ -43,7 +44,7 @@ const EvervaultCard: React.FC<EvervaultCardProps> = ({ className, icon: IconComp
         />
         <div className="relative z-10 flex items-center justify-center">
           <div className="relative h-44 w-44 rounded-full flex items-center justify-center text-white font-bold text-4xl">
-            <div className="absolute w-full h-full bg-white/[0.8] dark:bg-black/[0.8] blur-sm rounded-full" />
+            <div className="absolute w-full h-full bg-black/[0.8] blur-sm rounded-full" />
             <IconComponent className="w-16 h-16 text-purple-400 z-20" />
           </div>
         </div>
@@ -115,7 +116,7 @@ export default function HowItWorks() {
       id: '01',
       icon: Upload,
       title: 'Upload Your Document',
-      description: 'Easily upload scanned or digital documents in any format. Our secure platform supports images, PDFs, and more—whether it’s a single page or a bulk upload..',
+      description: 'Easily upload scanned or digital documents in any format. Our secure platform supports images, PDFs, and more—whether its a single page or a bulk upload..',
       bgGradient: 'from-purple-500/10 to-purple-900/10'
     },
     {
@@ -172,7 +173,7 @@ From compliance checks to data extraction, the process is fast, secure, and full
               </div>
 
               {/* Card with Evervault Effect */}
-              <div className="border border-gray-800/30 dark:border-white/[0.2] flex flex-col items-start mx-auto p-6 relative h-[35rem] rounded-2xl bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-sm transition-all duration-500 group-hover:border-purple-500/30 group-hover:shadow-2xl group-hover:shadow-purple-500/10">
+              <div className="border border-white/[0.2] flex flex-col items-start mx-auto p-6 relative h-[35rem] rounded-2xl bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-sm transition-all duration-500 group-hover:border-purple-500/30 group-hover:shadow-2xl group-hover:shadow-purple-500/10">
                 
                 {/* Corner Icons */}
                 <Icon className="absolute h-6 w-6 -top-3 -left-3 text-purple-400" />
@@ -199,7 +200,7 @@ From compliance checks to data extraction, the process is fast, secure, and full
                   </div>
                   
                   {/* Hover indicator */}
-                  <p className="text-sm border font-light border-gray-600/50 dark:border-white/[0.2] rounded-full text-gray-300 px-3 py-1.5 self-start opacity-70 group-hover:opacity-100 group-hover:border-purple-400/50 transition-all duration-300">
+                  <p className="text-sm border font-light border-white/[0.2] rounded-full text-gray-300 px-3 py-1.5 self-start opacity-70 group-hover:opacity-100 group-hover:border-purple-400/50 transition-all duration-300">
                     Built for Enterprise
                   </p>
                 </div>
