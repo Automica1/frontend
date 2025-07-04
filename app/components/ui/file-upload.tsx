@@ -163,7 +163,7 @@ export const FileUpload = ({
                     stiffness: 300,
                     damping: 20,
                   }}
-                  className="relative group-hover/file:shadow-2xl z-40 bg-white dark:bg-neutral-900 flex items-center justify-center h-32 mt-4 w-full max-w-[8rem] mx-auto rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
+                  className="relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center h-32 mt-4 w-full max-w-[8rem] mx-auto rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
                 >
                   {isDragActive ? (
                     <motion.p
@@ -172,10 +172,10 @@ export const FileUpload = ({
                       className="text-neutral-600 flex flex-col items-center"
                     >
                       Drop it
-                      <Upload className="h-4 w-4 text-neutral-600 dark:text-neutral-400 mt-1" />
+                      <Upload className="h-4 w-4 text-neutral-400 mt-1" />
                     </motion.p>
                   ) : (
-                    <Upload className="h-4 w-4 text-neutral-600 dark:text-neutral-300" />
+                    <Upload className="h-4 w-4 text-neutral-300" />
                   )}
                 </motion.div>
 
@@ -194,7 +194,7 @@ export const FileUpload = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="relative bg-white dark:bg-neutral-900 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden"
+                  className="relative bg-neutral-900 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden"
                 >
                   {/* Remove button */}
                   <button
@@ -207,7 +207,7 @@ export const FileUpload = ({
                   {isImageFile(file) && file.preview ? (
                     // Image preview
                     <div className="p-4">
-                      <div className="relative bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden mb-4">
+                      <div className="relative bg-neutral-800 rounded-lg overflow-hidden mb-4">
                         <motion.img
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
@@ -223,14 +223,14 @@ export const FileUpload = ({
                           <motion.p
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="text-base font-medium text-neutral-700 dark:text-neutral-300 truncate pr-4"
+                            className="text-base font-medium text-neutral-300 truncate pr-4"
                           >
                             {file.name}
                           </motion.p>
                           <motion.p
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap"
+                            className="text-sm text-neutral-400 whitespace-nowrap"
                           >
                             {(file.size / (1024 * 1024)).toFixed(2)} MB
                           </motion.p>
@@ -240,14 +240,14 @@ export const FileUpload = ({
                           <motion.span
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="inline-block px-3 py-1 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-xs font-medium"
+                            className="inline-block px-3 py-1 bg-neutral-700 text-neutral-300 rounded-full text-xs font-medium"
                           >
                             {file.type}
                           </motion.span>
                           <motion.span
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="text-xs text-neutral-500 dark:text-neutral-400"
+                            className="text-xs text-neutral-400"
                           >
                             Modified {new Date(file.lastModified).toLocaleDateString()}
                           </motion.span>
@@ -260,7 +260,7 @@ export const FileUpload = ({
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="flex-shrink-0 w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-lg flex items-center justify-center"
+                        className="flex-shrink-0 w-16 h-16 bg-neutral-800 rounded-lg flex items-center justify-center"
                       >
                         <File className="h-8 w-8 text-neutral-400" />
                       </motion.div>
@@ -268,21 +268,21 @@ export const FileUpload = ({
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className="text-base font-medium text-neutral-700 dark:text-neutral-300 truncate"
+                          className="text-base font-medium text-neutral-300 truncate"
                         >
                           {file.name}
                         </motion.p>
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className="text-sm text-neutral-500 dark:text-neutral-400 mt-1"
+                          className="text-sm text-neutral-400 mt-1"
                         >
                           {(file.size / (1024 * 1024)).toFixed(2)} MB • {file.type}
                         </motion.p>
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className="text-xs text-neutral-500 dark:text-neutral-400 mt-1"
+                          className="text-xs text-neutral-400 mt-1"
                         >
                           Modified {new Date(file.lastModified).toLocaleDateString()}
                         </motion.p>
@@ -304,7 +304,7 @@ export const FileUpload = ({
         initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           onClick={handleClick}
-          className="mt-4 w-full px-6 py-3 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 rounded-lg transition-all duration-200 border border-neutral-300 dark:border-neutral-600 shadow-sm hover:shadow-md transform hover:scale-[1.02]"
+          className="mt-4 w-full px-6 py-3 text-sm font-medium text-neutral-300 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-all duration-200 border border-neutral-600 shadow-sm hover:shadow-md transform hover:scale-[1.02]"
           >
           Upload Different File
         </motion.button>
@@ -319,7 +319,7 @@ export function GridPattern() {
   const columns = 41;
   const rows = 11;
   return (
-    <div className="flex bg-gray-100 dark:bg-neutral-900 shrink-0 flex-wrap justify-center items-center gap-x-px gap-y-px scale-105">
+    <div className="flex bg-neutral-900 shrink-0 flex-wrap justify-center items-center gap-x-px gap-y-px scale-105">
       {Array.from({ length: rows }).map((_, row) =>
         Array.from({ length: columns }).map((_, col) => {
           const index = row * columns + col;
@@ -328,8 +328,8 @@ export function GridPattern() {
               key={`${col}-${row}`}
               className={`w-10 h-10 flex shrink-0 rounded-[2px] ${
                 index % 2 === 0
-                  ? "bg-gray-50 dark:bg-neutral-950"
-                  : "bg-gray-50 dark:bg-neutral-950 shadow-[0px_0px_1px_3px_rgba(255,255,255,1)_inset] dark:shadow-[0px_0px_1px_3px_rgba(0,0,0,1)_inset]"
+                  ? "bg-neutral-950"
+                  : "bg-neutral-950 shadow-[0px_0px_1px_3px_rgba(255,255,255,1)_inset] dark:shadow-[0px_0px_1px_3px_rgba(0,0,0,1)_inset]"
               }`}
             />
           );

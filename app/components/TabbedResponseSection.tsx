@@ -75,6 +75,26 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
     });
   };
 
+  // Function to format the API response data properly
+  const formatApiResponse = (responseData: any) => {
+    if (!responseData) return '';
+    
+    // Extract only the cropResult object if it exists
+    if (responseData.cropResult && typeof responseData.cropResult === 'object') {
+      const cropResult = {
+        req_id: responseData.cropResult.req_id,
+        success: responseData.cropResult.success,
+        status: responseData.cropResult.status,
+        result: responseData.cropResult.result,
+        message: responseData.cropResult.message
+      };
+      return JSON.stringify(cropResult, null, 2);
+    }
+    
+    // Fallback to full response if cropResult doesn't exist
+    return JSON.stringify(responseData, null, 2);
+  };
+
   const renderTabContent = () => {
     if (activeTab === 'api-response') {
       return (
@@ -109,8 +129,8 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
 
           {data && (
             <div className="bg-black rounded-lg p-4 overflow-x-auto">
-              <pre className="text-sm text-gray-300">
-                {JSON.stringify(data, null, 2)}
+              <pre className="text-sm text-gray-300 whitespace-pre-wrap">
+                {formatApiResponse(data)}
               </pre>
             </div>
           )}

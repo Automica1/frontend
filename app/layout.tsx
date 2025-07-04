@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Automica Ai",
+  title: "Automica AI",
   description: "Plug and Play Ai Automation Platform",
 };
 

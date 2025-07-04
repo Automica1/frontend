@@ -97,7 +97,7 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
     },
     {
       id: 'try-api' as ActiveSection,
-      label: 'Try The Api',
+      label: 'Try API',
       icon: Terminal,
     },
     {
@@ -142,7 +142,10 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
   return (
     <div className="bg-black text-white">
       {/* Navigation Bar - Fixed positioning below main navbar */}
-      <div className="fixed top-16 left-0 right-0 z-40 bg-black border-b border-gray-800">
+      {/* Tabs Navigation */}
+     
+
+      <div className="fixed lg:top-19 top-18 max-w-7xl mx-auto left-0 right-0 z-40 bg-black/40 backdrop-blur-xl border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8">
             {navItems.map((item) => {
@@ -155,7 +158,7 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
                   onClick={() => setActiveSection(item.id)}
                   className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                     isActive
-                      ? 'border-blue-500 text-blue-400'
+                      ? 'border-purple-500 text-purple-400'
                       : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
                   }`}
                 >
@@ -168,6 +171,8 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
         </div>
       </div>
 
+    
+
       {/* Main Content Area - Add top padding to account for both navbars */}
       <div className="pt-32">
         {renderActiveComponent()}
@@ -175,3 +180,30 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
     </div>
   );
 }
+
+
+      // <div className="fixed lg:top-20 top-18 left-0 right-0 z-40 bg-black border-b border-gray-800">
+      //   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      //     <nav className="flex space-x-8">
+      //       {navItems.map((item) => {
+      //         const Icon = item.icon;
+      //         const isActive = activeSection === item.id;
+              
+      //         return (
+      //           <button
+      //             key={item.id}
+      //             onClick={() => setActiveSection(item.id)}
+      //             className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+      //               isActive
+      //                 ? 'border-blue-500 text-blue-400'
+      //                 : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+      //             }`}
+      //           >
+      //             <Icon className="w-4 h-4" />
+      //             <span>{item.label}</span>
+      //           </button>
+      //         );
+      //       })}
+      //     </nav>
+      //   </div>
+      // </div>

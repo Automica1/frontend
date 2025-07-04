@@ -3,7 +3,7 @@ import { CheckCircle, Users, Zap, Shield, Globe, Award } from 'lucide-react';
 
 export default function About() {
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white pt-8">
       {/* Hero Section */}
       <section className="relative py-20 px-4">
         <div className="max-w-6xl mx-auto text-center">
@@ -157,10 +157,10 @@ export default function About() {
               <div className="text-4xl font-bold text-purple-400 mb-2">10K+</div>
               <div className="text-gray-300">API Calls Daily</div>
             </div>
-            <div>
+            {/* <div>
               <div className="text-4xl font-bold text-purple-400 mb-2">500+</div>
               <div className="text-gray-300">Enterprise Clients</div>
-            </div>
+            </div> */}
             <div>
               <div className="text-4xl font-bold text-purple-400 mb-2">99.9%</div>
               <div className="text-gray-300">Uptime Guarantee</div>

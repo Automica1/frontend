@@ -23,7 +23,7 @@ export default function AboutComponent({ solution }: AboutComponentProps) {
   const Icon = solution.icon;
 
   return (
-    <div className="">
+    <div className="max-w-7xl mx-auto px-4">
       {/* Hero Section */}
       <section className="pt-14 pb-16 px-4">
         <div className="max-w-7xl mx-auto">
