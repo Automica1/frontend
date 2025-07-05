@@ -14,53 +14,53 @@ import {
 export function FeaturesSectionDemo() {
   const features = [
     {
-      title: "Built for developers",
+      title: "AI-Powered Business Efficiency",
       description:
-        "Built for engineers, developers, dreamers, thinkers and doers.",
+        "Drive smarter decision-making, automate processes, and unlock new levels of efficiency and productivity across your organization with our powerful AI solutions.",
       icon: <IconTerminal2 />,
     },
     {
-      title: "Ease of use",
+      title: "Easy to Use, Easy to Integrate",
       description:
-        "It's as easy as using an Apple, and as expensive as buying one.",
+        "Our AI APIs are designed for simplicity—quick to implement, effortless to use, and compatible with your existing systems.",
       icon: <IconEaseInOut />,
     },
     {
-      title: "Pricing like no other",
+      title: "Transparent Pricing",
       description:
-        "Our prices are best in the market. No cap, no lock, no credit card required.",
+        "Simple, transparent, and scalable pricing. No hidden costs. No vendor lock-in. Start small, grow seamlessly.",
       icon: <IconCurrencyDollar />,
     },
     {
-      title: "100% Uptime guarantee",
-      description: "We just cannot be taken down by anyone.",
+      title: "Enterprise-Grade Uptime & Reliability",
+      description: "We guarantee industry-leading uptime and resilience. Your AI services remain uninterrupted, ensuring your business runs smoothly—always.",
       icon: <IconCloud />,
     },
     {
-      title: "Multi-tenant Architecture",
-      description: "You can simply share passwords instead of buying new seats",
+      title: "Enterprise Security & Compliance",
+      description: "Built for the highest levels of security, privacy, and compliance. Our AI platform is trusted by enterprises across regulated industries to safeguard sensitive data and operations.",
       icon: <IconRouteAltLeft />,
     },
     {
-      title: "24/7 Customer Support",
+      title: "24/7 Dedicated AI Support",
       description:
-        "We are available a 100% of the time. Atleast our AI Agents are.",
+        "Our expert team, available around the clock to support your business, ensuring a smooth and hassle-free experience at every step.",
       icon: <IconHelp />,
     },
-    {
-      title: "Money back guarantee",
-      description:
-        "If you donot like EveryAI, we will convince you to like us.",
-      icon: <IconAdjustmentsBolt />,
-    },
-    {
-      title: "And everything else",
-      description: "I just ran out of copy ideas. Accept my sincere apologies",
-      icon: <IconHeart />,
-    },
+    // {
+    //   title: "Data-Driven Insights for Smarter Decisions",
+    //   description:
+    //     "Turn complex data into clear, actionable insights that help your teams make faster, better-informed decisions.",
+    //   icon: <IconAdjustmentsBolt />,
+    // },
+    // {
+    //   title: "Scalable Solutions for Growing Businesses",
+    //   description: "Our AI platform is built to scale effortlessly with your business needs—whether you're handling increasing volumes, expanding to new markets, or driving digital transformation.",
+    //   icon: <IconHeart />,
+    // },
   ];
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4  relative z-10 py-10 max-w-7xl mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3  relative z-10 py-10 max-w-7xl mx-auto">
       {features.map((feature, index) => (
         <Feature key={feature.title} {...feature} index={index} />
       ))}
@@ -83,14 +83,14 @@ const Feature = ({
     <div
       className={cn(
         "flex flex-col lg:border-r  py-10 relative group/feature border-neutral-800",
-        (index === 0 || index === 4) && "lg:border-l border-neutral-800",
-        index < 4 && "lg:border-b border-neutral-800"
+        (index === 0 || index === 3) && "lg:border-l border-neutral-800",
+        index < 3 && "lg:border-b border-neutral-800"
       )}
     >
-      {index < 4 && (
+      {index < 3 && (
         <div className="opacity-0 group-hover/feature:opacity-100 transition duration-200 absolute inset-0 h-full w-full bg-gradient-to-t from-neutral-800 to-transparent pointer-events-none" />
       )}
-      {index >= 4 && (
+      {index >= 3 && (
         <div className="opacity-0 group-hover/feature:opacity-100 transition duration-200 absolute inset-0 h-full w-full bg-gradient-to-b from-neutral-800 to-transparent pointer-events-none" />
       )}
       <div className="mb-4 relative z-10 px-10 text-neutral-400">
@@ -102,7 +102,7 @@ const Feature = ({
           {title}
         </span>
       </div>
-      <p className="text-sm text-neutral-300 max-w-xs relative z-10 px-10">
+      <p className="text-sm text-neutral-300 max-w-lg relative z-10 px-10">
         {description}
       </p>
     </div>

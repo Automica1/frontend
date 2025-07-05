@@ -45,7 +45,7 @@ const EvervaultCard: React.FC<EvervaultCardProps> = ({ className, icon: IconComp
         <div className="relative z-10 flex items-center justify-center">
           <div className="relative h-44 w-44 rounded-full flex items-center justify-center text-white font-bold text-4xl">
             <div className="absolute w-full h-full bg-black/[0.8] blur-sm rounded-full" />
-            <IconComponent className="w-16 h-16 text-purple-400 z-20" />
+            <IconComponent className="w-24 h-16 text-purple-400 z-20" />
           </div>
         </div>
       </div>
@@ -123,7 +123,7 @@ export default function HowItWorks() {
       id: '02',
       icon: ScanLine,
       title: 'AI-Powered Processing',
-      description: 'Our intelligent system analyzes the document to perform a wide range of tasks such as data extraction, redaction, pattern detection, or validation—tailored to your specific use case.',
+      description: 'Our intelligent system analyzes the document to perform tasks such as data extraction, redaction, pattern detection, or validation—tailored to your specific use case.',
       bgGradient: 'from-blue-500/10 to-purple-700/10'
     },
     {
@@ -179,7 +179,7 @@ From compliance checks to data extraction, the process is fast, secure, and full
                 <Icon className="absolute h-6 w-6 -top-3 -left-3 text-purple-400" />
                 <Icon className="absolute h-6 w-6 -bottom-3 -left-3 text-purple-400" />
                 <Icon className="absolute h-6 w-6 -top-3 -right-3 text-purple-400" />
-                <Icon className="absolute h-6 w-6 -bottom-3 -right-3 text-purple-400" />
+                {/* <Icon className="absolute h-6 w-6 -bottom-3 -right-3 text-purple-400" /> */}
                 
                 {/* Evervault Card */}
                 <div className="w-full h-64 mb-6">
@@ -210,7 +210,7 @@ From compliance checks to data extraction, the process is fast, secure, and full
               </div>
 
               {/* Connection Line */}
-              {index < steps.length - 1 && (
+              {index < steps.length -1  && (
                 <div className="hidden lg:block absolute top-1/2 -right-6 w-12 h-0.5 bg-gradient-to-r from-purple-500/30 to-transparent transform -translate-y-1/2 z-0">
                   <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-purple-500/60 rounded-full"></div>
                 </div>

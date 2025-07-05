@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, MessageCircle, Clock, CheckCircle, Table, QrCode, User, Scissors, Code, Zap, Shield, Globe, FileCheck, Star, ArrowRight } from 'lucide-react';
+import { Pen, Mail, Phone, MapPin, Send, MessageCircle, Clock, CheckCircle, Table, QrCode, User, Scissors, Code, Zap, Shield, Globe, FileCheck, Star, ArrowRight } from 'lucide-react';
 
 // Services data with enhanced styling
 const servicesData = {
@@ -70,7 +70,19 @@ const servicesData = {
     bgColor: 'bg-yellow-500/10',
     borderColor: 'border-yellow-500/20',
     description: 'Smart face detection and cropping with optimization'
-  }
+  },
+  'custom-requirement': {
+  title: 'Custom Requirement',
+  slug: 'custom-requirement',
+  tagline: 'Tailored AI solutions',
+  icon: Pen,  // You can replace this with any other icon you prefer
+  gradient: 'from-purple-500 to-indigo-500',
+  color: 'text-purple-400',
+  bgColor: 'bg-purple-500/10',
+  borderColor: 'border-purple-500/20',
+  description: 'Build customized AI solutions to meet your specific business needs'
+},
+
 };
 
 export default function Contact() {
