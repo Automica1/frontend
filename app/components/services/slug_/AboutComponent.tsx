@@ -28,7 +28,7 @@ export default function AboutComponent({ solution, onSectionChange }: AboutCompo
   return (
     <div className="max-w-7xl mx-auto px-4">
       {/* Hero Section */}
-      <section className="pt-14 pb-16 px-4">
+      <section className="pt-14 pb-16 ">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Content */}

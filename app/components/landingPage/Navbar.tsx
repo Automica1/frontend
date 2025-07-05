@@ -84,6 +84,7 @@ export default function Navbar() {
               <Image
                 src="/logo.svg"
                 alt="Automica.ai Logo"
+                className='rounded-md'
                 width={32}
                 height={32}
                 priority

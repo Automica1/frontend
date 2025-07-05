@@ -1,6 +1,8 @@
 'use client';
 import React from 'react';
 import { Twitter, Linkedin, Github, MessageSquare, Brain } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export default function Footer() {
   const footerLinks = {
@@ -59,12 +61,17 @@ export default function Footer() {
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-12">
           {/* Brand Section */}
           <div className="lg:col-span-2">
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center">
-                <Brain className="w-6 h-6 text-white" />
-              </div>
+            <Link href='/' className="flex items-center space-x-3 mb-6">
+              <Image
+                              src="/logo.svg"
+                              alt="Automica.ai Logo"
+                              className='rounded-md'
+                              width={32}
+                              height={32}
+                              priority
+                            />
               <span className="text-2xl font-bold text-white">Automica.ai</span>
-            </div>
+            </Link>
             
             <p className="text-gray-400 leading-relaxed mb-8 max-w-sm">
               Intelligent AI solutions for document processing and verification.

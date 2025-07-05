@@ -158,7 +158,7 @@ const ServiceCard2: React.FC<ServiceCard2Props> = ({
 
             <Button
               onClick={(e) => handleLearnMoreClick(e, service)}
-              className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg transition-all duration-300 group/btn"
+              className="bg-purple-600 hover:bg-purple-700 cursor-pointer text-white shadow-lg transition-all duration-300 group/btn"
             >
               <span className="mr-2">Learn More</span>
               <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />

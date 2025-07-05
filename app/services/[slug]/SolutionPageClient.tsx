@@ -145,7 +145,7 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
       {/* Tabs Navigation */}
      
 
-      <div className="fixed lg:top-19 top-18 max-w-7xl mx-auto left-0 right-0 z-40 bg-black/40 backdrop-blur-xl border-b border-gray-800">
+      <div className="fixed lg:top-18 top-18 max-w-7xl mx-auto left-0 right-0 z-40 bg-black/40 backdrop-blur-xl border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8">
             {navItems.map((item) => {

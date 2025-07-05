@@ -320,7 +320,7 @@ const ProcessingActionSection: React.FC<ProcessingActionSectionProps> = ({
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-gray-300 truncate">
+                    <p className="truncate max-w-xs overflow-hidden whitespace-nowrap text-gray-300 text-sm">
                       {solutionType === 'signature-verification' ? `Signature ${index + 1}` : file.name}
                     </p>
                     <p className="text-xs text-gray-500">

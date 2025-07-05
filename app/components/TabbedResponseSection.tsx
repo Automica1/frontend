@@ -1,5 +1,5 @@
 // components/TabbedResponseSection.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Copy, Check, Download, Image as ImageIcon, Code, FileText } from 'lucide-react';
 import { Solution, SolutionType } from '../types/solution';
 import { getFileRequirementText, getProcessingMessage, getDownloadFileName } from '../../utils/solutionHelpers';
@@ -30,9 +30,19 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   
   const Icon = solution.IconComponent;
 
+  // Switch to API response tab when error occurs
+  useEffect(() => {
+    if (error) {
+      setActiveTab('api-response');
+    }
+  }, [error]);
+
   // Always show processed image tab, but handle empty state
   const showProcessedImageTab = true;
   const hasProcessedImage = maskedBase64 && maskedBase64.length > 0;
+
+  // Disable processed image tab when there's an error
+  const isProcessedImageTabDisabled = !!error;
 
   const base64ToBlob = (base64: string, mimeType: string = 'image/png'): Blob => {
     const byteCharacters = atob(base64);
@@ -218,14 +228,17 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
       {/* Tab Navigation */}
       <div className="flex border-b border-gray-700">
         <button
-          onClick={() => setActiveTab('processed-image')}
+          onClick={() => !isProcessedImageTabDisabled && setActiveTab('processed-image')}
+          disabled={isProcessedImageTabDisabled}
           className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 font-medium transition-colors duration-200 ${
             activeTab === 'processed-image'
               ? 'bg-purple-600 text-white border-b-2 border-purple-400'
-              : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800'
+              : isProcessedImageTabDisabled
+                ? 'text-gray-600 bg-gray-800 cursor-not-allowed'
+                : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800'
           }`}
         >
-          <ImageIcon className="w-4 h-4" />
+          <ImageIcon className={`w-4 h-4 ${isProcessedImageTabDisabled ? 'text-gray-600' : ''}`} />
           <span>Processed Image</span>
         </button>
         <button

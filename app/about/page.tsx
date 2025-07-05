@@ -7,10 +7,10 @@ export default function About() {
       {/* Hero Section */}
       <section className="relative py-20 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
+          <h1 className="text-5xl md:text-6xl pt-2 font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-600 bg-clip-text text-transparent">
             About Us
           </h1>
-          <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto">
             We're pioneering the future of AI integration with enterprise-grade APIs 
             that transform how businesses leverage artificial intelligence.
           </p>
@@ -18,7 +18,7 @@ export default function About() {
       </section>
 
       {/* Mission Section */}
-      <section className="py-16 px-4">
+      <section className="py-16 pt-2 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -150,28 +150,28 @@ export default function About() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 px-4 bg-gray-900/20">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold text-purple-400 mb-2">10K+</div>
-              <div className="text-gray-300">API Calls Daily</div>
-            </div>
-            {/* <div>
+<section className="py-16 px-4 bg-gray-900/20">
+  <div className="max-w-6xl mx-auto">
+    <div className="grid md:grid-cols-3 gap-8 text-center">
+      <div>
+        <div className="text-4xl font-bold text-purple-400 mb-2">10K+</div>
+        <div className="text-gray-300">API Calls Daily</div>
+      </div>
+       {/* <div>
               <div className="text-4xl font-bold text-purple-400 mb-2">500+</div>
               <div className="text-gray-300">Enterprise Clients</div>
             </div> */}
-            <div>
-              <div className="text-4xl font-bold text-purple-400 mb-2">99.9%</div>
-              <div className="text-gray-300">Uptime Guarantee</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-purple-400 mb-2">24/7</div>
-              <div className="text-gray-300">Support Available</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <div>
+        <div className="text-4xl font-bold text-purple-400 mb-2">99.9%</div>
+        <div className="text-gray-300">Uptime Guarantee</div>
+      </div>
+      <div>
+        <div className="text-4xl font-bold text-purple-400 mb-2">24/7</div>
+        <div className="text-gray-300">Support Available</div>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* CTA Section */}
       <section className="py-16 px-4">
