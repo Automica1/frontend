@@ -145,10 +145,10 @@ export const FileUpload = ({
             <div className="flex flex-col items-center justify-center relative z-20">
               <div className="flex items-center justify-between w-full max-w-xl mx-auto mb-4">
                 <div className="flex-1 flex flex-col items-center justify-center space-y-2">
-                  <p className="relative z-20 font-sans font-bold text-neutral-700 dark:text-neutral-300 text-base">
+                  <p className="relative z-20 font-sans font-bold text-neutral-300 text-base">
                     Upload file
                   </p>
-                  <p className="relative z-20 font-sans font-normal text-neutral-400 dark:text-neutral-400 text-base mt-2">
+                  <p className="relative z-20 font-sans font-normal text-neutral-400 text-base mt-2">
                     Drag or drop your files here or click to upload
                   </p>
                 </div>
@@ -194,7 +194,7 @@ export const FileUpload = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="relative bg-neutral-900 rounded-lg shadow-lg border border-neutral-200 dark:border-neutral-700 overflow-hidden"
+                  className="relative bg-neutral-900 rounded-lg shadow-lg border border-neutral-700 overflow-hidden"
                 >
                   {/* Remove button */}
                   <button
@@ -329,7 +329,7 @@ export function GridPattern() {
               className={`w-10 h-10 flex shrink-0 rounded-[2px] ${
                 index % 2 === 0
                   ? "bg-neutral-950"
-                  : "bg-neutral-950 shadow-[0px_0px_1px_3px_rgba(255,255,255,1)_inset] dark:shadow-[0px_0px_1px_3px_rgba(0,0,0,1)_inset]"
+                  : "bg-neutral-950 shadow-[0px_0px_1px_3px_rgba(0,0,0,1)_inset]"
               }`}
             />
           );
