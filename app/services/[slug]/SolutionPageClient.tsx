@@ -129,13 +129,13 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
 
     switch (activeSection) {
       case 'about':
-        return <AboutComponent solution={solutionWithIcon} />;
+        return <AboutComponent solution={solutionWithIcon} onSectionChange={setActiveSection} />;
       case 'try-api':
         return <TryAPIComponent solution={tryApiSolution} />;
       case 'documentation':
         return <DocumentationComponent solution={solutionWithIcon} />;
       default:
-        return <AboutComponent solution={solutionWithIcon} />;
+        return <AboutComponent solution={solutionWithIcon} onSectionChange={setActiveSection} />;
     }
   };
 
@@ -180,30 +180,3 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
     </div>
   );
 }
-
-
-      // <div className="fixed lg:top-20 top-18 left-0 right-0 z-40 bg-black border-b border-gray-800">
-      //   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      //     <nav className="flex space-x-8">
-      //       {navItems.map((item) => {
-      //         const Icon = item.icon;
-      //         const isActive = activeSection === item.id;
-              
-      //         return (
-      //           <button
-      //             key={item.id}
-      //             onClick={() => setActiveSection(item.id)}
-      //             className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-      //               isActive
-      //                 ? 'border-blue-500 text-blue-400'
-      //                 : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
-      //             }`}
-      //           >
-      //             <Icon className="w-4 h-4" />
-      //             <span>{item.label}</span>
-      //           </button>
-      //         );
-      //       })}
-      //     </nav>
-      //   </div>
-      // </div>

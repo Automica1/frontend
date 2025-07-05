@@ -3,6 +3,8 @@
 import React from 'react';
 import { ArrowRight, Check } from 'lucide-react';
 
+type ActiveSection = 'about' | 'try-api' | 'documentation';
+
 interface AboutComponentProps {
   solution: {
     title: string;
@@ -17,9 +19,10 @@ interface AboutComponentProps {
       icon: React.ComponentType<any>;
     }>;
   };
+  onSectionChange: (section: ActiveSection) => void;
 }
 
-export default function AboutComponent({ solution }: AboutComponentProps) {
+export default function AboutComponent({ solution, onSectionChange }: AboutComponentProps) {
   const Icon = solution.icon;
 
   return (
@@ -56,11 +59,17 @@ export default function AboutComponent({ solution }: AboutComponentProps) {
               
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4">
-                <button className={`px-8 py-4 bg-gradient-to-r ${solution.gradient} rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center justify-center space-x-2`}>
+                <button 
+                  onClick={() => onSectionChange('try-api')}
+                  className={`px-8 py-4 bg-gradient-to-r ${solution.gradient} rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center justify-center space-x-2`}
+                >
                   <span>Get Started Free</span>
                   <ArrowRight className="w-5 h-5" />
                 </button>
-                <button className="px-8 py-4 border border-gray-600 rounded-xl font-semibold hover:border-purple-500 transition-colors duration-300">
+                <button 
+                  onClick={() => onSectionChange('documentation')}
+                  className="px-8 py-4 border border-gray-600 rounded-xl font-semibold hover:border-purple-500 transition-colors duration-300"
+                >
                   View Documentation
                 </button>
               </div>
@@ -78,29 +87,6 @@ export default function AboutComponent({ solution }: AboutComponentProps) {
           </div>
         </div>
       </section>
-
-      
-
-      {/* CTA Section */}
-      {/* <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to get started?
-          </h2>
-          <p className="text-xl text-gray-300 mb-8">
-            Join thousands of developers already using our APIs to build amazing applications.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className={`px-8 py-4 bg-gradient-to-r ${solution.gradient} rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center justify-center space-x-2`}>
-              <span>Start Free Trial</span>
-              <ArrowRight className="w-5 h-5" />
-            </button>
-            <button className="px-8 py-4 border border-gray-600 rounded-xl font-semibold hover:border-purple-500 transition-colors duration-300">
-              Contact Sales
-            </button>
-          </div>
-        </div>
-      </section> */}
     </div>
   );
 }
