@@ -1,5 +1,37 @@
 // src/services/apiService.ts
 import { ApiResponse, QRExtractResponse, SignatureVerificationResponse, FaceDetectionResponse, FaceVerificationResponse, IdCropResponse } from '../types/api';
+import { useCreditsStore } from '../stores/creditsStore';
+
+// Extended response types that include credits
+interface ApiResponseWithCredits extends ApiResponse {
+  remainingCredits?: number;
+  userId?: string;
+}
+
+interface QRExtractResponseWithCredits extends QRExtractResponse {
+  remainingCredits?: number;
+  userId?: string;
+}
+
+interface SignatureVerificationResponseWithCredits extends SignatureVerificationResponse {
+  remainingCredits?: number;
+  userId?: string;
+}
+
+interface FaceDetectionResponseWithCredits extends FaceDetectionResponse {
+  remainingCredits?: number;
+  userId?: string;
+}
+
+interface FaceVerificationResponseWithCredits extends FaceVerificationResponse {
+  remainingCredits?: number;
+  userId?: string;
+}
+
+interface IdCropResponseWithCredits extends IdCropResponse {
+  remainingCredits?: number;
+  userId?: string;
+}
 
 class ApiService {
   private baseUrl: string;
@@ -46,6 +78,15 @@ class ApiService {
 
   private generateReqId(prefix: string): string {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // Helper method to update credits after successful API calls
+  private updateCreditsFromResponse(response: any) {
+    if (response && typeof response.remainingCredits === 'number') {
+      const { updateCredits } = useCreditsStore.getState();
+      updateCredits(response.remainingCredits);
+      console.log('Credits updated from API response:', response.remainingCredits);
+    }
   }
 
   // Enhanced request method with better error handling
@@ -113,6 +154,10 @@ class ApiService {
 
       const result = await response.json();
       console.log('API Response:', result);
+      
+      // Update credits if present in response
+      this.updateCreditsFromResponse(result);
+      
       return result;
       
     } catch (error) {
@@ -129,11 +174,16 @@ class ApiService {
 
   // Credit operations
   async getCreditsBalance(): Promise<{ credits: number; userId: string }> {
-    return this.makeRequest<{ credits: number; userId: string }>('/credits/balance');
+    const response = await this.makeRequest<{ credits: number; userId: string }>('/credits/balance');
+    // Update credits store with initial data
+    const { setCredits } = useCreditsStore.getState();
+    setCredits(response.credits, response.userId);
+    
+    return response;
   }
 
   // QR Code Masking
-  async maskQRCode(base64Image: string): Promise<ApiResponse> {
+  async maskQRCode(base64Image: string): Promise<ApiResponseWithCredits> {
     const reqId = this.generateReqId('qr-mask');
     
     // Validate base64 input
@@ -141,7 +191,7 @@ class ApiService {
       throw new Error('Invalid base64 image data');
     }
     
-    return this.makeRequest<ApiResponse>('/qr-masking', {
+    return this.makeRequest<ApiResponseWithCredits>('/qr-masking', {
       method: 'POST',
       body: JSON.stringify({
         req_id: reqId,
@@ -151,7 +201,7 @@ class ApiService {
   }
 
   // QR Code Extraction with enhanced error handling
-  async extractQRCode(base64Image: string): Promise<QRExtractResponse> {
+  async extractQRCode(base64Image: string): Promise<QRExtractResponseWithCredits> {
     const reqId = this.generateReqId('qr-extract');
     
     // Validate input
@@ -175,7 +225,7 @@ class ApiService {
       base64_sample: cleanBase64.slice(0, 50) + '...'
     });
     
-    return this.makeRequest<QRExtractResponse>('/qr-extraction', {
+    return this.makeRequest<QRExtractResponseWithCredits>('/qr-extraction', {
       method: 'POST',
       body: JSON.stringify({
         req_id: reqId,
@@ -185,7 +235,7 @@ class ApiService {
   }
 
   // ID Cropping with validation
-  async processIdCrop(base64Image: string): Promise<IdCropResponse> {
+  async processIdCrop(base64Image: string): Promise<IdCropResponseWithCredits> {
     const reqId = this.generateReqId('id-crop');
     
     if (!base64Image || typeof base64Image !== 'string') {
@@ -194,7 +244,7 @@ class ApiService {
 
     const cleanBase64 = base64Image.replace(/^data:image\/[a-z]+;base64,/, '');
     
-    return this.makeRequest<IdCropResponse>('/id-cropping', {
+    return this.makeRequest<IdCropResponseWithCredits>('/id-cropping', {
       method: 'POST',
       body: JSON.stringify({
         req_id: reqId,
@@ -204,7 +254,7 @@ class ApiService {
   }
 
   // Signature verification with enhanced validation
-  async verifySignatures(base64Images: string[]): Promise<SignatureVerificationResponse> {
+  async verifySignatures(base64Images: string[]): Promise<SignatureVerificationResponseWithCredits> {
     if (!Array.isArray(base64Images) || base64Images.length !== 2) {
       throw new Error('Signature verification requires exactly 2 images');
     }
@@ -219,7 +269,7 @@ class ApiService {
 
     const reqId = this.generateReqId('sig-verify');
     
-    return this.makeRequest<SignatureVerificationResponse>('/signature-verification', {
+    return this.makeRequest<SignatureVerificationResponseWithCredits>('/signature-verification', {
       method: 'POST',
       body: JSON.stringify({
         req_id: reqId,
@@ -229,7 +279,7 @@ class ApiService {
   }
 
   // Face Detection with validation
-  async detectFace(base64Image: string): Promise<FaceDetectionResponse> {
+  async detectFace(base64Image: string): Promise<FaceDetectionResponseWithCredits> {
     const reqId = this.generateReqId('face-detect');
     
     if (!base64Image || typeof base64Image !== 'string') {
@@ -238,7 +288,7 @@ class ApiService {
 
     const cleanBase64 = base64Image.replace(/^data:image\/[a-z]+;base64,/, '');
     
-    return this.makeRequest<FaceDetectionResponse>('/face-detect', {
+    return this.makeRequest<FaceDetectionResponseWithCredits>('/face-detect', {
       method: 'POST',
       body: JSON.stringify({
         req_id: reqId,
@@ -248,7 +298,7 @@ class ApiService {
   }
 
   // Face Verification with validation
-  async verifyFace(base64Image1: string, base64Image2: string): Promise<FaceVerificationResponse> {
+  async verifyFace(base64Image1: string, base64Image2: string): Promise<FaceVerificationResponseWithCredits> {
     const reqId = this.generateReqId('face-verify');
     
     if (!base64Image1 || !base64Image2) {
@@ -258,7 +308,7 @@ class ApiService {
     const cleanBase64_1 = base64Image1.replace(/^data:image\/[a-z]+;base64,/, '');
     const cleanBase64_2 = base64Image2.replace(/^data:image\/[a-z]+;base64,/, '');
     
-    return this.makeRequest<FaceVerificationResponse>('/face-verification', {
+    return this.makeRequest<FaceVerificationResponseWithCredits>('/face-verification', {
       method: 'POST',
       body: JSON.stringify({
         req_id: reqId,
@@ -270,7 +320,7 @@ class ApiService {
   }
 
   // Legacy methods for backward compatibility
-  async cropFace(base64Image: string): Promise<FaceDetectionResponse> {
+  async cropFace(base64Image: string): Promise<FaceDetectionResponseWithCredits> {
     return this.detectFace(base64Image);
   }
 

@@ -4,9 +4,9 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Sphere, Trail } from '@react-three/drei';
 import { ArrowRight } from 'lucide-react';
 import * as THREE from 'three';
-import PremiumAtomLoader from './AtomicLoader'
+// import PremiumAtomLoader from './AtomicLoader'
 import {LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
-import Link from 'next/link';
+// import Link from 'next/link';
 
 // Custom shader material for premium effects
 const createAtomShader = () => {
