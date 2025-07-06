@@ -29,8 +29,8 @@ interface FaceVerificationResponseWithCredits extends FaceVerificationResponse {
 }
 
 interface IdCropResponseWithCredits extends IdCropResponse {
-  remainingCredits?: number;
-  userId?: string;
+  remainingCredits: number;
+  userId: string;
 }
 
 class ApiService {
