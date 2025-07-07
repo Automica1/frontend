@@ -1,4 +1,4 @@
-// components/TabbedResponseSection.tsx
+// components/TabbedResponseSection.tsx with conditional padding
 import React, { useState, useEffect } from 'react';
 import { Copy, Check, Download, Image as ImageIcon, Code, FileText } from 'lucide-react';
 import { Solution, SolutionType } from '../types/solution';
@@ -27,6 +27,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('processed-image');
   const [copiedBase64, setCopiedBase64] = useState(false);
+  const [copiedApiResponse, setCopiedApiResponse] = useState(false);
   
   const Icon = solution.IconComponent;
 
@@ -75,10 +76,15 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
     }
   };
 
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, type: 'base64' | 'api-response') => {
     navigator.clipboard.writeText(text).then(() => {
-      setCopiedBase64(true);
-      setTimeout(() => setCopiedBase64(false), 2000);
+      if (type === 'base64') {
+        setCopiedBase64(true);
+        setTimeout(() => setCopiedBase64(false), 2000);
+      } else {
+        setCopiedApiResponse(true);
+        setTimeout(() => setCopiedApiResponse(false), 2000);
+      }
     }).catch(err => {
       console.error('Failed to copy text:', err);
       alert('Failed to copy to clipboard');
@@ -105,128 +111,162 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
     return JSON.stringify(responseData, null, 2);
   };
 
-  const renderTabContent = () => {
-    if (activeTab === 'api-response') {
-      return (
-        <div className="space-y-4">
-          {!data && !loading && !error && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Icon className="w-8 h-8 text-gray-600" />
-              </div>
-              <p className="text-gray-400">
-                {getFileRequirementText(solutionType)} to see the API response
-              </p>
-            </div>
-          )}
-
-          {loading && (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 border-4 border-gray-700 border-t-purple-500 rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-400">{getProcessingMessage(solutionType)}</p>
-            </div>
-          )}
-
-          {error && (
-            <div className="bg-red-900/20 border border-red-500 rounded-lg p-4">
-              <div className="flex items-center space-x-2 mb-2">
-                <div className="w-4 h-4 bg-red-500 rounded-full" />
-                <h4 className="font-semibold text-red-400">Error</h4>
-              </div>
-              <p className="text-red-300 text-sm">{error}</p>
-            </div>
-          )}
-
-          {data && (
-            <div className="bg-black rounded-lg p-4 overflow-x-auto">
-              <pre className="text-sm text-gray-300 whitespace-pre-wrap">
-                {formatApiResponse(data)}
-              </pre>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    if (activeTab === 'processed-image') {
-      if (!hasProcessedImage) {
-        return (
-          <div className="text-center py-12">
+  const renderApiResponseTab = () => {
+    return (
+      <div className="h-full flex flex-col">
+        {!data && !loading && !error && (
+          <div className="text-center py-12 flex-1 flex flex-col items-center justify-center">
             <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ImageIcon className="w-8 h-8 text-gray-600" />
+              <Icon className="w-8 h-8 text-gray-600" />
             </div>
             <p className="text-gray-400">
-              {loading ? getProcessingMessage(solutionType) : `${getFileRequirementText(solutionType)} to see the processed image`}
+              {getFileRequirementText(solutionType)} to see the API response
             </p>
-            {loading && (
-              <div className="w-16 h-16 border-4 border-gray-700 border-t-purple-500 rounded-full animate-spin mx-auto mt-4" />
-            )}
           </div>
-        );
-      }
+        )}
 
-      return (
-        <div className="space-y-4">
-          {/* Preview Image */}
-          <div className="bg-gray-800 rounded-lg p-4">
-            <p className="text-sm text-gray-400 mb-2">Preview:</p>
-            <div className="max-w-full max-h-64 overflow-hidden rounded-lg bg-gray-700 flex items-center justify-center">
-              <img 
-                src={`data:image/png;base64,${maskedBase64}`} 
-                alt="Processed Image" 
-                className="max-w-full max-h-64 object-contain"
-                onError={(e) => {
-                  console.error('Failed to load image preview');
-                  console.log('Base64 length:', maskedBase64.length);
-                  console.log('Base64 preview:', maskedBase64.substring(0, 100) + '...');
-                }}
-                onLoad={() => console.log('Image loaded successfully')}
-              />
+        {loading && (
+          <div className="text-center py-12 flex-1 flex flex-col items-center justify-center">
+            <div className="w-16 h-16 border-4 border-gray-700 border-t-purple-500 rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-400">{getProcessingMessage(solutionType)}</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 m-6">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="w-4 h-4 bg-red-500 rounded-full" />
+              <h4 className="font-semibold text-red-400">Error</h4>
+            </div>
+            <p className="text-red-300 text-sm">{error}</p>
+          </div>
+        )}
+
+        {data && (
+          <div className="flex flex-col flex-1 min-h-0">
+            {/* Terminal-style Scrollable Response Container */}
+            <div className="bg-black rounded-none border-0 flex-1 min-h-0 flex flex-col">
+              {/* Terminal Header */}
+              <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-xs text-gray-400 ml-2">API Response</span>
+                </div>
+                <div className="text-xs text-gray-500">JSON</div>
+              </div>
+              
+              {/* Scrollable Content */}
+              <div className="p-4 overflow-y-auto flex-1 min-h-0">
+                <pre className="text-sm text-gray-300 whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed">
+                  {formatApiResponse(data)}
+                </pre>
+              </div>
+              
+              {/* Copy Button */}
+               {/* Copy Button */}
+              <div className="flex justify-end flex-shrink-0">
+                <button
+                  onClick={() => copyToClipboard(formatApiResponse(data), 'api-response')}
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors duration-300"
+                >
+                  {copiedApiResponse ? (
+                    <>
+                      <Check className="w-4 h-4 text-green-400" />
+                      <span className="text-green-400">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      <span>Copy Response</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
+        )}
+      </div>
+    );
+  };
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={() => copyToClipboard(maskedBase64)}
-              className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors duration-300"
-            >
-              {copiedBase64 ? (
-                <>
-                  <Check className="w-4 h-4 text-green-400" />
-                  <span className="text-green-400">Base64 Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4" />
-                  <span>Copy Base64</span>
-                </>
-              )}
-            </button>
-            
-            <button
-              onClick={() => downloadBase64Image(maskedBase64, getDownloadFileName(solutionType, fileName))}
-              className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors duration-300"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download Image</span>
-            </button>
+  const renderProcessedImageTab = () => {
+    if (!hasProcessedImage) {
+      return (
+        <div className="text-center py-12 h-full flex flex-col items-center justify-center">
+          <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <ImageIcon className="w-8 h-8 text-gray-600" />
           </div>
-
-          <div className="text-xs text-gray-500 mt-2">
-            Base64 length: {maskedBase64.length.toLocaleString()} characters
-          </div>
+          <p className="text-gray-400">
+            {loading ? getProcessingMessage(solutionType) : `${getFileRequirementText(solutionType)} to see the processed image`}
+          </p>
+          {loading && (
+            <div className="w-16 h-16 border-4 border-gray-700 border-t-purple-500 rounded-full animate-spin mx-auto mt-4" />
+          )}
         </div>
       );
     }
 
-    return null;
+    return (
+      <div className="space-y-4 h-full flex flex-col">
+        {/* Preview Image */}
+        <div className="bg-gray-800 rounded-lg p-4 flex-1 flex flex-col">
+          <p className="text-sm text-gray-400 mb-2">Preview:</p>
+          <div className="flex-1 rounded-lg bg-gray-700 flex items-center justify-center overflow-hidden">
+            <img 
+              src={`data:image/png;base64,${maskedBase64}`} 
+              alt="Processed Image" 
+              className="max-w-full max-h-full object-contain"
+              onError={(e) => {
+                console.error('Failed to load image preview');
+                console.log('Base64 length:', maskedBase64.length);
+                console.log('Base64 preview:', maskedBase64.substring(0, 100) + '...');
+              }}
+              onLoad={() => console.log('Image loaded successfully')}
+            />
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => copyToClipboard(maskedBase64, 'base64')}
+            className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors duration-300"
+          >
+            {copiedBase64 ? (
+              <>
+                <Check className="w-4 h-4 text-green-400" />
+                <span className="text-green-400">Base64 Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4" />
+                <span>Copy Base64</span>
+              </>
+            )}
+          </button>
+          
+          <button
+            onClick={() => downloadBase64Image(maskedBase64, getDownloadFileName(solutionType, fileName))}
+            className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors duration-300"
+          >
+            <Download className="w-4 h-4" />
+            <span>Download Image</span>
+          </button>
+        </div>
+
+        <div className="text-xs text-gray-500 mt-2">
+          Base64 length: {maskedBase64.length.toLocaleString()} characters
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
+    <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden h-full flex flex-col">
       {/* Tab Navigation */}
-      <div className="flex border-b border-gray-700">
+      <div className="flex border-b border-gray-700 flex-shrink-0">
         <button
           onClick={() => !isProcessedImageTabDisabled && setActiveTab('processed-image')}
           disabled={isProcessedImageTabDisabled}
@@ -252,13 +292,18 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
           <Code className="w-4 h-4" />
           <span>API Response</span>
         </button>
-        
       </div>
 
-      {/* Tab Content */}
-      <div className="p-6">
-        {renderTabContent()}
-      </div>
+      {/* Tab Content - Conditional Padding */}
+      {activeTab === 'api-response' ? (
+        <div className="flex-1 overflow-hidden">
+          {renderApiResponseTab()}
+        </div>
+      ) : (
+        <div className="p-6 flex-1 overflow-hidden">
+          {renderProcessedImageTab()}
+        </div>
+      )}
     </div>
   );
 };

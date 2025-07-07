@@ -166,11 +166,11 @@ From compliance checks to data extraction, the process is fast, secure, and full
               className="group relative"
             >
               {/* Step Number Badge */}
-              <div className="absolute -top-4 -right-4 z-20">
+              {/* <div className="absolute -top-4 -right-4 z-20">
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-500/80 to-purple-800/80 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-lg">
                   {step.id}
                 </div>
-              </div>
+              </div> */}
 
               {/* Card with Evervault Effect */}
               <div className="border border-white/[0.2] flex flex-col items-start mx-auto p-6 relative h-[35rem] rounded-2xl bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-sm transition-all duration-500 group-hover:border-purple-500/30 group-hover:shadow-2xl group-hover:shadow-purple-500/10">
@@ -211,7 +211,7 @@ From compliance checks to data extraction, the process is fast, secure, and full
 
               {/* Connection Line */}
               {index < steps.length -1  && (
-                <div className="hidden lg:block absolute top-1/2 -right-6 w-12 h-0.5 bg-gradient-to-r from-purple-500/30 to-transparent transform -translate-y-1/2 z-0">
+                <div className="hidden lg:block absolute top-1/2 -right-6 w-10 h-0.5 bg-gradient-to-r from-purple-500/30 to-transparent transform -translate-y-1/2 z-0">
                   <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-purple-500/60 rounded-full"></div>
                 </div>
               )}

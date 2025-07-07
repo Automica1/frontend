@@ -140,7 +140,7 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
   };
 
   return (
-    <div className="bg-black text-white">
+    <div className="bg-black text-white min-h-screen ">
       {/* Navigation Bar - Fixed positioning below main navbar */}
       {/* Tabs Navigation */}
      

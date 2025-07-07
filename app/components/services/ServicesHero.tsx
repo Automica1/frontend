@@ -2,6 +2,8 @@
 import { ArrowRight, Network, Database, Cpu } from 'lucide-react';
 import { motion } from 'framer-motion';
 import React, { useEffect, useRef } from 'react';
+import {LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import { useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs';
 
 // NetworkAnimation component embedded
 type Particle = {
@@ -157,6 +159,7 @@ const NetworkAnimation = () => {
 };
 
 const SolutionsHero = () => {
+  const { isAuthenticated, isLoading } = useKindeBrowserClient();
   const titleVariants = {
     hidden: { opacity: 0, y: -20 },
     visible: { 
@@ -239,7 +242,12 @@ const SolutionsHero = () => {
           }}
         >
           <span className="relative inline-block">
-            Powerful AI APIs Built for Real-World Use
+            <p className='text-5xl lg:text-7xl font-mono text-white tracking-tighter leading-tight '>
+            Powerful AI APIs Built for <br/> 
+            <span className='bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent'>
+              Real-World Use
+              </span>
+            </p>
             {/* <motion.span 
               className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-400"
               initial={{ width: 0, opacity: 0 }}
@@ -250,7 +258,7 @@ const SolutionsHero = () => {
         </motion.h1>
         
         <motion.p 
-          className="text-base md:text-lg lg:text-xl text-gray-300 max-w-3xl mx-auto mb-8 md:mb-10"
+          className="text-xl text-gray-400 max-w-3xl mx-auto font-light opacity-80"
           variants={subtitleVariants}
           initial="hidden"
           animate="visible"
@@ -278,6 +286,21 @@ const SolutionsHero = () => {
         >
           <ArrowRight className="transform rotate-90 text-white/70" size={24} />
         </motion.div>
+
+      {!isLoading && !isAuthenticated && (
+
+        <div className="text-center mt-10">
+                <LoginLink postLoginRedirectURL="/services" className="group relative inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500/90 to-purple-800/90 rounded-lg text-white font-medium text-lg hover:from-purple-600/90 hover:to-purple-900/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+                  <p className="mr-3">Get Started Now</p>
+                  <div className="w-5 h-5 group-hover:translate-x-1 transition-transform">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                  </div>
+                </LoginLink>
+              </div>
+      )}
+
       </div>
     </section>
   );
