@@ -149,7 +149,12 @@ class ApiService {
           errorData,
         });
 
-        throw new Error(errorMessage);
+        // Create enhanced error object
+        const enhancedError = new Error(errorMessage);
+        // Attach error data to the error object for access in useApi
+        (enhancedError as any).errorData = errorData;
+
+        throw enhancedError;
       }
 
       const result = await response.json();

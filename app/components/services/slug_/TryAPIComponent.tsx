@@ -1,4 +1,4 @@
-// Refactored TryAPIComponent.tsx with equal heights for upload and response sections
+// Refactored TryAPIComponent.tsx with error details support
 "use client";
 import React, { useState } from 'react';
 import { Solution, SolutionType } from '../../../types/solution';
@@ -177,9 +177,6 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
               Try {solution.title}
             </h1>
           </div>
-          {/* <p className="text-gray-400 max-w-2xl mx-auto">
-            {getFileRequirementText(solutionType)}. Upload your files and test the API functionality.
-          </p> */}
         </div>
 
         {/* Main Content Grid */}
@@ -190,15 +187,6 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
             <div className="w-full max-w-4xl mx-auto min-h-96 h-[600px] border border-dashed bg-black border-neutral-800 rounded-lg">
               <FileUpload onChange={handleFileUpload} />
             </div>
-            
-            {/* Optional: Add signature verification specific messaging */}
-            {/* {solutionType === 'signature-verification' && (
-              <div className="text-center p-4 bg-blue-900/20 border border-blue-500/20 rounded-lg">
-                <p className="text-blue-400 text-sm">
-                  Upload exactly 2 signature images for comparison
-                </p>
-              </div>
-            )} */}
           </div>
 
           {/* Right Column - Conditional Content */}
@@ -221,6 +209,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                   data={currentApi.data}
                   loading={currentApi.loading}
                   error={currentApi.error}
+                  errorDetails={currentApi.errorData}
                   maskedBase64={maskedBase64}
                   fileName={files[0]?.name}
                 />

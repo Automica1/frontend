@@ -1,8 +1,9 @@
-// components/TabbedResponseSection.tsx with conditional padding
+// components/TabbedResponseSection.tsx with enhanced error handling
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, Download, Image as ImageIcon, Code, FileText } from 'lucide-react';
+import { Copy, Check, Download, Image as ImageIcon, Code, FileText, AlertCircle, Info, Lightbulb } from 'lucide-react';
 import { Solution, SolutionType } from '../types/solution';
 import { getFileRequirementText, getProcessingMessage, getDownloadFileName } from '../../utils/solutionHelpers';
+import './terminal.css'
 
 interface TabbedResponseSectionProps {
   solution: Solution;
@@ -10,6 +11,7 @@ interface TabbedResponseSectionProps {
   data: any;
   loading: boolean;
   error: string | null;
+  errorDetails?: any | null;
   maskedBase64?: string;
   fileName?: string;
 }
@@ -22,6 +24,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   data,
   loading,
   error,
+  errorDetails,
   maskedBase64,
   fileName
 }) => {
@@ -111,6 +114,67 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
     return JSON.stringify(responseData, null, 2);
   };
 
+  const renderEnhancedError = () => {
+    if (!error) return null;
+
+    return (
+      <div className="space-y-4 m-6">
+        {/* Main Error Card */}
+        <div className="bg-red-900/20 border border-red-500 rounded-lg p-4">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="font-semibold text-red-400 mb-2">Error Occurred</h4>
+              <p className="text-red-300 text-sm mb-3">{error}</p>
+              
+              {/* Error Code */}
+              {/* {errorDetails?.error_code && (
+                <div className="bg-red-800/30 rounded px-3 py-2 mb-3">
+                  <p className="text-red-200 text-xs font-mono">
+                    Error Code: {errorDetails.error_code}
+                  </p>
+                </div>
+              )} */}
+            </div>
+          </div>
+        </div>
+
+        {/* Technical Details */}
+        {errorDetails?.technical_message && (
+          <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Info className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h5 className="font-medium text-blue-400 mb-2">Technical Details</h5>
+                <p className="text-gray-300 text-sm">{errorDetails.technical_message}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Suggestion */}
+        {errorDetails?.suggestion && (
+          <div className="bg-yellow-900/20 border border-yellow-500 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Lightbulb className="w-5 h-5 text-yellow-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <h5 className="font-medium text-yellow-400 mb-2">Suggestion</h5>
+                <p className="text-yellow-200 text-sm">{errorDetails.suggestion}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Additional Error Info */}
+        {errorDetails?.status && (
+          <div className="text-xs text-gray-500 mt-2">
+            Status: {errorDetails.status} | Type: {errorDetails.type || 'Unknown'}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderApiResponseTab = () => {
     return (
       <div className="h-full flex flex-col">
@@ -132,44 +196,16 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
           </div>
         )}
 
-        {error && (
-          <div className="bg-red-900/20 border border-red-500 rounded-lg p-4 m-6">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="w-4 h-4 bg-red-500 rounded-full" />
-              <h4 className="font-semibold text-red-400">Error</h4>
-            </div>
-            <p className="text-red-300 text-sm">{error}</p>
-          </div>
-        )}
+        {error && renderEnhancedError()}
 
         {data && (
           <div className="flex flex-col flex-1 min-h-0">
             {/* Terminal-style Scrollable Response Container */}
             <div className="bg-black rounded-none border-0 flex-1 min-h-0 flex flex-col">
-              {/* Terminal Header */}
-              <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                  <span className="text-xs text-gray-400 ml-2">API Response</span>
-                </div>
-                <div className="text-xs text-gray-500">JSON</div>
-              </div>
-              
-              {/* Scrollable Content */}
-              <div className="p-4 overflow-y-auto flex-1 min-h-0">
-                <pre className="text-sm text-gray-300 whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed">
-                  {formatApiResponse(data)}
-                </pre>
-              </div>
-              
-              {/* Copy Button */}
-               {/* Copy Button */}
-              <div className="flex justify-end flex-shrink-0">
+              <div className="flex justify-end flex-shrink-0 cursor-pointer">
                 <button
                   onClick={() => copyToClipboard(formatApiResponse(data), 'api-response')}
-                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors duration-300"
+                  className="flex items-center space-x-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors duration-300"
                 >
                   {copiedApiResponse ? (
                     <>
@@ -183,6 +219,13 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
                     </>
                   )}
                 </button>
+              </div>
+              
+              {/* Scrollable Content */}
+              <div className="p-4 overflow-y-auto custom-scrollbar flex-1 min-h-0">
+                <pre className="text-sm text-gray-300 whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed">
+                  {formatApiResponse(data)}
+                </pre>
               </div>
             </div>
           </div>
