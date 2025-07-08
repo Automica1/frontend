@@ -7,42 +7,43 @@ import Link from 'next/link';
 export default function Footer() {
   const footerLinks = {
     Product: [
-      { name: 'Features', href: '#features' },
-      { name: 'Pricing', href: '#pricing' },
-      { name: 'API Documentation', href: '#api-docs' },
-      { name: 'Integrations', href: '#integrations' }
+      // { name: 'Features', href: '#features' },
+      { name: 'Pricing', href: '/pricing' },
+      // { name: 'API Documentation', href: '#api-docs' },
+      // { name: 'Integrations', href: '#integrations' }
     ],
     Company: [
-      { name: 'About', href: '#about' },
-      { name: 'Blog', href: '#blog' },
-      { name: 'Careers', href: '#careers' },
-      { name: 'Contact', href: '#contact' }
+      { name: 'About', href: '/about' },
+      // { name: 'Blog', href: '#blog' },
+      // { name: 'Careers', href: '#careers' },
+      { name: 'Contact', href: '/contact' }
     ],
     Resources: [
-      { name: 'Help Center', href: '#help' },
-      { name: 'Security', href: '#security' },
-      { name: 'Status', href: '#status' },
-      { name: 'Terms of Service', href: '#terms' }
+      // { name: 'Help Center', href: '#help' },
+      // { name: 'Security', href: '#security' },
+      // { name: 'Status', href: '#status' },
+      { name: 'Terms of Service', href: '/terms-services' }
     ],
     Developers: [
-      { name: 'API Reference', href: '#api-reference' },
-      { name: 'SDKs', href: '#sdks' },
-      { name: 'Webhooks', href: '#webhooks' },
-      { name: 'Changelog', href: '#changelog' }
+      // { name: 'API Reference', href: '#api-reference' },
+      // { name: 'SDKs', href: '#sdks' },
+      // { name: 'Webhooks', href: '#webhooks' },
+      // { name: 'Changelog', href: '#changelog' }
+      { name: 'services', href: '/services' }
     ]
   };
 
   const socialLinks = [
     { icon: Twitter, href: '#twitter', label: 'Twitter' },
     { icon: Linkedin, href: '#linkedin', label: 'LinkedIn' },
-    { icon: Github, href: '#github', label: 'GitHub' },
-    { icon: MessageSquare, href: '#discord', label: 'Discord' }
+    // { icon: Github, href: '#github', label: 'GitHub' },
+    // { icon: MessageSquare, href: '#discord', label: 'Discord' }
   ];
 
   const legalLinks = [
-    { name: 'Privacy Policy', href: '#privacy' },
-    { name: 'Terms of Service', href: '#terms' },
-    { name: 'Cookie Policy', href: '#cookies' }
+    { name: 'Privacy Policy', href: 'privacy-policy' },
+    { name: 'Terms of Service', href: 'terms-services' },
+    // { name: 'Cookie Policy', href: '#cookies' }
   ];
 
   return (
