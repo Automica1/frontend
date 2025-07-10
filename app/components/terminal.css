@@ -2,6 +2,8 @@
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #a855f7 #1f2937; /* thumb track */
+  /* Force scrollbar to always be visible */
+  overflow-y: scroll !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -15,4 +17,8 @@
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: #a855f7; /* purple-500 */
   border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #9333ea; /* purple-600 - slightly darker on hover */
 }

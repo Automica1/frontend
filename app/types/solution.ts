@@ -7,4 +7,4 @@ export interface Solution {
   slug?: string;
 }
 
-export type SolutionType = 'qr-extract' | 'signature-verification' | 'id-crop' | 'face-verify' | 'face-cropping' | 'unknown';
+export type SolutionType = 'qr-extract' | 'signature-verification' | 'id-crop' | 'face-verify' | 'face-cropping' | 'qr-mask' | 'unknown';

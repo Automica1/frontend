@@ -18,6 +18,27 @@ export default function Navbar() {
   // Use the new Zustand-based credits hook
   const { credits, loading: creditsLoading, error: creditsError, refreshCredits } = useCredits();
 
+  // Helper function to determine if user picture should use default avatar
+  const shouldUseDefaultAvatar = (userPicture: string | string[]) => {
+    if (!userPicture) return true;
+    
+    // Check if the picture URL contains gravatar with 'd=blank' parameter
+    if (userPicture.includes('gravatar.com') && userPicture.includes('d=blank')) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Function to get the appropriate avatar URL
+  const getAvatarUrl = (userPicture: string | string[]) => {
+    if (shouldUseDefaultAvatar(userPicture)) {
+      return `https://api.dicebear.com/7.x/identicon/png?seed=${user?.email ?? 'default'}`;
+    }
+    // If userPicture is an array, use the first element; otherwise, return as is
+    return Array.isArray(userPicture) ? userPicture[0] : userPicture;
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -150,7 +171,7 @@ export default function Navbar() {
               >
                 {user.picture ? (
                   <Image
-                    src={user.picture}
+                    src={getAvatarUrl(user.picture)}
                     alt={user.given_name || user.email || "User"}
                     width={24}
                     height={24}
@@ -175,7 +196,7 @@ export default function Navbar() {
                     <div className="flex items-center space-x-3">
                       {user.picture ? (
                         <Image
-                          src={user.picture}
+                          src={getAvatarUrl(user.picture)}
                           alt={user.given_name || user.email || "User"}
                           width={40}
                           height={40}
@@ -186,13 +207,13 @@ export default function Navbar() {
                           <User className="w-5 h-5 text-white" />
                         </div>
                       )}
-                      <div>
-                        <div className="text-white font-medium">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-white font-medium truncate">
                           {user.given_name && user.family_name 
                             ? `${user.given_name} ${user.family_name}` 
                             : user.given_name || 'User'}
                         </div>
-                        <div className="text-gray-400 text-sm">{user.email}</div>
+                        <div className="text-gray-400 text-sm truncate">{user.email}</div>
                       </div>
                     </div>
                   </div>
@@ -226,7 +247,7 @@ export default function Navbar() {
                     )}
                   </div>
                   
-                  <div className="py-1">
+                  {/* <div className="py-1">
                     <a href="/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-purple-500/20 transition-colors duration-200">
                       <Brain className="w-4 h-4 mr-3" />
                       Dashboard
@@ -235,8 +256,8 @@ export default function Navbar() {
                       <User className="w-4 h-4 mr-3" />
                       Profile
                     </a>
-                  </div>
-                  
+                  </div> */}
+                  {/* <button onClick={() => console.log('kinde User', user)} className='px-4 py-2 bg-white text-black'>clickme</button> */}
                   <div className="border-t border-white/10 pt-1">
                     <LogoutLink postLogoutRedirectURL="/" className="flex items-center w-full px-4 py-2 text-gray-300 hover:text-white hover:bg-red-500/20 transition-colors duration-200">
                       <LogOut className="w-4 h-4 mr-3" />
@@ -325,7 +346,7 @@ export default function Navbar() {
                   <div className="flex items-center space-x-3 mb-6 p-4 bg-black/70 backdrop-blur-sm rounded-xl border border-purple-500/40" style={{ backdropFilter: 'blur(12px)' }}>
                     {user.picture ? (
                       <Image
-                        src={user.picture}
+                        src={getAvatarUrl(user.picture)}
                         alt={user.given_name || user.email || "User"}
                         width={48}
                         height={48}
@@ -364,7 +385,7 @@ export default function Navbar() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <a 
                       href="/dashboard" 
                       onClick={closeMobileMenu}
@@ -382,7 +403,7 @@ export default function Navbar() {
                       <User className="w-5 h-5" />
                       <span className="text-lg font-medium">Profile</span>
                     </a>
-                  </div>
+                  </div> */}
                 </div>
               )}
             </div>

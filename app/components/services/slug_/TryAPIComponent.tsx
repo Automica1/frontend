@@ -1,4 +1,4 @@
-// Refactored TryAPIComponent.tsx with error details support
+// Fixed TryAPIComponent.tsx with proper face verification support
 "use client";
 import React, { useState } from 'react';
 import { Solution, SolutionType } from '../../../types/solution';
@@ -6,6 +6,7 @@ import { useSolutionType } from '../../../hooks/useSolutionType';
 import { useSolutionApi } from '../../../hooks/useSolutionApi';
 import { getFileRequirementText } from '../../../../utils/solutionHelpers';
 import { fileToBase64, filesToBase64 } from '@/utils/fileUtils';
+import { FileUpload2 } from '../../ui/file-upload2';
 import { FileUpload } from '../../ui/file-upload';
 import { TabbedResponseSection } from '../../TabbedResponseSection';
 import { ProcessingActionCard } from '../ProcessingActionCard';
@@ -23,9 +24,9 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const Icon = solution.IconComponent;
 
   const handleFileUpload = (uploadedFiles: File[]) => {
-    // For signature verification, limit to 2 files
-    if (solutionType === 'signature-verification' && uploadedFiles.length > 2) {
-      alert('Please upload only 2 images for signature verification');
+    // For signature verification and face verification, limit to 2 files
+    if ((solutionType === 'signature-verification' || solutionType === 'face-verify') && uploadedFiles.length > 2) {
+      alert(`Please upload only 2 images for ${solutionType === 'signature-verification' ? 'signature verification' : 'face verification'}`);
       return;
     }
     
@@ -55,22 +56,31 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
           await currentApi.execute(base64Images);
           break;
           
+        case 'face-verify':
+          if (files.length !== 2) {
+            throw new Error('Please upload exactly 2 face images for verification');
+          }
+          const faceBase64Images = await filesToBase64(files);
+          console.log('Calling face verify API with 2 images');
+          await currentApi.execute(faceBase64Images[0], faceBase64Images[1]);
+          break;
+          
         case 'qr-extract':
           const qrBase64 = await fileToBase64(files[0]);
           console.log('Calling QR extract API');
           await currentApi.execute(qrBase64);
           break;
           
+        case 'qr-mask':
+          const qrMaskBase64 = await fileToBase64(files[0]);
+          console.log('Calling QR mask API');
+          await currentApi.execute(qrMaskBase64);
+          break;
+          
         case 'id-crop':
           const idBase64 = await fileToBase64(files[0]);
           console.log('Calling ID crop API');
           await currentApi.execute(idBase64);
-          break;
-          
-        case 'face-verify':
-          const faceVerifyBase64 = await fileToBase64(files[0]);
-          console.log('Calling face verify API');
-          await currentApi.execute(faceVerifyBase64);
           break;
           
         case 'face-cropping':
@@ -97,31 +107,20 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   // Get the masked base64 from response
   const getMaskedBase64 = () => {
     const data = currentApi.data;
-    // Type guard for cropResult property
-    const hasCropResult = (obj: any): obj is { cropResult: { result?: string } } =>
-      obj && typeof obj === 'object' && 'cropResult' in obj;
-
     console.log('Getting masked base64 for solution type:', solutionType);
+    console.log('Current data:', data);
     
-    if (solutionType === 'qr-extract') {
-      // Type guard for masked_base64 property
-      if (data && typeof data === 'object' && 'masked_base64' in data) {
-        return (data as any).masked_base64;
+    // For face detection/verification, check faceResult.data[0]
+    if (solutionType === 'face-verify' || solutionType === 'face-cropping') {
+      if (data && typeof data === 'object' && 'faceResult' in data) {
+        const faceResult = (data as any).faceResult;
+        if (faceResult && typeof faceResult === 'object' && 'data' in faceResult && Array.isArray(faceResult.data) && faceResult.data.length > 0) {
+          console.log('Found face result data:', faceResult.data[0]);
+          return faceResult.data[0];
+        }
       }
-      return undefined;
-    }
-    
-    if (solutionType === 'id-crop') {
-      if (hasCropResult(data) && data.cropResult?.result) {
-        return data.cropResult.result;
-      }
-      // Only return processed_image if it exists on the data object
-      return (data && 'result' in data && data.result)
-        || (data && 'processed_image' in data && (data as any).processed_image);
-    }
-    
-    if (solutionType === 'face-cropping') {
-      // Type guard for FaceDetectionResponse
+      
+      // Fallback to other possible properties
       if (data && typeof data === 'object') {
         if ('processed_image' in data && typeof (data as any).processed_image === 'string') {
           return (data as any).processed_image;
@@ -136,18 +135,52 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
       return undefined;
     }
     
-    if (solutionType === 'face-verify') {
-      if (data && typeof data === 'object') {
-        if ('processed_image' in data && typeof (data as any).processed_image === 'string') {
-          return (data as any).processed_image;
-        }
-        if ('result_image' in data && typeof (data as any).result_image === 'string') {
-          return (data as any).result_image;
-        }
+    // Type guard for cropResult property
+    const hasCropResult = (obj: any): obj is { cropResult: { result?: string } } =>
+      obj && typeof obj === 'object' && 'cropResult' in obj;
+    
+    if (solutionType === 'qr-extract') {
+      // Type guard for masked_base64 property
+      if (data && typeof data === 'object' && 'masked_base64' in data) {
+        return (data as any).masked_base64;
       }
       return undefined;
     }
     
+    if (solutionType === 'qr-mask') {
+      // For qr-mask, get masked_base64 from qrResult
+      if (data && typeof data === 'object' && 'qrResult' in data) {
+        const qrResult = (data as any).qrResult;
+        if (qrResult && typeof qrResult === 'object' && 'masked_base64' in qrResult) {
+          return qrResult.masked_base64;
+        }
+      }
+      
+      // Fallback to direct masked_base64 property
+      if (data && typeof data === 'object' && 'masked_base64' in data) {
+        return (data as any).masked_base64;
+      }
+      
+      // Also check for other possible response properties
+      if (data && typeof data === 'object' && 'result' in data) {
+        return (data as any).result;
+      }
+      if (data && typeof data === 'object' && 'processed_image' in data) {
+        return (data as any).processed_image;
+      }
+      return undefined;
+    }
+    
+    if (solutionType === 'id-crop') {
+      if (hasCropResult(data) && data.cropResult?.result) {
+        return data.cropResult.result;
+      }
+      // Only return processed_image if it exists on the data object
+      return (data && 'result' in data && data.result)
+        || (data && 'processed_image' in data && (data as any).processed_image);
+    }
+    
+    // Generic fallback for other solution types
     if (data && typeof data === 'object') {
       if ('processed_image' in data && typeof (data as any).processed_image === 'string') {
         return (data as any).processed_image;
@@ -163,6 +196,13 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   };
 
   const maskedBase64 = getMaskedBase64();
+  console.log('Final masked base64 length:', maskedBase64 ? maskedBase64.length : 0);
+
+  // Determine which file upload component to use
+  const shouldUseFileUpload2 = solutionType === 'signature-verification' || solutionType === 'face-verify';
+  
+  // Determine height based on solution type
+  const containerHeight = shouldUseFileUpload2 ? 'h-[800px]' : 'h-[600px]';
 
   return (
     <div className="pt-16 pb-16 px-4">
@@ -183,9 +223,13 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - File Upload */}
           <div className="space-y-6">
-            {/* Direct FileUpload component usage with fixed height */}
-            <div className="w-full max-w-4xl mx-auto min-h-96 h-[600px] border border-dashed bg-black border-neutral-800 rounded-lg">
-              <FileUpload onChange={handleFileUpload} />
+            {/* Conditional FileUpload component usage with dynamic height */}
+            <div className={`w-full max-w-4xl mx-auto min-h-96 ${containerHeight} border border-dashed bg-black border-neutral-800 rounded-lg`}>
+              {shouldUseFileUpload2 ? (
+                <FileUpload2 onChange={handleFileUpload} />
+              ) : (
+                <FileUpload onChange={handleFileUpload} />
+              )}
             </div>
           </div>
 
@@ -202,7 +246,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
               />
             ) : (
               /* Show Results Section after processing starts with matching height */
-              <div className="h-[600px]">
+              <div className={containerHeight}>
                 <TabbedResponseSection
                   solution={solution}
                   solutionType={solutionType}

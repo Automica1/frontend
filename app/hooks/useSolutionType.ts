@@ -13,6 +13,10 @@ export const useSolutionType = (solution: Solution): SolutionType => {
       console.log('Detected: QR Extract');
       return 'qr-extract';
     }
+    if (slug === 'qr-mask' || title.includes('qr mask')) {
+      console.log('Detected: QR Mask');
+      return 'qr-mask';
+    }
     if (slug === 'signature-verification' || title.includes('signature verification')) {
       console.log('Detected: Signature Verification');
       return 'signature-verification';

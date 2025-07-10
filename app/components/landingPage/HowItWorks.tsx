@@ -1,18 +1,18 @@
 // How it works
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Upload, ScanLine, Download } from 'lucide-react';
 import { useMotionValue, useMotionTemplate, motion } from 'framer-motion';
 import {LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import Image from 'next/image';
 
 // Evervault Card Components
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface EvervaultCardProps {
   className?: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  imageSrc: string;
+  imageAlt: string;
 }
 
-const EvervaultCard: React.FC<EvervaultCardProps> = ({ className, icon: IconComponent }) => {
+const EvervaultCard: React.FC<EvervaultCardProps> = ({ className, imageSrc, imageAlt }) => {
   let mouseX = useMotionValue(0);
   let mouseY = useMotionValue(0);
   const [randomString, setRandomString] = useState("");
@@ -45,7 +45,15 @@ const EvervaultCard: React.FC<EvervaultCardProps> = ({ className, icon: IconComp
         <div className="relative z-10 flex items-center justify-center">
           <div className="relative h-44 w-44 rounded-full flex items-center justify-center text-white font-bold text-4xl">
             <div className="absolute w-full h-full bg-black/[0.8] blur-sm rounded-full" />
-            <IconComponent className="w-24 h-16 text-purple-400 z-20" />
+            <div className="relative z-20 w-24 h-24 flex items-center justify-center">
+              <Image
+                src={imageSrc}
+                alt={imageAlt}
+                width={96}
+                height={96}
+                className="object-contain"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -114,21 +122,24 @@ export default function HowItWorks() {
   const steps = [
     {
       id: '01',
-      icon: Upload,
+      imageSrc: '/images/1.png',
+      imageAlt: 'Upload Document',
       title: 'Upload Your Document',
       description: 'Easily upload scanned or digital documents in any format. Our secure platform supports images, PDFs, and more—whether its a single page or a bulk upload..',
       bgGradient: 'from-purple-500/10 to-purple-900/10'
     },
     {
       id: '02',
-      icon: ScanLine,
+      imageSrc: '/images/2.png',
+      imageAlt: 'AI Processing',
       title: 'AI-Powered Processing',
       description: 'Our intelligent system analyzes the document to perform tasks such as data extraction, redaction, pattern detection, or validation—tailored to your specific use case.',
       bgGradient: 'from-blue-500/10 to-purple-700/10'
     },
     {
       id: '03',
-      icon: Download,
+      imageSrc: '/images/3.png',
+      imageAlt: 'Get Results',
       title: 'Get Actionable Results',
       description: 'Receive clean, structured results ready for review or integration. You can download outputs, view reports, or connect to your systems via API—all within seconds.',
       bgGradient: 'from-purple-600/10 to-pink-500/10'
@@ -184,7 +195,8 @@ From compliance checks to data extraction, the process is fast, secure, and full
                 {/* Evervault Card */}
                 <div className="w-full h-64 mb-6">
                   <EvervaultCard 
-                    icon={step.icon}
+                    imageSrc={step.imageSrc}
+                    imageAlt={step.imageAlt}
                     className="w-full h-full"
                   />
                 </div>

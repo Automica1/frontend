@@ -1,6 +1,6 @@
-// components/TabbedResponseSection.tsx with enhanced error handling
+// components/TabbedResponseSection.tsx with enhanced error handling and face detection support
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, Download, Image as ImageIcon, Code, FileText, AlertCircle, Info, Lightbulb } from 'lucide-react';
+import { Copy, Check, Download, Image as ImageIcon, Code, FileText, AlertCircle, Info, Lightbulb, CheckCircle, XCircle, Shield } from 'lucide-react';
 import { Solution, SolutionType } from '../types/solution';
 import { getFileRequirementText, getProcessingMessage, getDownloadFileName } from '../../utils/solutionHelpers';
 import './terminal.css'
@@ -16,7 +16,7 @@ interface TabbedResponseSectionProps {
   fileName?: string;
 }
 
-type TabType = 'api-response' | 'processed-image';
+type TabType = 'api-response' | 'processed-image' | 'result';
 
 export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   solution,
@@ -34,6 +34,18 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   
   const Icon = solution.IconComponent;
 
+  // Determine if this is a verification solution type
+  const isVerificationSolution = solutionType === 'face-verify' || solutionType === 'signature-verification';
+
+  // Set initial tab based on solution type
+  useEffect(() => {
+    if (isVerificationSolution) {
+      setActiveTab('result');
+    } else {
+      setActiveTab('processed-image');
+    }
+  }, [isVerificationSolution]);
+
   // Switch to API response tab when error occurs
   useEffect(() => {
     if (error) {
@@ -41,12 +53,14 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
     }
   }, [error]);
 
-  // Always show processed image tab, but handle empty state
-  const showProcessedImageTab = true;
+  // Show processed image tab only for non-verification solutions
+  const showProcessedImageTab = !isVerificationSolution;
+  const showResultTab = isVerificationSolution;
   const hasProcessedImage = maskedBase64 && maskedBase64.length > 0;
 
   // Disable processed image tab when there's an error
   const isProcessedImageTabDisabled = !!error;
+  const isResultTabDisabled = !!error;
 
   const base64ToBlob = (base64: string, mimeType: string = 'image/png'): Blob => {
     const byteCharacters = atob(base64);
@@ -98,6 +112,21 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   const formatApiResponse = (responseData: any) => {
     if (!responseData) return '';
     
+    // For face verification, show only faceResult
+    if (solutionType === 'face-verify' && responseData.faceResult && typeof responseData.faceResult === 'object') {
+      return JSON.stringify(responseData.faceResult, null, 2);
+    }
+    
+    // For signature verification, show only verification_result
+    if (solutionType === 'signature-verification' && responseData.verification_result && typeof responseData.verification_result === 'object') {
+      return JSON.stringify(responseData.verification_result, null, 2);
+    }
+    
+    // For qr-mask, show only qrResult
+    if (solutionType === 'qr-mask' && responseData.qrResult && typeof responseData.qrResult === 'object') {
+      return JSON.stringify(responseData.qrResult, null, 2);
+    }
+    
     // Extract only the cropResult object if it exists
     if (responseData.cropResult && typeof responseData.cropResult === 'object') {
       const cropResult = {
@@ -126,15 +155,6 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
             <div className="flex-1">
               <h4 className="font-semibold text-red-400 mb-2">Error Occurred</h4>
               <p className="text-red-300 text-sm mb-3">{error}</p>
-              
-              {/* Error Code */}
-              {/* {errorDetails?.error_code && (
-                <div className="bg-red-800/30 rounded px-3 py-2 mb-3">
-                  <p className="text-red-200 text-xs font-mono">
-                    Error Code: {errorDetails.error_code}
-                  </p>
-                </div>
-              )} */}
             </div>
           </div>
         </div>
@@ -222,7 +242,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
               </div>
               
               {/* Scrollable Content */}
-              <div className="p-4 overflow-y-auto custom-scrollbar flex-1 min-h-0">
+              <div className="p-4 custom-scrollbar flex-1 min-h-0">
                 <pre className="text-sm text-gray-300 whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed">
                   {formatApiResponse(data)}
                 </pre>
@@ -234,15 +254,15 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
     );
   };
 
-  const renderProcessedImageTab = () => {
-    if (!hasProcessedImage) {
+  const renderResultTab = () => {
+    if (!data) {
       return (
         <div className="text-center py-12 h-full flex flex-col items-center justify-center">
           <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <ImageIcon className="w-8 h-8 text-gray-600" />
+            <Shield className="w-8 h-8 text-gray-600" />
           </div>
           <p className="text-gray-400">
-            {loading ? getProcessingMessage(solutionType) : `${getFileRequirementText(solutionType)} to see the processed image`}
+            {loading ? getProcessingMessage(solutionType) : `${getFileRequirementText(solutionType)} to see the verification result`}
           </p>
           {loading && (
             <div className="w-16 h-16 border-4 border-gray-700 border-t-purple-500 rounded-full animate-spin mx-auto mt-4" />
@@ -251,16 +271,145 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
       );
     }
 
+    // Extract verification data
+    let verificationData = null;
+    if (solutionType === 'face-verify' && data.faceResult?.data) {
+      verificationData = data.faceResult.data;
+    } else if (solutionType === 'signature-verification' && data.verification_result?.data) {
+      verificationData = data.verification_result.data;
+    }
+
+    if (!verificationData) {
+      return (
+        <div className="text-center py-12 h-full flex flex-col items-center justify-center">
+          <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-gray-600" />
+          </div>
+          <p className="text-gray-400">No verification data available</p>
+        </div>
+      );
+    }
+
+    const getStatusColor = (classification: string) => {
+      const lowerClass = classification?.toLowerCase();
+      if (lowerClass === 'genuine' || lowerClass === 'match') {
+        return 'text-green-400';
+      } else if (lowerClass === 'fake' || lowerClass === 'no match') {
+        return 'text-red-400';
+      }
+      return 'text-yellow-400';
+    };
+
+    const getStatusIcon = (classification: string) => {
+      const lowerClass = classification?.toLowerCase();
+      if (lowerClass === 'genuine' || lowerClass === 'match') {
+        return <CheckCircle className="w-5 h-5 text-green-400" />;
+      } else if (lowerClass === 'fake' || lowerClass === 'no match') {
+        return <XCircle className="w-5 h-5 text-red-400" />;
+      }
+      return <AlertCircle className="w-5 h-5 text-yellow-400" />;
+    };
+
     return (
-      <div className="space-y-4 h-full flex flex-col">
-        {/* Preview Image */}
-        <div className="bg-gray-800 rounded-lg p-4 flex-1 flex flex-col">
-          <p className="text-sm text-gray-400 mb-2">Preview:</p>
-          <div className="flex-1 rounded-lg bg-gray-700 flex items-center justify-center overflow-hidden">
+      <div className="space-y-6 h-full flex flex-col">
+        {/* Header */}
+        <div className="text-center">
+          <h3 className="text-xl font-semibold text-white mb-2">
+            {solutionType === 'face-verify' ? 'Face Verification Result' : 'Signature Verification Result'}
+          </h3>
+          <p className="text-gray-400">Verification completed successfully</p>
+        </div>
+
+        {/* Main Result Card */}
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="space-y-4">
+            {Object.entries(verificationData).map(([key, value]) => {
+              const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+              const isClassification = key.toLowerCase().includes('classification');
+              const isPercentage = key.toLowerCase().includes('percentage') || key.toLowerCase().includes('similarity');
+              
+              return (
+                <div key={key} className="flex items-center justify-between py-3 border-b border-gray-700 last:border-b-0">
+                  <div className="flex items-center space-x-3">
+                    {isClassification && getStatusIcon(String(value))}
+                    <span className="text-gray-300 font-medium">{displayKey}:</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`font-semibold ${
+                      isClassification ? getStatusColor(String(value)) : 
+                      isPercentage ? 'text-blue-400' : 'text-white'
+                    }`}>
+                      {isPercentage ? `${value}%` : String(value)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Status Summary */}
+        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+          <div className="flex items-center justify-center space-x-3">
+            <Shield className="w-5 h-5 text-purple-400" />
+            <span className="text-gray-300">
+              Verification Status: 
+              <span className={`ml-2 font-semibold ${
+                verificationData.classification ? getStatusColor(verificationData.classification) : 'text-white'
+              }`}>
+                {verificationData.classification || 'Completed'}
+              </span>
+            </span>
+          </div>
+        </div>
+
+        {/* Metadata */}
+        <div className="text-xs text-gray-500 text-center mt-auto">
+          {solutionType === 'face-verify' && data.faceResult?.req_id && (
+            <p>Request ID: {data.faceResult.req_id}</p>
+          )}
+          {solutionType === 'signature-verification' && data.verification_result?.req_id && (
+            <p>Request ID: {data.verification_result.req_id}</p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+const renderProcessedImageTab = () => {
+  if (!hasProcessedImage) {
+    return (
+      <div className="text-center py-12 h-full flex flex-col items-center justify-center">
+        <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+          <ImageIcon className="w-8 h-8 text-gray-600" />
+        </div>
+        <p className="text-gray-400">
+          {loading ? getProcessingMessage(solutionType) : `${getFileRequirementText(solutionType)} to see the processed image`}
+        </p>
+        {loading && (
+          <div className="w-16 h-16 border-4 border-gray-700 border-t-purple-500 rounded-full animate-spin mx-auto mt-4" />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4 h-full flex flex-col">
+      {/* Preview Image */}
+      <div className="bg-gray-800 rounded-lg p-4 flex-1 flex flex-col min-h-0">
+        <p className="text-sm text-gray-400 mb-2 flex-shrink-0">Preview:</p>
+        <div className="flex-1 rounded-lg bg-gray-700 flex items-center justify-center overflow-hidden min-h-0 relative">
+          <div className="w-full h-full flex items-center justify-center p-2">
             <img 
               src={`data:image/png;base64,${maskedBase64}`} 
               alt="Processed Image" 
-              className="max-w-full max-h-full object-contain"
+              className="max-w-full max-h-full object-contain w-auto h-auto"
+              style={{ 
+                maxWidth: '100%', 
+                maxHeight: '100%',
+                width: 'auto',
+                height: 'auto'
+              }}
               onError={(e) => {
                 console.error('Failed to load image preview');
                 console.log('Base64 length:', maskedBase64.length);
@@ -270,60 +419,84 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
             />
           </div>
         </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={() => copyToClipboard(maskedBase64, 'base64')}
-            className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors duration-300"
-          >
-            {copiedBase64 ? (
-              <>
-                <Check className="w-4 h-4 text-green-400" />
-                <span className="text-green-400">Base64 Copied!</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-4 h-4" />
-                <span>Copy Base64</span>
-              </>
-            )}
-          </button>
-          
-          <button
-            onClick={() => downloadBase64Image(maskedBase64, getDownloadFileName(solutionType, fileName))}
-            className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors duration-300"
-          >
-            <Download className="w-4 h-4" />
-            <span>Download Image</span>
-          </button>
-        </div>
-
-        <div className="text-xs text-gray-500 mt-2">
-          Base64 length: {maskedBase64.length.toLocaleString()} characters
-        </div>
       </div>
-    );
-  };
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+        <button
+          onClick={() => copyToClipboard(maskedBase64, 'base64')}
+          className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors duration-300"
+        >
+          {copiedBase64 ? (
+            <>
+              <Check className="w-4 h-4 text-green-400" />
+              <span className="text-green-400">Base64 Copied!</span>
+            </>
+          ) : (
+            <>
+              <Copy className="w-4 h-4" />
+              <span>Copy Base64</span>
+            </>
+          )}
+        </button>
+        
+        <button
+          onClick={() => downloadBase64Image(maskedBase64, getDownloadFileName(solutionType, fileName))}
+          className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors duration-300"
+        >
+          <Download className="w-4 h-4" />
+          <span>Download Image</span>
+        </button>
+      </div>
+
+      <div className="text-xs text-gray-500 mt-2 flex-shrink-0">
+        Base64 length: {maskedBase64.length.toLocaleString()} characters
+      </div>
+    </div>
+  );
+};
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden h-full flex flex-col">
       {/* Tab Navigation */}
       <div className="flex border-b border-gray-700 flex-shrink-0">
-        <button
-          onClick={() => !isProcessedImageTabDisabled && setActiveTab('processed-image')}
-          disabled={isProcessedImageTabDisabled}
-          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 font-medium transition-colors duration-200 ${
-            activeTab === 'processed-image'
-              ? 'bg-purple-600 text-white border-b-2 border-purple-400'
-              : isProcessedImageTabDisabled
-                ? 'text-gray-600 bg-gray-800 cursor-not-allowed'
-                : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800'
-          }`}
-        >
-          <ImageIcon className={`w-4 h-4 ${isProcessedImageTabDisabled ? 'text-gray-600' : ''}`} />
-          <span>Processed Image</span>
-        </button>
+        {/* Result Tab for Verification Solutions */}
+        {showResultTab && (
+          <button
+            onClick={() => !isResultTabDisabled && setActiveTab('result')}
+            disabled={isResultTabDisabled}
+            className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 font-medium transition-colors duration-200 ${
+              activeTab === 'result'
+                ? 'bg-purple-600 text-white border-b-2 border-purple-400'
+                : isResultTabDisabled
+                  ? 'text-gray-600 bg-gray-800 cursor-not-allowed'
+                  : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800'
+            }`}
+          >
+            <Shield className={`w-4 h-4 ${isResultTabDisabled ? 'text-gray-600' : ''}`} />
+            <span>Result</span>
+          </button>
+        )}
+
+        {/* Processed Image Tab for Non-Verification Solutions */}
+        {showProcessedImageTab && (
+          <button
+            onClick={() => !isProcessedImageTabDisabled && setActiveTab('processed-image')}
+            disabled={isProcessedImageTabDisabled}
+            className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 font-medium transition-colors duration-200 ${
+              activeTab === 'processed-image'
+                ? 'bg-purple-600 text-white border-b-2 border-purple-400'
+                : isProcessedImageTabDisabled
+                  ? 'text-gray-600 bg-gray-800 cursor-not-allowed'
+                  : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800'
+            }`}
+          >
+            <ImageIcon className={`w-4 h-4 ${isProcessedImageTabDisabled ? 'text-gray-600' : ''}`} />
+            <span>Processed Image</span>
+          </button>
+        )}
+
+        {/* API Response Tab */}
         <button
           onClick={() => setActiveTab('api-response')}
           className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 font-medium transition-colors duration-200 ${
@@ -337,16 +510,20 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         </button>
       </div>
 
-      {/* Tab Content - Conditional Padding */}
-      {activeTab === 'api-response' ? (
-        <div className="flex-1 overflow-hidden">
-          {renderApiResponseTab()}
-        </div>
-      ) : (
-        <div className="p-6 flex-1 overflow-hidden">
-          {renderProcessedImageTab()}
-        </div>
-      )}
+      {/* Tab Content */}
+      <div className="flex-1 overflow-hidden">
+        {activeTab === 'api-response' && renderApiResponseTab()}
+        {activeTab === 'result' && (
+          <div className="p-6 h-full overflow-auto">
+            {renderResultTab()}
+          </div>
+        )}
+        {activeTab === 'processed-image' && (
+          <div className="p-6 h-full overflow-hidden">
+            {renderProcessedImageTab()}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

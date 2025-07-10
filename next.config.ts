@@ -2,9 +2,23 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['gravatar.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'gravatar.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+    ],
+    dangerouslyAllowSVG: true, // ⚠️ Only if you really need SVGs from trusted sources
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  /* config options here */
   eslint: {
     ignoreDuringBuilds: true,
   },

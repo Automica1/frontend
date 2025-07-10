@@ -5,6 +5,7 @@ import { SolutionType } from '../types/solution';
 
 export const useSolutionApi = (solutionType: SolutionType) => {
   const qrExtract = useApi(apiService.extractQRCode.bind(apiService));
+  const qrMask = useApi(apiService.maskQRCode.bind(apiService));
   const signatureVerify = useApi(apiService.verifySignatures.bind(apiService));
   const idCrop = useApi(apiService.processIdCrop.bind(apiService));
   const faceVerify = useApi(apiService.verifyFace.bind(apiService));
@@ -16,6 +17,8 @@ export const useSolutionApi = (solutionType: SolutionType) => {
         return qrExtract;
       case 'signature-verification':
         return signatureVerify;
+      case 'qr-mask':
+        return qrMask;
       case 'id-crop':
         return idCrop;
       case 'face-verify':
