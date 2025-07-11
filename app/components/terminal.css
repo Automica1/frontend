@@ -1,9 +1,9 @@
-/* styles.css or global.css */
+/* terminal.css  */
 .custom-scrollbar {
+  overflow-y: scroll !important;
   scrollbar-width: thin;
   scrollbar-color: #a855f7 #1f2937; /* thumb track */
   /* Force scrollbar to always be visible */
-  overflow-y: scroll !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar {

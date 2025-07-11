@@ -39,6 +39,7 @@ export const FileUpload2 = ({
   className?: string;
 }) => {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Create preview URLs for image files
@@ -112,17 +113,14 @@ export const FileUpload2 = ({
   });
 
   const canAcceptMore = files.length < maxFiles;
-  const isImageFile = (file: FileWithPreview) => {
-    return file.type.startsWith('image/');
-  };
 
   return (
-    <div className={cn("w-full h-full flex flex-col", className)} {...getRootProps()}>
+    <div className={cn("w-full h-full flex flex-col max-h-[600px]", className)} {...getRootProps()}>
       <motion.div
         onClick={handleClick}
         whileHover={canAcceptMore ? "animate" : undefined}
         className={cn(
-          "flex-1 flex flex-col p-6 group/file block rounded-lg w-full relative overflow-hidden",
+          "flex-1 flex flex-col p-6 group/file block rounded-lg w-full relative overflow-hidden min-h-0",
           canAcceptMore ? "cursor-pointer hover:shadow-2xl" : "cursor-not-allowed opacity-75"
         )}
       >
@@ -148,17 +146,17 @@ export const FileUpload2 = ({
             <div className="flex flex-col items-center justify-center w-full max-w-xl mx-auto space-y-4">
               <div className="text-center">
                 <p className="relative z-20 font-sans font-bold text-neutral-300 text-base">
-                  Upload Signature Images
+                  Upload Images
                 </p>
                 <p className="relative z-20 font-sans font-normal text-neutral-400 text-sm mt-2">
-                  Upload exactly 2 signature images for comparison
+                  Upload exactly 2 images for comparison
                 </p>
               </div>
               
               {/* Progress indicator */}
               <div className="flex items-center gap-2">
                 <div className="text-sm font-medium text-neutral-400">
-                  {files.length}/{maxFiles} signatures uploaded
+                  {files.length}/{maxFiles} images uploaded
                 </div>
                 <div className="w-24 bg-neutral-700 rounded-full h-2">
                   <div 
@@ -209,7 +207,7 @@ export const FileUpload2 = ({
             {/* Progress indicator */}
             <div className="flex items-center gap-2 mb-4 flex-shrink-0">
               <div className="text-sm font-medium text-neutral-400">
-                {files.length}/{maxFiles} signatures uploaded
+                {files.length}/{maxFiles} images uploaded
               </div>
               <div className="w-24 bg-neutral-700 rounded-full h-2">
                 <div 
@@ -226,13 +224,13 @@ export const FileUpload2 = ({
             <div className="flex-1 flex flex-col gap-4 min-h-0">
               {files.length === 1 && (
                 // Single image + upload area
-                <div className="flex-1 flex flex-col gap-4">
+                <div className="flex-1 flex flex-col gap-4 min-h-0">
                   {/* First image */}
                   <div className="flex-1 min-h-0">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="relative bg-neutral-900 rounded-lg shadow-lg border border-l-4 border-l-blue-500 overflow-hidden h-full"
+                      className="relative bg-neutral-900 rounded-lg shadow-lg border border-l-4 border-l-blue-500 overflow-hidden h-full flex flex-col"
                     >
                       {/* Remove button */}
                       <button
@@ -245,16 +243,17 @@ export const FileUpload2 = ({
                         <IconX className="h-4 w-4" />
                       </button>
 
-                      {/* Signature label */}
+                      {/* Image label */}
                       <div className="absolute top-3 left-3 z-10">
                         <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-900 text-blue-200">
-                          Signature 1
+                          Image 1
                         </span>
                       </div>
 
                       {/* Image preview */}
-                      <div className="p-4 pt-12 h-full flex flex-col">
-                        <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center">
+                      <div className="p-4 pt-12 flex-1 flex flex-col min-h-0">
+                        <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center min-h-0 max-h-[200px] cursor-pointer hover:bg-neutral-700 transition-colors duration-200"
+                             onClick={() => setPreviewImage(files[0].preview || null)}>
                           <motion.img
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -268,7 +267,7 @@ export const FileUpload2 = ({
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className="text-sm font-medium text-neutral-300 truncate"
+                          className="text-sm font-medium text-neutral-300 truncate flex-shrink-0"
                         >
                           {files[0].name}
                         </motion.p>
@@ -276,26 +275,26 @@ export const FileUpload2 = ({
                     </motion.div>
                   </div>
 
-                  {/* Upload area for second signature */}
+                  {/* Upload area for second Image */}
                   <div className="flex-1 min-h-0">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       onClick={handleClick}
-                      className="relative bg-neutral-900 rounded-lg shadow-lg border-2 border-dashed border-blue-600 overflow-hidden cursor-pointer hover:border-blue-500 transition-all duration-200 hover:shadow-xl h-full"
+                      className="relative bg-neutral-900 rounded-lg shadow-lg border-2 border-dashed border-blue-600 overflow-hidden cursor-pointer hover:border-blue-500 transition-all duration-200 hover:shadow-xl h-full flex flex-col"
                     >
-                      <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                      <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
                         <div className="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center mb-3">
                           <IconUpload className="h-6 w-6 text-blue-400" />
                         </div>
                         <h3 className="text-lg font-medium text-neutral-300 mb-2">
-                          Upload Second Signature
+                          Upload Second image
                         </h3>
                         <p className="text-sm text-neutral-400 mb-3">
-                          Click here or drag and drop your second signature image
+                          Click here or drag and drop your second image
                         </p>
                         <div className="flex items-center gap-2 text-xs text-neutral-500">
-                          <span>Signature 2</span>
+                          <span>images 2</span>
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         </div>
                       </div>
@@ -309,12 +308,12 @@ export const FileUpload2 = ({
                 <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
                   {files.map((file, idx) => (
                     <motion.div
-                      key={`signature-${idx}`}
+                      key={`Image-${idx}`}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       className={cn(
-                        "flex-1 relative bg-neutral-900 rounded-lg shadow-lg border overflow-hidden",
+                        "flex-1 relative bg-neutral-900 rounded-lg shadow-lg border overflow-hidden flex flex-col",
                         idx === 0 ? "border-l-4 border-l-blue-500" : "border-l-4 border-l-green-500"
                       )}
                     >
@@ -329,16 +328,17 @@ export const FileUpload2 = ({
                         <IconX className="h-4 w-4" />
                       </button>
 
-                      {/* Signature label */}
+                      {/* Image label */}
                       <div className="absolute top-3 left-3 z-10">
                         <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-900 text-blue-200">
-                          Signature {idx + 1}
+                          images {idx + 1}
                         </span>
                       </div>
 
                       {/* Image preview */}
-                      <div className="p-4 pt-12 h-full flex flex-col">
-                        <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center">
+                      <div className="p-4 pt-12 flex-1 flex flex-col min-h-0">
+                        <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center min-h-0 max-h-[150px] cursor-pointer hover:bg-neutral-700 transition-colors duration-200"
+                             onClick={() => setPreviewImage(file.preview || null)}>
                           <motion.img
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -352,7 +352,7 @@ export const FileUpload2 = ({
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className="text-sm font-medium text-neutral-300 truncate"
+                          className="text-sm font-medium text-neutral-300 truncate flex-shrink-0"
                         >
                           {file.name}
                         </motion.p>
@@ -365,6 +365,33 @@ export const FileUpload2 = ({
           </div>
         )}
       </motion.div>
+
+      {/* Full-screen image preview modal */}
+      {previewImage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-4xl p-4">
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 z-10"
+            >
+              <IconX className="h-4 w-4" />
+            </button>
+            <motion.img
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              src={previewImage}
+              alt="Preview"
+              className="max-w-full max-h-full object-contain rounded-lg"
+            />
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };

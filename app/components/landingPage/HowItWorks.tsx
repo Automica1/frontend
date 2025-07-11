@@ -43,19 +43,24 @@ const EvervaultCard: React.FC<EvervaultCardProps> = ({ className, imageSrc, imag
           randomString={randomString}
         />
         <div className="relative z-10 flex items-center justify-center">
-          <div className="relative h-44 w-44 rounded-full flex items-center justify-center text-white font-bold text-4xl">
-            <div className="absolute w-full h-full bg-black/[0.8] blur-sm rounded-full" />
-            <div className="relative z-20 w-24 h-24 flex items-center justify-center">
-              <Image
-                src={imageSrc}
-                alt={imageAlt}
-                width={96}
-                height={96}
-                className="object-contain"
-              />
-            </div>
-          </div>
-        </div>
+  <div className="relative h-44 w-44 rounded-full flex items-center justify-center text-white font-bold text-4xl">
+    <div className="absolute w-full h-full bg-black/[0.8] blur-sm rounded-full" />
+    <div className="relative z-20 w-full h-full flex items-center justify-center">
+      <Image 
+        src={imageSrc} 
+        alt={imageAlt} 
+        fill 
+        className="object-cover rounded-full"
+        style={{
+          maskImage: 'radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 80%)',
+          WebkitMaskImage: 'radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 80%)',
+          maskSize: '100% 100%',
+          WebkitMaskSize: '100% 100%'
+        }}
+      />
+    </div>
+  </div>
+</div>
       </div>
     </div>
   );

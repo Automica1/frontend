@@ -241,20 +241,15 @@ const SolutionsHero = () => {
             ease: "easeInOut"
           }}
         >
-          <span className="relative inline-block">
-            <p className='text-5xl lg:text-7xl font-mono text-white tracking-tighter leading-tight '>
-            Powerful AI APIs Built for <br/> 
-            <span className='bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent'>
-              Real-World Use
-              </span>
-            </p>
-            {/* <motion.span 
-              className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-purple-400"
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: "100%", opacity: 1 }}
-              transition={{ delay: 1, duration: 1 }}
-            /> */}
-          </span>
+          <span className="relative inline-block w-full">
+  <p className="text-4xl sm:text-5xl lg:text-7xl font-mono text-white tracking-tighter leading-tight max-w-5xl mx-auto text-center">
+    Powerful AI APIs Built for <br />
+    <span className="bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+      Real-World Use
+    </span>
+  </p>
+</span>
+
         </motion.h1>
         
         <motion.p 

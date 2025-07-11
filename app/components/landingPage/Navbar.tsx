@@ -33,7 +33,9 @@ export default function Navbar() {
   // Function to get the appropriate avatar URL
   const getAvatarUrl = (userPicture: string | string[]) => {
     if (shouldUseDefaultAvatar(userPicture)) {
-      return `https://api.dicebear.com/7.x/identicon/png?seed=${user?.email ?? 'default'}`;
+      const fullName = `${user?.given_name || ''} ${user?.family_name || ''}`.trim();
+      // return `https://api.dicebear.com/7.x/identicon/png?seed=${user?.email ?? 'default'}`;
+      return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName)}&backgroundColor=4c1d95&fontSize=38`;
     }
     // If userPicture is an array, use the first element; otherwise, return as is
     return Array.isArray(userPicture) ? userPicture[0] : userPicture;
