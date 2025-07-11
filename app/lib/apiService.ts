@@ -285,7 +285,7 @@ class ApiService {
 
   // Face Detection with validation
   async detectFace(base64Image: string): Promise<FaceDetectionResponseWithCredits> {
-    const reqId = this.generateReqId('face-detect');
+    const reqId = this.generateReqId('face-cropping');
     
     if (!base64Image || typeof base64Image !== 'string') {
       throw new Error('Invalid base64 image data');
@@ -325,9 +325,9 @@ class ApiService {
   }
 
   // Legacy methods for backward compatibility
-  async cropFace(base64Image: string): Promise<FaceDetectionResponseWithCredits> {
-    return this.detectFace(base64Image);
-  }
+  // async cropFace(base64Image: string): Promise<FaceDetectionResponseWithCredits> {
+  //   return this.detectFace(base64Image);
+  // }
 
   // Health check with timeout
   async healthCheck(): Promise<{ status: string; timestamp: string }> {

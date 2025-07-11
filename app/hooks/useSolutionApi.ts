@@ -9,7 +9,7 @@ export const useSolutionApi = (solutionType: SolutionType) => {
   const signatureVerify = useApi(apiService.verifySignatures.bind(apiService));
   const idCrop = useApi(apiService.processIdCrop.bind(apiService));
   const faceVerify = useApi(apiService.verifyFace.bind(apiService));
-  const faceCrop = useApi(apiService.cropFace.bind(apiService));
+  const faceCrop = useApi(apiService.detectFace.bind(apiService));
 
   const getCurrentApi = () => {
     switch (solutionType) {

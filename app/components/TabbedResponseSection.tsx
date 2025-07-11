@@ -117,6 +117,9 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
       return JSON.stringify(responseData.faceResult, null, 2);
     }
     
+if (solutionType === 'face-cropping' && responseData.faceResult && typeof responseData.faceResult === 'object') {
+  return JSON.stringify(responseData.faceResult, null, 2);
+}
     // For signature verification, show only verification_result
     if (solutionType === 'signature-verification' && responseData.verification_result && typeof responseData.verification_result === 'object') {
       return JSON.stringify(responseData.verification_result, null, 2);
