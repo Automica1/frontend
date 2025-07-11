@@ -304,14 +304,14 @@ export default function Navbar() {
 
       {/* Mobile Menu Overlay */}
       {showMobileMenu && (
-        <div className="mobile-menu md:hidden fixed inset-0 top-[72px] bg-black/80 backdrop-blur-2xl z-40 animate-[fadeIn_0.3s_ease-out]" style={{ backdropFilter: 'blur(48px) saturate(180%)' }}>
-          <div className="flex flex-col h-full">
+        <div className="mobile-menu md:hidden fixed inset-0 top-[72px] bg-black/80 backdrop-blur-2xl z-40 animate-[fadeIn_0.3s_ease-out] overflow-y-auto" style={{ backdropFilter: 'blur(48px) saturate(180%)' }}>
+          <div className="min-h-full flex flex-col">
             {/* Navigation Links */}
-            <div className="flex-1 px-6 py-8 space-y-6 bg-black/60 backdrop-blur-md mx-4 mt-4 rounded-2xl border border-white/10" style={{ backdropFilter: 'blur(16px)' }}>
+            <div className="flex-1 px-4 py-4 space-y-3 bg-black/60 backdrop-blur-md mx-3 mt-3 rounded-2xl border border-white/10" style={{ backdropFilter: 'blur(16px)' }}>
               <Link 
                 href="/services" 
                 onClick={closeMobileMenu}
-                className="block text-2xl font-medium text-white hover:text-purple-400 transition-colors duration-200 py-3 border-b border-gray-800/50"
+                className="block text-xl font-medium text-white hover:text-purple-400 transition-colors duration-200 py-2 border-b border-gray-800/50"
               >
                 Services
               </Link>
@@ -319,7 +319,7 @@ export default function Navbar() {
               <Link 
                 href="/contact" 
                 onClick={closeMobileMenu}
-                className="block text-2xl font-medium text-white hover:text-purple-400 transition-colors duration-200 py-3 border-b border-gray-800/50"
+                className="block text-xl font-medium text-white hover:text-purple-400 transition-colors duration-200 py-2 border-b border-gray-800/50"
               >
                 Contact Us
               </Link>
@@ -327,7 +327,7 @@ export default function Navbar() {
               <Link 
                 href="/about" 
                 onClick={closeMobileMenu}
-                className="block text-2xl font-medium text-white hover:text-purple-400 transition-colors duration-200 py-3 border-b border-gray-800/50"
+                className="block text-xl font-medium text-white hover:text-purple-400 transition-colors duration-200 py-2 border-b border-gray-800/50"
               >
                 About Us
               </Link>
@@ -335,41 +335,41 @@ export default function Navbar() {
               <Link 
                 href="/pricing" 
                 onClick={closeMobileMenu}
-                className="block text-2xl font-medium text-white hover:text-purple-400 transition-colors duration-200 py-3 border-b border-gray-800/50"
+                className="block text-xl font-medium text-white hover:text-purple-400 transition-colors duration-200 py-2 border-b border-gray-800/50"
               >
                 Pricing
               </Link>
 
               {/* Mobile User Section (when authenticated) */}
               {!isLoading && isAuthenticated && user && (
-                <div className="border-t border-white/20 pt-6 mt-8">
-                  <div className="flex items-center space-x-3 mb-6 p-4 bg-black/70 backdrop-blur-sm rounded-xl border border-purple-500/40" style={{ backdropFilter: 'blur(12px)' }}>
+                <div className="border-t border-white/20 pt-4 mt-4">
+                  <div className="flex items-center space-x-3 mb-3 p-3 bg-black/70 backdrop-blur-sm rounded-xl border border-purple-500/40" style={{ backdropFilter: 'blur(12px)' }}>
                     {user.picture ? (
                       <Image
                         src={getAvatarUrl(user.picture)}
                         alt={user.given_name || user.email || "User"}
-                        width={48}
-                        height={48}
-                        className="w-12 h-12 rounded-full border-2 border-purple-500/50"
+                        width={40}
+                        height={40}
+                        className="w-10 h-10 rounded-full border-2 border-purple-500/50"
                       />
                     ) : (
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center">
-                        <User className="w-6 h-6 text-white" />
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center">
+                        <User className="w-5 h-5 text-white" />
                       </div>
                     )}
-                    <div className="flex-1">
-                      <div className="text-white font-semibold text-lg">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-white font-semibold text-base truncate">
                         {user.given_name && user.family_name 
                           ? `${user.given_name} ${user.family_name}` 
                           : user.given_name || 'User'}
                       </div>
-                      <div className="text-gray-300 text-sm">{user.email}</div>
+                      <div className="text-gray-300 text-sm truncate">{user.email}</div>
                       {/* Mobile Credits in User Section */}
-                      <div className="flex items-center space-x-2 mt-2">
-                        <Coins className="w-4 h-4 text-yellow-500" />
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Coins className="w-3 h-3 text-yellow-500" />
                         <span className="text-white text-sm font-medium">
                           {creditsLoading ? (
-                            <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                            <div className="w-3 h-3 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                           ) : creditsError ? (
                             <button 
                               onClick={refreshCredits}
@@ -384,45 +384,25 @@ export default function Navbar() {
                       </div>
                     </div>
                   </div>
-
-                  {/* <div className="space-y-2">
-                    <a 
-                      href="/dashboard" 
-                      onClick={closeMobileMenu}
-                      className="flex items-center space-x-3 text-white hover:text-purple-400 hover:bg-purple-500/20 backdrop-blur-sm transition-all duration-200 py-3 px-4 rounded-xl border border-white/10" style={{ backdropFilter: 'blur(8px)' }}
-                    >
-                      <Brain className="w-5 h-5" />
-                      <span className="text-lg font-medium">Dashboard</span>
-                    </a>
-                    
-                    <a 
-                      href="/profile" 
-                      onClick={closeMobileMenu}
-                      className="flex items-center space-x-3 text-white hover:text-purple-400 hover:bg-purple-500/20 backdrop-blur-sm transition-all duration-200 py-3 px-4 rounded-xl border border-white/10" style={{ backdropFilter: 'blur(8px)' }}
-                    >
-                      <User className="w-5 h-5" />
-                      <span className="text-lg font-medium">Profile</span>
-                    </a>
-                  </div> */}
                 </div>
               )}
             </div>
 
-            {/* Bottom Auth Section */}
-            <div className="px-6 py-6 bg-black/60 backdrop-blur-md border-t border-white/20 space-y-4 mx-4 mb-4 rounded-2xl" style={{ backdropFilter: 'blur(16px)' }}>
+            {/* Bottom Auth Section - Always visible */}
+            <div className="px-4 py-3 bg-black/60 backdrop-blur-md border-t border-white/20 space-y-3 mx-3 mb-3 rounded-2xl flex-shrink-0" style={{ backdropFilter: 'blur(16px)' }}>
               {!isLoading && !isAuthenticated && (
                 <>
                   <LoginLink 
                     postLoginRedirectURL="/" 
                     onClick={closeMobileMenu}
-                    className="block w-full px-6 py-4 border-2 border-white/30 backdrop-blur-sm rounded-xl text-center text-white font-medium hover:text-purple-400 hover:border-purple-500 transition-all duration-300" style={{ backdropFilter: 'blur(8px)' }}
+                    className="block w-full px-4 py-3 border-2 border-white/30 backdrop-blur-sm rounded-xl text-center text-white font-medium hover:text-purple-400 hover:border-purple-500 transition-all duration-300" style={{ backdropFilter: 'blur(8px)' }}
                   >
                     SIGN IN
                   </LoginLink>
                   <RegisterLink 
                     postLoginRedirectURL="/" 
                     onClick={closeMobileMenu}
-                    className="block w-full px-6 py-4 bg-gradient-to-r from-purple-500/90 to-purple-700/90 backdrop-blur-sm text-white rounded-xl font-semibold text-center hover:from-purple-600 hover:to-purple-800 transition-all duration-300 shadow-lg border border-purple-400/50" style={{ backdropFilter: 'blur(8px)' }}
+                    className="block w-full px-4 py-3 bg-gradient-to-r from-purple-500/90 to-purple-700/90 backdrop-blur-sm text-white rounded-xl font-semibold text-center hover:from-purple-600 hover:to-purple-800 transition-all duration-300 shadow-lg border border-purple-400/50" style={{ backdropFilter: 'blur(8px)' }}
                   >
                     GET STARTED
                   </RegisterLink>
@@ -433,10 +413,10 @@ export default function Navbar() {
                 <LogoutLink 
                   postLogoutRedirectURL="/"
                   onClick={closeMobileMenu}
-                  className="flex items-center justify-center space-x-3 w-full px-6 py-4 text-white font-medium hover:text-red-400 hover:bg-red-500/20 backdrop-blur-sm transition-colors duration-200 rounded-xl border-2 border-red-500/50" style={{ backdropFilter: 'blur(8px)' }}
+                  className="flex items-center justify-center space-x-2 w-full px-4 py-3 text-white font-medium hover:text-red-400 hover:bg-red-500/20 backdrop-blur-sm transition-colors duration-200 rounded-xl border-2 border-red-500/50" style={{ backdropFilter: 'blur(8px)' }}
                 >
-                  <LogOut className="w-5 h-5" />
-                  <span className="text-lg">Sign Out</span>
+                  <LogOut className="w-4 h-4" />
+                  <span className="text-base">Sign Out</span>
                 </LogoutLink>
               )}
             </div>
