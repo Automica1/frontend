@@ -30,51 +30,51 @@ export default function DocumentationComponent({ solution }: DocumentationCompon
   ];
 
   const renderQuickStart = () => (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {/* Getting Started */}
       <div>
-        <h3 className="text-2xl font-bold mb-4">Getting Started</h3>
-        <p className="text-gray-300 mb-6">
+        <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Getting Started</h3>
+        <p className="text-gray-300 mb-4 sm:mb-6 text-sm sm:text-base">
           Get up and running with our API in just a few steps. No complex setup required.
         </p>
         
-        <div className="space-y-6">
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h4 className="text-lg font-semibold mb-3 flex items-center">
-              <span className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold mr-3">1</span>
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+            <h4 className="text-base sm:text-lg font-semibold mb-3 flex items-center">
+              <span className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold mr-2 sm:mr-3">1</span>
               Get Your API Key
             </h4>
-            <p className="text-gray-300 mb-4">
+            <p className="text-gray-300 mb-4 text-sm sm:text-base">
               Sign up for a free account and get your API key from the dashboard.
             </p>
-            <button className={`px-4 py-2 bg-gradient-to-r ${solution.gradient} rounded-lg font-semibold text-sm`}>
+            <button className={`px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r ${solution.gradient} rounded-lg font-semibold text-xs sm:text-sm`}>
               Get API Key
             </button>
           </div>
 
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h4 className="text-lg font-semibold mb-3 flex items-center">
-              <span className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold mr-3">2</span>
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+            <h4 className="text-base sm:text-lg font-semibold mb-3 flex items-center">
+              <span className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold mr-2 sm:mr-3">2</span>
               Make Your First Request
             </h4>
-            <p className="text-gray-300 mb-4">
+            <p className="text-gray-300 mb-4 text-sm sm:text-base">
               Use curl or any HTTP client to make your first API call.
             </p>
-            <div className="bg-black rounded-lg p-4 relative">
+            <div className="bg-black rounded-lg p-3 sm:p-4 relative">
               <button
                 onClick={() => copyToClipboard(`curl -X POST "${solution.apiEndpoint || 'https://api.example.com/v1/process'}" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"image": "base64_encoded_image"}'`, 'quickstart-curl')}
-                className="absolute top-2 right-2 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors duration-300"
+                className="absolute top-2 right-2 p-1.5 sm:p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs sm:text-sm transition-colors duration-300"
               >
                 {copied === 'quickstart-curl' ? (
-                  <Check className="w-4 h-4 text-green-400" />
+                  <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
                 ) : (
-                  <Copy className="w-4 h-4" />
+                  <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
                 )}
               </button>
-              <pre className="text-sm text-gray-300 font-mono pr-12">
+              <pre className="text-xs sm:text-sm text-gray-300 font-mono pr-8 sm:pr-12 overflow-x-auto">
 {`curl -X POST "${solution.apiEndpoint || 'https://api.example.com/v1/process'}" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
@@ -83,15 +83,15 @@ export default function DocumentationComponent({ solution }: DocumentationCompon
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h4 className="text-lg font-semibold mb-3 flex items-center">
-              <span className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-sm font-bold mr-3">3</span>
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+            <h4 className="text-base sm:text-lg font-semibold mb-3 flex items-center">
+              <span className="w-5 h-5 sm:w-6 sm:h-6 bg-purple-500 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold mr-2 sm:mr-3">3</span>
               Handle the Response
             </h4>
-            <p className="text-gray-300 mb-4">
+            <p className="text-gray-300 mb-4 text-sm sm:text-base">
               Process the JSON response from our API.
             </p>
-            <div className="bg-black rounded-lg p-4 relative">
+            <div className="bg-black rounded-lg p-3 sm:p-4 relative">
               <button
                 onClick={() => copyToClipboard(`{
   "success": true,
@@ -104,15 +104,15 @@ export default function DocumentationComponent({ solution }: DocumentationCompon
     "requests_remaining": 999
   }
 }`, 'quickstart-response')}
-                className="absolute top-2 right-2 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors duration-300"
+                className="absolute top-2 right-2 p-1.5 sm:p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs sm:text-sm transition-colors duration-300"
               >
                 {copied === 'quickstart-response' ? (
-                  <Check className="w-4 h-4 text-green-400" />
+                  <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
                 ) : (
-                  <Copy className="w-4 h-4" />
+                  <Copy className="w-3 h-3 sm:w-4 sm:h-4" />
                 )}
               </button>
-              <pre className="text-sm text-gray-300 font-mono pr-12">
+              <pre className="text-xs sm:text-sm text-gray-300 font-mono pr-8 sm:pr-12 overflow-x-auto">
 {`{
   "success": true,
   "data": {
@@ -133,26 +133,26 @@ export default function DocumentationComponent({ solution }: DocumentationCompon
   );
 
   const renderAPIReference = () => (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h3 className="text-2xl font-bold mb-4">API Reference</h3>
-        <p className="text-gray-300 mb-6">
+        <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">API Reference</h3>
+        <p className="text-gray-300 mb-4 sm:mb-6 text-sm sm:text-base">
           Complete reference for all available endpoints and parameters.
         </p>
       </div>
 
       {/* Endpoint */}
-      <div className="bg-gray-800 rounded-lg p-6">
-        <h4 className="text-lg font-semibold mb-4">POST /v1/process</h4>
-        <p className="text-gray-300 mb-4">
+      <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+        <h4 className="text-base sm:text-lg font-semibold mb-4">POST /v1/process</h4>
+        <p className="text-gray-300 mb-4 text-sm sm:text-base">
           Process an image and extract information based on your requirements.
         </p>
         
         <div className="space-y-4">
           <div>
-            <h5 className="font-semibold mb-2">Request Headers</h5>
-            <div className="bg-black rounded-lg p-4">
-              <pre className="text-sm text-gray-300 font-mono">
+            <h5 className="font-semibold mb-2 text-sm sm:text-base">Request Headers</h5>
+            <div className="bg-black rounded-lg p-3 sm:p-4">
+              <pre className="text-xs sm:text-sm text-gray-300 font-mono overflow-x-auto">
 {`Authorization: Bearer YOUR_API_KEY
 Content-Type: application/json`}
               </pre>
@@ -160,9 +160,9 @@ Content-Type: application/json`}
           </div>
 
           <div>
-            <h5 className="font-semibold mb-2">Request Body</h5>
-            <div className="bg-black rounded-lg p-4">
-              <pre className="text-sm text-gray-300 font-mono">
+            <h5 className="font-semibold mb-2 text-sm sm:text-base">Request Body</h5>
+            <div className="bg-black rounded-lg p-3 sm:p-4">
+              <pre className="text-xs sm:text-sm text-gray-300 font-mono overflow-x-auto">
 {`{
   "image": "base64_encoded_image_data",
   "options": {
@@ -177,9 +177,9 @@ Content-Type: application/json`}
           </div>
 
           <div>
-            <h5 className="font-semibold mb-2">Response</h5>
-            <div className="bg-black rounded-lg p-4">
-              <pre className="text-sm text-gray-300 font-mono">
+            <h5 className="font-semibold mb-2 text-sm sm:text-base">Response</h5>
+            <div className="bg-black rounded-lg p-3 sm:p-4">
+              <pre className="text-xs sm:text-sm text-gray-300 font-mono overflow-x-auto">
 {`{
   "success": true,
   "data": {
@@ -200,18 +200,18 @@ Content-Type: application/json`}
   );
 
   const renderExamples = () => (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <div>
-        <h3 className="text-2xl font-bold mb-4">Examples</h3>
-        <p className="text-gray-300 mb-6">
+        <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Examples</h3>
+        <p className="text-gray-300 mb-4 sm:mb-6 text-sm sm:text-base">
           See how to integrate the API using popular tools and languages.
         </p>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           {/* JavaScript Example */}
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h4 className="text-lg font-semibold mb-4">JavaScript (Fetch)</h4>
-            <pre className="text-sm text-gray-300 font-mono bg-black rounded-lg p-4 overflow-x-auto">
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+            <h4 className="text-base sm:text-lg font-semibold mb-4">JavaScript (Fetch)</h4>
+            <pre className="text-xs sm:text-sm text-gray-300 font-mono bg-black rounded-lg p-3 sm:p-4 overflow-x-auto">
 {`fetch('${solution.apiEndpoint || 'https://api.example.com/v1/process'}', {
   method: 'POST',
   headers: {
@@ -228,9 +228,9 @@ Content-Type: application/json`}
           </div>
 
           {/* Python Example */}
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h4 className="text-lg font-semibold mb-4">Python (requests)</h4>
-            <pre className="text-sm text-gray-300 font-mono bg-black rounded-lg p-4 overflow-x-auto">
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
+            <h4 className="text-base sm:text-lg font-semibold mb-4">Python (requests)</h4>
+            <pre className="text-xs sm:text-sm text-gray-300 font-mono bg-black rounded-lg p-3 sm:p-4 overflow-x-auto">
 {`import requests
 
 url = '${solution.apiEndpoint || 'https://api.example.com/v1/process'}'
@@ -252,20 +252,20 @@ print(response.json())`}
   );
 
   return (
-    <div className="max-w-7xl mx-auto py-16 px-4">
+    <div className="max-w-7xl mx-auto py-8 sm:py-16 px-3 sm:px-4">
       {/* Tabs Navigation */}
-      <div className="flex space-x-4 mb-12 border-b border-gray-700">
+      <div className="flex space-x-1 sm:space-x-4 mb-8 sm:mb-12 border-b border-gray-700 overflow-x-auto">
         {tabs.map(({ id, label, icon: TabIcon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`px-4 py-2 flex items-center space-x-2 font-semibold border-b-2 transition-all ${
+            className={`px-3 sm:px-4 py-2 flex items-center space-x-1 sm:space-x-2 font-semibold border-b-2 transition-all whitespace-nowrap text-sm sm:text-base ${
               activeTab === id
                 ? 'border-purple-500 text-white'
                 : 'border-transparent text-gray-400 hover:text-white'
             }`}
           >
-            <TabIcon className="w-4 h-4" />
+            <TabIcon className="w-3 h-3 sm:w-4 sm:h-4" />
             <span>{label}</span>
           </button>
         ))}

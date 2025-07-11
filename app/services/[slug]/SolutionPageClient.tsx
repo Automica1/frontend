@@ -140,41 +140,38 @@ export default function SolutionPageClient({ solution }: SolutionPageClientProps
   };
 
   return (
-    <div className="bg-black text-white min-h-screen ">
+    <div className="bg-black text-white min-h-screen">
       {/* Navigation Bar - Fixed positioning below main navbar */}
-      {/* Tabs Navigation */}
-     
-
-      <div className="fixed lg:top-18 top-18 max-w-7xl mx-auto left-0 right-0 z-40 bg-black/40 backdrop-blur-xl border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeSection === item.id;
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveSection(item.id)}
-                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                    isActive
-                      ? 'border-purple-500 text-purple-400'
-                      : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
+      <div className="fixed top-16 sm:top-18 lg:top-18 left-0 right-0 z-40 bg-black/40 backdrop-blur-xl border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+          <nav className="flex justify-center sm:justify-start">
+            <div className="flex space-x-2 sm:space-x-6 lg:space-x-8 overflow-x-auto scrollbar-hide">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeSection === item.id;
+                
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    className={`flex items-center space-x-1 sm:space-x-2 py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+                      isActive
+                        ? 'border-purple-500 text-purple-400'
+                        : 'border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300'
+                    }`}
+                  >
+                    <Icon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </nav>
         </div>
       </div>
 
-    
-
       {/* Main Content Area - Add top padding to account for both navbars */}
-      <div className="pt-32">
+      <div className="pt-28 sm:pt-32">
         {renderActiveComponent()}
       </div>
     </div>
