@@ -96,7 +96,7 @@ const SolutionCard = ({
         <div className="text-center w-full mx-auto flex items-center justify-center pt-0">
           <div className="relative w-full rounded-lg overflow-hidden shadow-lg transition-transform duration-300 hover:scale-[1.05]">
             <img 
-              src={`/images/${index + 1}.png`}
+              src={`/images/${index + 1}.svg`}
               alt={solution.title}
               className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
             />

@@ -147,20 +147,20 @@ export const FileUpload2 = ({
           <div className="flex-1 flex flex-col items-center justify-center relative z-20 min-h-0">
             <div className="flex flex-col items-center justify-center w-full max-w-xl mx-auto space-y-4">
               <div className="text-center">
-                <p className="relative z-20 font-sans font-bold text-neutral-700 dark:text-neutral-300 text-base">
+                <p className="relative z-20 font-sans font-bold text-neutral-300 text-base">
                   Upload Signature Images
                 </p>
-                <p className="relative z-20 font-sans font-normal text-neutral-400 dark:text-neutral-400 text-sm mt-2">
+                <p className="relative z-20 font-sans font-normal text-neutral-400 text-sm mt-2">
                   Upload exactly 2 signature images for comparison
                 </p>
               </div>
               
               {/* Progress indicator */}
               <div className="flex items-center gap-2">
-                <div className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                <div className="text-sm font-medium text-neutral-400">
                   {files.length}/{maxFiles} signatures uploaded
                 </div>
-                <div className="w-24 bg-gray-200 dark:bg-neutral-700 rounded-full h-2">
+                <div className="w-24 bg-neutral-700 rounded-full h-2">
                   <div 
                     className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${(files.length / maxFiles) * 100}%` }}
@@ -180,19 +180,19 @@ export const FileUpload2 = ({
                     stiffness: 300,
                     damping: 20,
                   }}
-                  className="relative group-hover/file:shadow-2xl z-40 bg-white dark:bg-neutral-900 flex items-center justify-center h-24 w-24 rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
+                  className="relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center h-24 w-24 rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
                 >
                   {isDragActive && canAcceptMore ? (
                     <motion.p
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="text-neutral-600 flex flex-col items-center text-xs"
+                      className="text-neutral-400 flex flex-col items-center text-xs"
                     >
                       Drop it
-                      <IconUpload className="h-4 w-4 text-neutral-600 dark:text-neutral-400 mt-1" />
+                      <IconUpload className="h-4 w-4 text-neutral-400 mt-1" />
                     </motion.p>
                   ) : (
-                    <IconUpload className="h-4 w-4 text-neutral-600 dark:text-neutral-300" />
+                    <IconUpload className="h-4 w-4 text-neutral-300" />
                   )}
                 </motion.div>
 
@@ -204,14 +204,14 @@ export const FileUpload2 = ({
             </div>
           </div>
         ) : (
-          // File preview area - scrollable if needed
+          // File preview area - responsive layout for 2 images
           <div className="flex-1 flex flex-col relative z-20 min-h-0">
             {/* Progress indicator */}
             <div className="flex items-center gap-2 mb-4 flex-shrink-0">
-              <div className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+              <div className="text-sm font-medium text-neutral-400">
                 {files.length}/{maxFiles} signatures uploaded
               </div>
-              <div className="w-24 bg-gray-200 dark:bg-neutral-700 rounded-full h-2">
+              <div className="w-24 bg-neutral-700 rounded-full h-2">
                 <div 
                   className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${(files.length / maxFiles) * 100}%` }}
@@ -222,161 +222,149 @@ export const FileUpload2 = ({
               )}
             </div>
 
-            {/* Scrollable content area */}
-            <div className="flex-1 overflow-y-auto space-y-4 min-h-0">
-              {/* Upload area for second signature when only one is uploaded */}
+            {/* Images layout - side by side or stacked depending on available space */}
+            <div className="flex-1 flex flex-col gap-4 min-h-0">
               {files.length === 1 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={handleClick}
-                  className="relative bg-white dark:bg-neutral-900 rounded-lg shadow-lg border-2 border-dashed border-blue-300 dark:border-blue-600 overflow-hidden cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 hover:shadow-xl"
-                >
-                  <div className="p-6 flex flex-col items-center justify-center text-center">
-                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-3">
-                      <IconUpload className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <h3 className="text-lg font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                      Upload Second Signature
-                    </h3>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
-                      Click here or drag and drop your second signature image
-                    </p>
-                    <div className="flex items-center gap-2 text-xs text-neutral-400 dark:text-neutral-500">
-                      <span>Signature 2</span>
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
+                // Single image + upload area
+                <div className="flex-1 flex flex-col gap-4">
+                  {/* First image */}
+                  <div className="flex-1 min-h-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="relative bg-neutral-900 rounded-lg shadow-lg border border-l-4 border-l-blue-500 overflow-hidden h-full"
+                    >
+                      {/* Remove button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFile(0);
+                        }}
+                        className="absolute top-3 right-3 z-10 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                      >
+                        <IconX className="h-4 w-4" />
+                      </button>
 
-              {files.map((file, idx) => (
-                <motion.div
-                  key={`signature-${idx}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className={cn(
-                    "relative bg-white dark:bg-neutral-900 rounded-lg shadow-lg border overflow-hidden",
-                    idx === 0 ? "border-l-4 border-l-blue-500" : "border-l-4 border-l-green-500"
-                  )}
-                >
-                  {/* Remove button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeFile(idx);
-                    }}
-                    className="absolute top-3 right-3 z-10 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                  >
-                    <IconX className="h-4 w-4" />
-                  </button>
-
-                  {/* Signature label */}
-                  <div className="absolute top-3 left-3 z-10">
-                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                      Signature {idx + 1}
-                    </span>
-                  </div>
-
-                  {isImageFile(file) && file.preview ? (
-                    // Image preview
-                    <div className="p-4 pt-12">
-                      <div className="relative bg-gray-100 dark:bg-neutral-800 rounded-lg overflow-hidden mb-4">
-                        <motion.img
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          src={file.preview}
-                          alt={file.name}
-                          className="w-full h-auto max-h-48 object-contain"
-                        />
+                      {/* Signature label */}
+                      <div className="absolute top-3 left-3 z-10">
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-900 text-blue-200">
+                          Signature 1
+                        </span>
                       </div>
-                      
-                      {/* File details */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="text-sm font-medium text-neutral-700 dark:text-neutral-300 truncate pr-4"
-                          >
-                            {file.name}
-                          </motion.p>
-                          <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap"
-                          >
-                            {(file.size / (1024 * 1024)).toFixed(2)} MB
-                          </motion.p>
+
+                      {/* Image preview */}
+                      <div className="p-4 pt-12 h-full flex flex-col">
+                        <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center">
+                          <motion.img
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            src={files[0].preview}
+                            alt={files[0].name}
+                            className="max-w-full max-h-full object-contain"
+                          />
                         </div>
                         
-                        <div className="flex items-center justify-between">
-                          <motion.span
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="inline-block px-2 py-1 bg-gray-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-full text-xs font-medium"
-                          >
-                            {file.type}
-                          </motion.span>
-                          <motion.span
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="text-xs text-neutral-600 dark:text-neutral-400"
-                          >
-                            {new Date(file.lastModified).toLocaleDateString()}
-                          </motion.span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    // Non-image file preview (fallback)
-                    <div className="p-4 pt-12 flex items-center space-x-4">
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex-shrink-0 w-12 h-12 bg-gray-100 dark:bg-neutral-800 rounded-lg flex items-center justify-center"
-                      >
-                        <IconUpload className="h-6 w-6 text-neutral-600 dark:text-neutral-400" />
-                      </motion.div>
-                      <div className="flex-1 min-w-0 pr-8">
+                        {/* File name */}
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className="text-sm font-medium text-neutral-700 dark:text-neutral-300 truncate"
+                          className="text-sm font-medium text-neutral-300 truncate"
+                        >
+                          {files[0].name}
+                        </motion.p>
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Upload area for second signature */}
+                  <div className="flex-1 min-h-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      onClick={handleClick}
+                      className="relative bg-neutral-900 rounded-lg shadow-lg border-2 border-dashed border-blue-600 overflow-hidden cursor-pointer hover:border-blue-500 transition-all duration-200 hover:shadow-xl h-full"
+                    >
+                      <div className="h-full flex flex-col items-center justify-center text-center p-6">
+                        <div className="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center mb-3">
+                          <IconUpload className="h-6 w-6 text-blue-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-neutral-300 mb-2">
+                          Upload Second Signature
+                        </h3>
+                        <p className="text-sm text-neutral-400 mb-3">
+                          Click here or drag and drop your second signature image
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-neutral-500">
+                          <span>Signature 2</span>
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                </div>
+              )}
+
+              {files.length === 2 && (
+                // Two images side by side
+                <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
+                  {files.map((file, idx) => (
+                    <motion.div
+                      key={`signature-${idx}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      className={cn(
+                        "flex-1 relative bg-neutral-900 rounded-lg shadow-lg border overflow-hidden",
+                        idx === 0 ? "border-l-4 border-l-blue-500" : "border-l-4 border-l-green-500"
+                      )}
+                    >
+                      {/* Remove button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFile(idx);
+                        }}
+                        className="absolute top-3 right-3 z-10 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                      >
+                        <IconX className="h-4 w-4" />
+                      </button>
+
+                      {/* Signature label */}
+                      <div className="absolute top-3 left-3 z-10">
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-900 text-blue-200">
+                          Signature {idx + 1}
+                        </span>
+                      </div>
+
+                      {/* Image preview */}
+                      <div className="p-4 pt-12 h-full flex flex-col">
+                        <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center">
+                          <motion.img
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            src={file.preview}
+                            alt={file.name}
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        </div>
+                        
+                        {/* File name */}
+                        <motion.p
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="text-sm font-medium text-neutral-300 truncate"
                         >
                           {file.name}
                         </motion.p>
-                        <motion.p
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="text-xs text-neutral-600 dark:text-neutral-400 mt-1"
-                        >
-                          {(file.size / (1024 * 1024)).toFixed(2)} MB • {file.type}
-                        </motion.p>
                       </div>
-                    </div>
-                  )}
-                </motion.div>
-              ))}
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
       </motion.div>
-
-      {/* Upload different file button */}
-      {files.length > 0 && canAcceptMore && (
-        <div className="p-4 pt-0 flex-shrink-0">
-          <motion.button
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={handleClick}
-            className="w-full px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 rounded-lg transition-all duration-200 border border-gray-300 dark:border-neutral-600 shadow-sm hover:shadow-md transform hover:scale-[1.02]"
-          >
-            Upload {files.length === 1 ? 'Second' : 'More'} Signature
-          </motion.button>
-        </div>
-      )}
     </div>
   );
 };
@@ -385,7 +373,7 @@ export function GridPattern() {
   const columns = 41;
   const rows = 11;
   return (
-    <div className="flex bg-gray-100 dark:bg-neutral-900 shrink-0 flex-wrap justify-center items-center gap-x-px gap-y-px scale-105">
+    <div className="flex bg-neutral-900 shrink-0 flex-wrap justify-center items-center gap-x-px gap-y-px scale-105">
       {Array.from({ length: rows }).map((_, row) =>
         Array.from({ length: columns }).map((_, col) => {
           const index = row * columns + col;
@@ -394,8 +382,8 @@ export function GridPattern() {
               key={`${col}-${row}`}
               className={`w-10 h-10 flex shrink-0 rounded-[2px] ${
                 index % 2 === 0
-                  ? "bg-gray-50 dark:bg-neutral-950"
-                  : "bg-gray-50 dark:bg-neutral-950 shadow-[0px_0px_1px_3px_rgba(255,255,255,1)_inset] dark:shadow-[0px_0px_1px_3px_rgba(0,0,0,1)_inset]"
+                  ? "bg-neutral-950"
+                  : "bg-neutral-950 shadow-[0px_0px_1px_3px_rgba(0,0,0,1)_inset]"
               }`}
             />
           );

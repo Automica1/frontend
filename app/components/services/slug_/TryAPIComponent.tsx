@@ -202,7 +202,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const shouldUseFileUpload2 = solutionType === 'signature-verification' || solutionType === 'face-verify';
   
   // Determine height based on solution type
-  const containerHeight = shouldUseFileUpload2 ? 'h-[800px]' : 'h-[600px]';
+  const containerHeight = shouldUseFileUpload2 ? 'h-[600px]' : 'h-[600px]';
 
   return (
     <div className="pt-16 pb-16 px-4">

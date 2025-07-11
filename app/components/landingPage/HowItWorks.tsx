@@ -122,7 +122,7 @@ export default function HowItWorks() {
   const steps = [
     {
       id: '01',
-      imageSrc: '/images/1.png',
+      imageSrc: '/images/1.svg',
       imageAlt: 'Upload Document',
       title: 'Upload Your Document',
       description: 'Easily upload scanned or digital documents in any format. Our secure platform supports images, PDFs, and more—whether its a single page or a bulk upload..',
@@ -130,7 +130,7 @@ export default function HowItWorks() {
     },
     {
       id: '02',
-      imageSrc: '/images/2.png',
+      imageSrc: '/images/2.svg',
       imageAlt: 'AI Processing',
       title: 'AI-Powered Processing',
       description: 'Our intelligent system analyzes the document to perform tasks such as data extraction, redaction, pattern detection, or validation—tailored to your specific use case.',
@@ -138,7 +138,7 @@ export default function HowItWorks() {
     },
     {
       id: '03',
-      imageSrc: '/images/3.png',
+      imageSrc: '/images/3.svg',
       imageAlt: 'Get Results',
       title: 'Get Actionable Results',
       description: 'Receive clean, structured results ready for review or integration. You can download outputs, view reports, or connect to your systems via API—all within seconds.',
