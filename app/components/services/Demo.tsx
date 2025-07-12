@@ -118,7 +118,7 @@ const SolutionCard = ({
           <div className="mt-auto">
             <LoginLink 
               postLoginRedirectURL={`/services/${solution.slug}`}
-              className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black cursor-pointer"
+              className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-purple-500/90 to-purple-800/90 text-white font-semibold rounded-lg transition-all duration-300 transform hover:from-purple-600/90 hover:to-purple-800/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 font-medium text-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black cursor-pointer"
             >
               <span className="mr-2">Try Now</span>
               <svg 
