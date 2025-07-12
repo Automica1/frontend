@@ -52,7 +52,7 @@ export const FileUpload2 = ({
     return file as FileWithPreview;
   };
 
-  // Clean up preview URLs when component unmounts or files change
+  // Clean up all preview URLs only when component unmounts
   useEffect(() => {
     return () => {
       files.forEach(file => {
@@ -61,7 +61,7 @@ export const FileUpload2 = ({
         }
       });
     };
-  }, [files]);
+  }, []); // Empty dependency array - only run on unmount
 
   const handleFileChange = (newFiles: File[]) => {
     // Calculate how many files we can add
@@ -93,7 +93,7 @@ export const FileUpload2 = ({
   };
 
   const removeFile = (indexToRemove: number) => {
-    // Clean up preview URL for removed file
+    // Clean up preview URL for the specific file being removed
     const fileToRemove = files[indexToRemove];
     if (fileToRemove.preview) {
       URL.revokeObjectURL(fileToRemove.preview);

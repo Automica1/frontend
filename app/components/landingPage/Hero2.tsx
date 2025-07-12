@@ -1,14 +1,11 @@
 'use client';
 import React, { useRef, useMemo, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Sphere, Trail } from '@react-three/drei';
+import { OrbitControls, Trail } from '@react-three/drei';
 import { ArrowRight } from 'lucide-react';
 import * as THREE from 'three';
-// import PremiumAtomLoader from './AtomicLoader'
-import {LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
-// import Link from 'next/link';
 
-// Custom shader material for premium effects
+// Enhanced shader material with better initialization
 const createAtomShader = () => {
   return new THREE.ShaderMaterial({
     uniforms: {
@@ -23,7 +20,6 @@ const createAtomShader = () => {
       varying vec2 vUv;
       uniform float time;
       
-      // Simple noise function
       float noise(vec3 p) {
         return sin(p.x * 10.0) * sin(p.y * 10.0) * sin(p.z * 10.0) * 0.1;
       }
@@ -71,42 +67,80 @@ const createAtomShader = () => {
   });
 };
 
-// Premium Electron with advanced effects
+// Enhanced Electron with proper initialization
 type PremiumElectronProps = {
   radius: number;
   speed: number;
   offset: number;
   color?: string;
   trail?: boolean;
+  startDelay?: number;
 };
 
-function PremiumElectron({ radius, speed, offset, color = '#a855f7', trail = true }: PremiumElectronProps) {
+function PremiumElectron({ radius, speed, offset, color = '#a855f7', trail = true, startDelay = 0 }: PremiumElectronProps) {
   const electronRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const startTimeRef = useRef<number | null>(null);
   
   const shaderMaterial = useMemo(() => createAtomShader(), []);
 
-  useFrame((state) => {
-    const time = state.clock.elapsedTime * speed + offset;
+  // Initialize position immediately
+  useEffect(() => {
     if (electronRef.current) {
-      // Complex orbital motion with multiple harmonics
-      const x = Math.cos(time) * radius + Math.cos(time * 2.1) * 0.1;
-      const z = Math.sin(time) * radius + Math.sin(time * 1.7) * 0.1;
-      const y = Math.sin(time * 1.5) * 0.4 + Math.cos(time * 0.7) * 0.2;
+      const initialTime = offset + startDelay;
+      const x = Math.cos(initialTime) * radius;
+      const z = Math.sin(initialTime) * radius;
+      const y = Math.sin(initialTime * 1.5) * 0.4;
       
       electronRef.current.position.set(x, y, z);
-      electronRef.current.rotation.y = time * 2;
-      electronRef.current.rotation.x = time * 1.3;
+      electronRef.current.rotation.y = initialTime * 2;
+      electronRef.current.rotation.x = initialTime * 1.3;
       
-      // Update shader uniforms
-      shaderMaterial.uniforms.time.value = state.clock.elapsedTime;
-      shaderMaterial.uniforms.intensity.value = hovered ? 2.5 : 1.5;
-      shaderMaterial.uniforms.color.value.setHex(hovered ? 0xc084fc : parseInt(color.replace('#', '0x')));
+      // Mark as initialized after a short delay
+      setTimeout(() => setIsInitialized(true), 100);
+    }
+  }, [radius, offset, startDelay]);
+
+  useFrame((state) => {
+    if (!isInitialized || !electronRef.current) return;
+    
+    // Initialize start time on first frame
+    if (startTimeRef.current === null) {
+      startTimeRef.current = state.clock.elapsedTime;
     }
     
+    const adjustedTime = state.clock.elapsedTime - startTimeRef.current + startDelay;
+    const time = adjustedTime * speed + offset;
+    
+    // Enhanced orbital motion with smoother transitions
+    const baseX = Math.cos(time) * radius;
+    const baseZ = Math.sin(time) * radius;
+    const baseY = Math.sin(time * 1.5) * 0.4;
+    
+    // Add secondary harmonics for more realistic motion
+    const perturbX = Math.cos(time * 2.1) * 0.1;
+    const perturbZ = Math.sin(time * 1.7) * 0.1;
+    const perturbY = Math.cos(time * 0.7) * 0.2;
+    
+    electronRef.current.position.set(
+      baseX + perturbX,
+      baseY + perturbY,
+      baseZ + perturbZ
+    );
+    
+    electronRef.current.rotation.y = time * 2;
+    electronRef.current.rotation.x = time * 1.3;
+    
+    // Update shader uniforms
+    shaderMaterial.uniforms.time.value = adjustedTime;
+    shaderMaterial.uniforms.intensity.value = hovered ? 2.5 : 1.5;
+    shaderMaterial.uniforms.color.value.setHex(hovered ? 0xc084fc : parseInt(color.replace('#', '0x')));
+    
+    // Animate glow
     if (glowRef.current) {
-      const scale = 1 + Math.sin(state.clock.elapsedTime * 4) * 0.3;
+      const scale = 1 + Math.sin(adjustedTime * 4) * 0.3;
       glowRef.current.scale.setScalar(scale * (hovered ? 1.5 : 1));
     }
   });
@@ -118,12 +152,12 @@ function PremiumElectron({ radius, speed, offset, color = '#a855f7', trail = tru
       onPointerLeave={() => setHovered(false)}
       scale={hovered ? 1.3 : 1}
     >
-      {/* Main electron with shader */}
+      {/* Main electron with enhanced shader */}
       <mesh material={shaderMaterial}>
         <sphereGeometry args={[0.15, 32, 32]} />
       </mesh>
       
-      {/* Multiple glow layers */}
+      {/* Multiple glow layers for depth */}
       <mesh ref={glowRef} scale={2}>
         <sphereGeometry args={[0.15, 16, 16]} />
         <meshBasicMaterial
@@ -146,7 +180,7 @@ function PremiumElectron({ radius, speed, offset, color = '#a855f7', trail = tru
         />
       </mesh>
       
-      {/* Core light */}
+      {/* Enhanced point light */}
       <pointLight color={color} intensity={hovered ? 3 : 1.5} distance={2} />
     </group>
   );
@@ -165,26 +199,33 @@ function PremiumElectron({ radius, speed, offset, color = '#a855f7', trail = tru
   );
 }
 
-// Premium Orbital Ring
+// Enhanced Orbital Ring with better initialization
 type PremiumOrbitalRingProps = {
   radius: number;
   rotationSpeed?: number;
   opacity?: number;
   segments?: number;
   color?: string;
+  startDelay?: number;
 };
 
-function PremiumOrbitalRing({ radius, rotationSpeed = 0.005, opacity = 0.4, segments = 128, color = '#a855f7' }: PremiumOrbitalRingProps) {
+function PremiumOrbitalRing({ 
+  radius, 
+  rotationSpeed = 0.005, 
+  opacity = 0.4, 
+  segments = 128, 
+  color = '#a855f7',
+  startDelay = 0
+}: PremiumOrbitalRingProps) {
   const ringRef = useRef<THREE.Group>(null);
   const particlesRef = useRef<THREE.Group>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const startTimeRef = useRef<number | null>(null);
   
-  // Create ring geometry
   const ringGeometry = useMemo(() => {
-    const geometry = new THREE.RingGeometry(radius - 0.03, radius + 0.03, segments);
-    return geometry;
+    return new THREE.RingGeometry(radius - 0.03, radius + 0.03, segments);
   }, [radius, segments]);
 
-  // Create ring particles
   const ringParticles = useMemo(() => {
     const particles = [];
     for (let i = 0; i < 24; i++) {
@@ -201,7 +242,19 @@ function PremiumOrbitalRing({ radius, rotationSpeed = 0.005, opacity = 0.4, segm
     return particles;
   }, [radius]);
 
+  useEffect(() => {
+    setTimeout(() => setIsInitialized(true), startDelay);
+  }, [startDelay]);
+
   useFrame((state) => {
+    if (!isInitialized) return;
+    
+    if (startTimeRef.current === null) {
+      startTimeRef.current = state.clock.elapsedTime;
+    }
+    
+    const adjustedTime = state.clock.elapsedTime - startTimeRef.current;
+    
     if (ringRef.current) {
       ringRef.current.rotation.x += rotationSpeed * 0.6;
       ringRef.current.rotation.y += rotationSpeed * 0.4;
@@ -213,16 +266,16 @@ function PremiumOrbitalRing({ radius, rotationSpeed = 0.005, opacity = 0.4, segm
         const data = ringParticles[i];
         if ((particle as THREE.Mesh).material && 'opacity' in (particle as THREE.Mesh).material) {
           ((particle as THREE.Mesh).material as THREE.Material & { opacity: number }).opacity =
-            0.6 + Math.sin(state.clock.elapsedTime * 2 + data.phase) * 0.4;
+            0.6 + Math.sin(adjustedTime * 2 + data.phase) * 0.4;
         }
-        particle.scale.setScalar(0.5 + Math.sin(state.clock.elapsedTime * 3 + data.phase) * 0.3);
+        particle.scale.setScalar(0.5 + Math.sin(adjustedTime * 3 + data.phase) * 0.3);
       });
     }
   });
 
   return (
     <group ref={ringRef}>
-      {/* Main ring */}
+      {/* Main ring with gradient effect */}
       <mesh geometry={ringGeometry}>
         <meshBasicMaterial
           color={color}
@@ -244,7 +297,7 @@ function PremiumOrbitalRing({ radius, rotationSpeed = 0.005, opacity = 0.4, segm
         />
       </mesh>
       
-      {/* Ring particles */}
+      {/* Animated ring particles */}
       <group ref={particlesRef}>
         {ringParticles.map((particle, i) => (
           <mesh key={i} position={particle.position as [number, number, number]}>
@@ -262,12 +315,14 @@ function PremiumOrbitalRing({ radius, rotationSpeed = 0.005, opacity = 0.4, segm
   );
 }
 
-// Premium Nucleus
+// Enhanced Nucleus with better effects
 function PremiumNucleus() {
   const nucleusRef = useRef<THREE.Group>(null);
   const innerCoreRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const startTimeRef = useRef<number | null>(null);
   
   const nucleusShader = useMemo(() => {
     const shader = createAtomShader();
@@ -277,7 +332,19 @@ function PremiumNucleus() {
     return shader;
   }, []);
 
+  useEffect(() => {
+    setTimeout(() => setIsInitialized(true), 200);
+  }, []);
+
   useFrame((state) => {
+    if (!isInitialized) return;
+    
+    if (startTimeRef.current === null) {
+      startTimeRef.current = state.clock.elapsedTime;
+    }
+    
+    const adjustedTime = state.clock.elapsedTime - startTimeRef.current;
+    
     if (nucleusRef.current) {
       nucleusRef.current.rotation.x += 0.02;
       nucleusRef.current.rotation.y += 0.025;
@@ -291,12 +358,12 @@ function PremiumNucleus() {
     }
     
     if (glowRef.current) {
-      const scale = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.1;
+      const scale = 1 + Math.sin(adjustedTime * 2) * 0.1;
       glowRef.current.scale.setScalar(scale * (hovered ? 1.3 : 1));
     }
     
     // Update shader
-    nucleusShader.uniforms.time.value = state.clock.elapsedTime;
+    nucleusShader.uniforms.time.value = adjustedTime;
     nucleusShader.uniforms.intensity.value = hovered ? 3.5 : 2.5;
   });
 
@@ -305,7 +372,7 @@ function PremiumNucleus() {
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
-      {/* Main nucleus */}
+      {/* Enhanced nucleus with multiple geometries */}
       <mesh ref={nucleusRef} material={nucleusShader} scale={hovered ? 1.3 : 1}>
         <icosahedronGeometry args={[0.5, 2]} />
         <pointLight color="#a855f7" intensity={hovered ? 5 : 3} distance={12} />
@@ -325,7 +392,7 @@ function PremiumNucleus() {
         />
       </mesh>
       
-      {/* Multiple glow layers */}
+      {/* Enhanced glow layers */}
       <group ref={glowRef}>
         {[1.8, 2.5, 3.2].map((scale, i) => (
           <mesh key={i} scale={scale}>
@@ -341,7 +408,7 @@ function PremiumNucleus() {
         ))}
       </group>
       
-      {/* Nucleus energy particles */}
+      {/* Animated nucleus particles */}
       <group>
         {Array.from({ length: 20 }, (_, i) => (
           <mesh
@@ -366,14 +433,15 @@ function PremiumNucleus() {
   );
 }
 
-// Advanced Background
+// Enhanced Background with better performance
 function PremiumBackground() {
   const particlesRef = useRef<THREE.Group>(null);
   const gridRef = useRef<THREE.Mesh>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const backgroundParticles = useMemo(() => {
     const temp = [];
-    for (let i = 0; i < 200; i++) {
+    for (let i = 0; i < 150; i++) {
       temp.push({
         position: [
           (Math.random() - 0.5) * 50,
@@ -388,7 +456,13 @@ function PremiumBackground() {
     return temp;
   }, []);
 
+  useEffect(() => {
+    setTimeout(() => setIsInitialized(true), 500);
+  }, []);
+
   useFrame((state) => {
+    if (!isInitialized) return;
+    
     if (particlesRef.current) {
       particlesRef.current.children.forEach((particle, i) => {
         const data = backgroundParticles[i];
@@ -412,7 +486,6 @@ function PremiumBackground() {
 
   return (
     <>
-      {/* Background particles */}
       <group ref={particlesRef}>
         {backgroundParticles.map((particle, i) => (
           <mesh key={i} position={particle.position as [number, number, number]} scale={particle.scale}>
@@ -427,7 +500,6 @@ function PremiumBackground() {
         ))}
       </group>
       
-      {/* Distant grid sphere */}
       <mesh ref={gridRef} scale={25}>
         <sphereGeometry args={[1, 32, 32]} />
         <meshBasicMaterial
@@ -442,47 +514,56 @@ function PremiumBackground() {
   );
 }
 
-// Advanced Camera System - Fixed to show atom on the right
+// Enhanced Camera Controller
 function PremiumCameraController() {
   const { camera, mouse } = useThree();
   const targetRef = useRef({ x: 0, y: 0, z: 8 });
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  useEffect(() => {
+    // Initialize camera position
+    camera.position.set(0, 0, 8);
+    camera.lookAt(0, 0, 0);
+    setTimeout(() => setIsInitialized(true), 100);
+  }, [camera]);
   
   useFrame((state) => {
-    // Enhanced mouse parallax
+    if (!isInitialized) return;
+    
     const mouseInfluence = 0.2;
     targetRef.current.x = mouse.x * mouseInfluence;
     targetRef.current.y = mouse.y * mouseInfluence * 0.3;
     
-    // Smooth camera movement with easing
     camera.position.x += (targetRef.current.x - camera.position.x) * 0.03;
     camera.position.y += (targetRef.current.y - camera.position.y) * 0.03;
     
-    // Dynamic breathing and floating motion
     const breathe = Math.sin(state.clock.elapsedTime * 0.6) * 0.1;
     const float = Math.cos(state.clock.elapsedTime * 0.4) * 0.05;
     camera.position.z = 8 + breathe;
     camera.position.y += float;
     
-    // Subtle rotation for immersion
     camera.rotation.z = mouse.x * 0.003;
-    
-    // Look at center
     camera.lookAt(0, 0, 0);
   });
   
   return null;
 }
 
-// Main Premium Atomic Structure - positioned to the right
+// Enhanced Main Atomic Structure
 function PremiumAtomicStructure() {
   const groupRef = useRef<THREE.Group>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  useEffect(() => {
+    setTimeout(() => setIsInitialized(true), 300);
+  }, []);
   
   useFrame((state) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += 0.002;
-      groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.3) * 0.1;
-      groupRef.current.rotation.z = Math.cos(state.clock.elapsedTime * 0.2) * 0.03;
-    }
+    if (!isInitialized || !groupRef.current) return;
+    
+    groupRef.current.rotation.y += 0.002;
+    groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.3) * 0.1;
+    groupRef.current.rotation.z = Math.cos(state.clock.elapsedTime * 0.2) * 0.03;
   });
 
   return (
@@ -490,48 +571,50 @@ function PremiumAtomicStructure() {
       {/* Central Nucleus */}
       <PremiumNucleus />
       
-      {/* Orbital Rings - Multiple layers */}
-      <PremiumOrbitalRing radius={2.2} rotationSpeed={0.008} opacity={0.6} segments={256} />
+      {/* Orbital Rings with staggered delays */}
+      <PremiumOrbitalRing radius={2.2} rotationSpeed={0.008} opacity={0.6} segments={256} startDelay={300} />
       
       <group rotation={[Math.PI / 2.2, 0, 0]}>
-        <PremiumOrbitalRing radius={2.8} rotationSpeed={0.006} opacity={0.4} segments={192} color="#8b5cf6" />
+        <PremiumOrbitalRing radius={2.8} rotationSpeed={0.006} opacity={0.4} segments={192} color="#8b5cf6" startDelay={500} />
       </group>
       
       <group rotation={[0, Math.PI / 2.2, Math.PI / 3.5]}>
-        <PremiumOrbitalRing radius={3.4} rotationSpeed={0.004} opacity={0.3} segments={128} color="#7c3aed" />
+        <PremiumOrbitalRing radius={3.4} rotationSpeed={0.004} opacity={0.3} segments={128} color="#7c3aed" startDelay={700} />
       </group>
 
-      {/* Premium Electrons - Multiple orbital shells */}
-      {/* First shell */}
-      <PremiumElectron radius={2.2} speed={1.5} offset={0} color="#a855f7" />
-      <PremiumElectron radius={2.2} speed={1.5} offset={Math.PI} color="#a855f7" />
+      {/* Enhanced Electrons with staggered start delays */}
+      <PremiumElectron radius={2.2} speed={1.5} offset={0} color="#a855f7" startDelay={0.5} />
+      <PremiumElectron radius={2.2} speed={1.5} offset={Math.PI} color="#a855f7" startDelay={0.8} />
       
-      {/* Second shell */}
       <group rotation={[Math.PI / 2.2, 0, 0]}>
-        <PremiumElectron radius={2.8} speed={1.2} offset={0} color="#8b5cf6" />
-        <PremiumElectron radius={2.8} speed={1.2} offset={Math.PI / 2} color="#8b5cf6" />
-        <PremiumElectron radius={2.8} speed={1.2} offset={Math.PI} color="#8b5cf6" />
-        <PremiumElectron radius={2.8} speed={1.2} offset={3 * Math.PI / 2} color="#8b5cf6" />
+        <PremiumElectron radius={2.8} speed={1.2} offset={0} color="#8b5cf6" startDelay={1.0} />
+        <PremiumElectron radius={2.8} speed={1.2} offset={Math.PI / 2} color="#8b5cf6" startDelay={1.3} />
+        <PremiumElectron radius={2.8} speed={1.2} offset={Math.PI} color="#8b5cf6" startDelay={1.6} />
+        <PremiumElectron radius={2.8} speed={1.2} offset={3 * Math.PI / 2} color="#8b5cf6" startDelay={1.9} />
       </group>
       
-      {/* Third shell */}
       <group rotation={[0, Math.PI / 2.2, Math.PI / 3.5]}>
-        <PremiumElectron radius={3.4} speed={0.9} offset={0} color="#7c3aed" />
-        <PremiumElectron radius={3.4} speed={0.9} offset={2 * Math.PI / 3} color="#7c3aed" />
-        <PremiumElectron radius={3.4} speed={0.9} offset={4 * Math.PI / 3} color="#7c3aed" />
+        <PremiumElectron radius={3.4} speed={0.9} offset={0} color="#7c3aed" startDelay={2.2} />
+        <PremiumElectron radius={3.4} speed={0.9} offset={2 * Math.PI / 3} color="#7c3aed" startDelay={2.5} />
+        <PremiumElectron radius={3.4} speed={0.9} offset={4 * Math.PI / 3} color="#7c3aed" startDelay={2.8} />
       </group>
     </group>
   );
 }
 
-
-// Main Premium Component
+// Main Component with enhanced loading
 export default function ThemedAtomicHero() {
   const [loading, setLoading] = useState(true);
+  const [atomInitialized, setAtomInitialized] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 200);
+    // Initial loading
+    const initialTimer = setTimeout(() => {
+      setLoading(false);
+      // Start atom initialization after initial load
+      setTimeout(() => setAtomInitialized(true), 200);
+    }, 1000);
     
     const handleMouseMove = (e: { clientX: number; clientY: number; }) => {
       setMousePosition({
@@ -543,26 +626,27 @@ export default function ThemedAtomicHero() {
     window.addEventListener('mousemove', handleMouseMove);
     
     return () => {
-      clearTimeout(timer);
+      clearTimeout(initialTimer);
       window.removeEventListener('mousemove', handleMouseMove);
     };
   }, []);
 
   return (
-    <div className=" bg-[#0b0b0d] text-white relative overflow-hidden">
-      {/* Background gradient */}
+    <div className="bg-[#0b0b0d] text-white relative overflow-hidden">
+      {/* Background gradients */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-black to-black"></div>
       
-      {/* Grid pattern overlay */}
+      {/* Grid pattern */}
       <div className="absolute inset-0 opacity-10" style={{
         backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)`,
         backgroundSize: '40px 40px'
       }}></div>
       
-      {/* Loading Screen */}
+      {/* Loading indicator */}
       {loading && (
-        // <PremiumAtomLoader />
-        <p>...</p>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/0 z-50">
+          <div className="text-purple-400 text-lg"></div>
+        </div>
       )}
       
       {/* Dynamic background effect */}
@@ -573,7 +657,7 @@ export default function ThemedAtomicHero() {
         }}
       />
       
-      {/* 3D Atomic Animation Container */}
+      {/* 3D Atomic Animation */}
       <div className="absolute inset-0 z-0 opacity-60">
         <Canvas
           camera={{ position: [0, 0, 8], fov: 50 }}
@@ -584,25 +668,19 @@ export default function ThemedAtomicHero() {
           }}
           style={{ background: 'transparent' }}
         >
-          {/* Lighting Setup */}
           <ambientLight intensity={0.2} color="#4c1d95" />
-          <directionalLight 
-            position={[10, 10, 5]} 
-            intensity={0.5} 
-            color="#a855f7"
-          />
+          <directionalLight position={[10, 10, 5]} intensity={0.5} color="#a855f7" />
           <pointLight position={[5, 0, 0]} intensity={1.5} color="#a855f7" distance={10} />
           
-          {/* Background */}
-          <PremiumBackground />
+          {atomInitialized && (
+            <>
+              <PremiumBackground />
+              <PremiumAtomicStructure />
+            </>
+          )}
           
-          {/* Main Atomic Structure */}
-          <PremiumAtomicStructure />
-          
-          {/* Camera Control */}
           <PremiumCameraController />
           
-          {/* Controls */}
           <OrbitControls 
             enableZoom={false}
             enablePan={false}
@@ -623,13 +701,11 @@ export default function ThemedAtomicHero() {
       <div className="relative z-10 max-w-7xl mx-auto px-6 pt-20 pb-32">
         <div className="max-w-4xl">
           <h1 className="text-5xl lg:text-7xl font-light text-white tracking-tighter leading-tight mb-8">
-            {/* Intelligent Solutions */}
-          Plug-and-Play AI APIs
+            Plug-and-Play AI APIs
             <br />
             <span className="bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
-              {/* for Document  */}
-          Built for Enterprise
-              </span>
+              Built for Enterprise
+            </span>
           </h1>
           
           <p className="text-xl lg:text-2xl text-gray-300 mb-12 max-w-3xl font-light leading-relaxed opacity-90">
@@ -640,13 +716,10 @@ export default function ThemedAtomicHero() {
             Get production-ready AI, faster.
           </p>
           
-          <LoginLink
-  postLoginRedirectURL="/services"
-  className="group relative inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500 to-purple-800 rounded-lg text-white font-medium text-lg hover:from-purple-600 hover:to-purple-900 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
->
-  <span className="mr-3">TRY IT FREE</span>
-  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-</LoginLink>
+          <button className="group relative inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500 to-purple-800 rounded-lg text-white font-medium text-lg hover:from-purple-600 hover:to-purple-900 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+            <span className="mr-3">TRY IT FREE</span>
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          </button>
         </div>
       </div>
     </div>
