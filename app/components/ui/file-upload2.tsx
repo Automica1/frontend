@@ -64,21 +64,31 @@ export const FileUpload2 = ({
   }, [files]);
 
   const handleFileChange = (newFiles: File[]) => {
-    // Clean up existing previews
-    files.forEach(file => {
-      if (file.preview) {
-        URL.revokeObjectURL(file.preview);
-      }
-    });
-    
-    // Limit to maxFiles total
+    // Calculate how many files we can add
     const remainingSlots = maxFiles - files.length;
+    
+    if (remainingSlots <= 0) {
+      // No more slots available
+      return;
+    }
+    
+    // Take only the files we can fit
     const filesToAdd = newFiles.slice(0, remainingSlots);
     
     if (filesToAdd.length > 0) {
-      const filesWithPreviews = [...files, ...filesToAdd.map(createPreview)];
-      setFiles(filesWithPreviews);
-      onChange && onChange(filesWithPreviews.map(f => f as File));
+      // Create previews for new files
+      const newFilesWithPreviews = filesToAdd.map(createPreview);
+      
+      // Combine existing files with new files
+      const updatedFiles = [...files, ...newFilesWithPreviews];
+      
+      setFiles(updatedFiles);
+      onChange && onChange(updatedFiles.map(f => f as File));
+    }
+    
+    // Reset the input value to allow selecting the same file again if needed
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -117,11 +127,11 @@ export const FileUpload2 = ({
   return (
     <div className={cn("w-full h-full flex flex-col max-h-[600px]", className)} {...getRootProps()}>
       <motion.div
-        onClick={handleClick}
+        onClick={files.length === 0 ? handleClick : undefined}
         whileHover={canAcceptMore ? "animate" : undefined}
         className={cn(
           "flex-1 flex flex-col p-6 group/file block rounded-lg w-full relative overflow-hidden min-h-0",
-          canAcceptMore ? "cursor-pointer hover:shadow-2xl" : "cursor-not-allowed opacity-75"
+          files.length === 0 && canAcceptMore ? "cursor-pointer hover:shadow-2xl" : ""
         )}
       >
         <input
@@ -280,7 +290,10 @@ export const FileUpload2 = ({
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      onClick={handleClick}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleClick();
+                      }}
                       className="relative bg-neutral-900 rounded-lg shadow-lg border-2 border-dashed border-blue-600 overflow-hidden cursor-pointer hover:border-blue-500 transition-all duration-200 hover:shadow-xl h-full flex flex-col"
                     >
                       <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
@@ -288,13 +301,13 @@ export const FileUpload2 = ({
                           <IconUpload className="h-6 w-6 text-blue-400" />
                         </div>
                         <h3 className="text-lg font-medium text-neutral-300 mb-2">
-                          Upload Second image
+                          Upload Second Image
                         </h3>
                         <p className="text-sm text-neutral-400 mb-3">
                           Click here or drag and drop your second image
                         </p>
                         <div className="flex items-center gap-2 text-xs text-neutral-500">
-                          <span>images 2</span>
+                          <span>Image 2</span>
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         </div>
                       </div>
@@ -308,7 +321,7 @@ export const FileUpload2 = ({
                 <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
                   {files.map((file, idx) => (
                     <motion.div
-                      key={`Image-${idx}`}
+                      key={`image-${idx}`}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
@@ -331,7 +344,7 @@ export const FileUpload2 = ({
                       {/* Image label */}
                       <div className="absolute top-3 left-3 z-10">
                         <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-900 text-blue-200">
-                          images {idx + 1}
+                          Image {idx + 1}
                         </span>
                       </div>
 
