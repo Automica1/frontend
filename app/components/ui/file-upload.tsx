@@ -117,10 +117,10 @@ export const FileUpload = ({
   const hasFiles = files.length > 0;
 
   return (
-    <div className="w-full h-full flex flex-col max-h-[600px]">
+    <div className="w-full h-full flex flex-col max-h-[500px]">
       {/* Upload Area with GridPattern Background */}
       <div
-        className="w-full h-full flex flex-col"
+        className="flex-1 flex flex-col min-h-0 overflow-hidden"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -128,7 +128,7 @@ export const FileUpload = ({
         <motion.div
           onClick={!hasFiles ? handleClick : undefined}
           whileHover={!hasFiles ? "animate" : undefined}
-          className={`flex-1 flex flex-col p-6 group/file block rounded-lg w-full relative overflow-hidden min-h-0 ${
+          className={`flex-1 flex flex-col p-4 sm:p-6 group/file block rounded-lg w-full relative overflow-hidden min-h-0 ${
             !hasFiles ? 'cursor-pointer hover:shadow-2xl' : ''
           }`}
         >
@@ -149,11 +149,11 @@ export const FileUpload = ({
             // Upload prompt with animations - centered in available space
             <div className="flex-1 flex flex-col items-center justify-center relative z-20 min-h-0">
               <div className="flex flex-col items-center justify-center w-full max-w-xl mx-auto space-y-4">
-                <div className="text-center">
-                  <p className="relative z-20 font-sans font-bold text-neutral-300 text-base">
+                <div className="text-center px-4">
+                  <p className="relative z-20 font-sans font-bold text-neutral-300 text-sm sm:text-base">
                     Upload file
                   </p>
-                  <p className="relative z-20 font-sans font-normal text-neutral-400 text-base mt-2">
+                  <p className="relative z-20 font-sans font-normal text-neutral-400 text-xs sm:text-base mt-2">
                     Drag or drop your files here or click to upload
                   </p>
                 </div>
@@ -167,31 +167,31 @@ export const FileUpload = ({
                       stiffness: 300,
                       damping: 20,
                     }}
-                    className="relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center h-32 w-32 rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
+                    className="relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center h-24 w-24 sm:h-32 sm:w-32 rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
                   >
                     {isDragActive ? (
                       <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="text-neutral-400 flex flex-col items-center text-xs "
+                        className="text-neutral-400 flex flex-col items-center text-xs"
                       >
                         Drop it
-                        <Upload className="h-4 w-4 text-neutral-400 mt-1" />
+                        <Upload className="h-3 w-3 sm:h-4 sm:w-4 text-neutral-400 mt-1" />
                       </motion.p>
                     ) : (
-                      <Upload className="h-4 w-4 text-neutral-300" />
+                      <Upload className="h-3 w-3 sm:h-4 sm:w-4 text-neutral-300" />
                     )}
                   </motion.div>
 
                   <motion.div
                     variants={secondaryVariant}
-                    className="absolute opacity-0 border border-dashed border-sky-400 inset-0 z-30 bg-transparent flex items-center justify-center h-32 w-32 rounded-md"
+                    className="absolute opacity-0 border border-dashed border-sky-400 inset-0 z-30 bg-transparent flex items-center justify-center h-24 w-24 sm:h-32 sm:w-32 rounded-md"
                   ></motion.div>
                 </div>
               </div>
             </div>
           ) : (
-            // File preview area
+            // File preview area with fixed dimensions
             <div className="flex-1 flex flex-col relative z-20 min-h-0">
               {files.map((file, idx) => (
                 <motion.div
@@ -199,53 +199,53 @@ export const FileUpload = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className="relative bg-neutral-900 rounded-lg shadow-lg border border-neutral-700 overflow-hidden"
+                  className="relative bg-neutral-900 rounded-lg shadow-lg border border-neutral-700 overflow-hidden h-full"
                 >
                   {/* Remove button */}
                   <button
                     onClick={() => handleRemoveFile(idx)}
-                    className="absolute top-3 right-3 z-10 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                    className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 p-1.5 sm:p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-3 w-3 sm:h-4 sm:w-4" />
                   </button>
 
                   {isImageFile(file) && file.preview ? (
-                    // Image preview
-                    <div className="p-4">
-                      <div className="relative bg-neutral-800 rounded-lg overflow-hidden mb-4">
+                    // Image preview with fixed container size
+                    <div className="p-3 sm:p-4 h-full flex flex-col">
+                      <div className="relative bg-neutral-800 rounded-lg overflow-hidden mb-3 sm:mb-4 flex-1 flex items-center justify-center">
                         <motion.img
                           initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
                           src={file.preview}
                           alt={file.name}
-                          className="w-full h-auto max-h-80 object-contain"
+                          className="max-w-full max-h-full object-contain"
                         />
                       </div>
                       
-                      {/* File details */}
-                      <div className="space-y-3">
+                      {/* File details - fixed at bottom */}
+                      <div className="space-y-2 sm:space-y-3 flex-shrink-0">
                         <div className="flex items-center justify-between">
                           <motion.p
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="text-base font-medium text-neutral-300 truncate pr-4"
+                            className="text-sm sm:text-base font-medium text-neutral-300 truncate pr-4"
                           >
                             {file.name}
                           </motion.p>
                           <motion.p
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="text-sm text-neutral-400 whitespace-nowrap"
+                            className="text-xs sm:text-sm text-neutral-400 whitespace-nowrap"
                           >
                             {(file.size / (1024 * 1024)).toFixed(2)} MB
                           </motion.p>
                         </div>
                         
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                           <motion.span
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="inline-block px-3 py-1 bg-neutral-700 text-neutral-300 rounded-full text-xs font-medium"
+                            className="inline-block px-2 sm:px-3 py-1 bg-neutral-700 text-neutral-300 rounded-full text-xs font-medium w-fit"
                           >
                             {file.type}
                           </motion.span>
@@ -261,26 +261,26 @@ export const FileUpload = ({
                     </div>
                   ) : (
                     // Non-image file preview
-                    <div className="p-6 flex items-center space-x-4">
+                    <div className="p-4 sm:p-6 flex items-center space-x-3 sm:space-x-4 h-full">
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="flex-shrink-0 w-16 h-16 bg-neutral-800 rounded-lg flex items-center justify-center"
+                        className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-neutral-800 rounded-lg flex items-center justify-center"
                       >
-                        <File className="h-8 w-8 text-neutral-400" />
+                        <File className="h-6 w-6 sm:h-8 sm:w-8 text-neutral-400" />
                       </motion.div>
-                      <div className="flex-1 min-w-0 pr-8">
+                      <div className="flex-1 min-w-0 pr-6 sm:pr-8">
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className="text-base font-medium text-neutral-300 truncate"
+                          className="text-sm sm:text-base font-medium text-neutral-300 truncate"
                         >
                           {file.name}
                         </motion.p>
                         <motion.p
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className="text-sm text-neutral-400 mt-1"
+                          className="text-xs sm:text-sm text-neutral-400 mt-1"
                         >
                           {(file.size / (1024 * 1024)).toFixed(2)} MB • {file.type}
                         </motion.p>
@@ -301,16 +301,17 @@ export const FileUpload = ({
         </motion.div>
       </div>
 
-      {/* Upload different file button */}
+      {/* Upload different file button - matches the process button styling */}
       {hasFiles && (
-        <div className="px-6 pb-4 flex-shrink-0">
+        <div className="flex-shrink-0 p-4 sm:p-6 pt-4">
           <motion.button
-          initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             onClick={handleClick}
-            className="mt-4 w-full px-6 py-3 text-sm font-medium text-neutral-300 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-all duration-200 border border-neutral-600 shadow-sm hover:shadow-md transform hover:scale-[1.02]"
-            >
-            Upload Different File
+            className="w-full px-6 py-4 text-sm sm:text-lg font-semibold text-neutral-300 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-3 border border-neutral-600 shadow-sm hover:shadow-md transform"
+          >
+            <Upload className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>Upload Different File</span>
           </motion.button>
         </div>
       )}

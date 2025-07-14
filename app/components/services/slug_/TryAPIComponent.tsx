@@ -8,7 +8,8 @@ import { getFileRequirementText } from '../../../../utils/solutionHelpers';
 import { fileToBase64, filesToBase64 } from '@/utils/fileUtils';
 import { FileUpload2 } from '../../ui/file-upload2';
 import { FileUpload } from '../../ui/file-upload';
-import { TabbedResponseSection } from '../../TabbedResponseSection';
+// import { TabbedResponseSection } from '../../TabbedResponseSection';
+import {TabbedResponseSection} from '../../TabbedResponse/index'
 import { ProcessingActionCard } from '../ProcessingActionCard';
 
 interface TryAPIComponentProps {
