@@ -202,8 +202,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const shouldUseFileUpload2 = solutionType === 'signature-verification' || solutionType === 'face-verify';
   
   // Determine height based on solution type
-  const containerHeight = shouldUseFileUpload2 ? 'h-[600px]' : 'h-[600px]';
-
+  const containerHeight = shouldUseFileUpload2 ? 'h-[500px]' : 'h-[500px]';
   return (
     <div className="pt-16 pb-16 px-4">
       <div className="max-w-6xl mx-auto">
@@ -234,7 +233,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
           </div>
 
           {/* Right Column - Conditional Content */}
-          <div className="space-y-6">
+          <div className={`space-y-6 h-${containerHeight}`}>
             {!hasStartedProcessing ? (
               /* Show Processing Action Card before processing */
               <ProcessingActionCard

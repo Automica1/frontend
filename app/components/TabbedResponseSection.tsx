@@ -1,6 +1,6 @@
 // components/TabbedResponseSection.tsx with enhanced error handling and face detection support
 import React, { useState, useEffect } from 'react';
-import { Copy, Check, Download, Image as ImageIcon, Code, FileText, AlertCircle, Info, Lightbulb, CheckCircle, XCircle, Shield } from 'lucide-react';
+import { Copy, Check, Download, Image as ImageIcon, Code, FileText, AlertCircle, Info, Lightbulb, CheckCircle, XCircle, Shield, QrCode } from 'lucide-react';
 import { Solution, SolutionType } from '../types/solution';
 import { getFileRequirementText, getProcessingMessage, getDownloadFileName } from '../../utils/solutionHelpers';
 import './terminal.css'
@@ -34,17 +34,18 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   
   const Icon = solution.IconComponent;
 
-  // Determine if this is a verification solution type
+  // Determine if this is a verification solution type or QR extract
   const isVerificationSolution = solutionType === 'face-verify' || solutionType === 'signature-verification';
+  const isQrExtractSolution = solutionType === 'qr-extract';
 
   // Set initial tab based on solution type
   useEffect(() => {
-    if (isVerificationSolution) {
+    if (isVerificationSolution || isQrExtractSolution) {
       setActiveTab('result');
     } else {
       setActiveTab('processed-image');
     }
-  }, [isVerificationSolution]);
+  }, [isVerificationSolution, isQrExtractSolution]);
 
   // Switch to API response tab when error occurs
   useEffect(() => {
@@ -53,9 +54,9 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
     }
   }, [error]);
 
-  // Show processed image tab only for non-verification solutions
-  const showProcessedImageTab = !isVerificationSolution;
-  const showResultTab = isVerificationSolution;
+  // Show processed image tab only for non-verification and non-QR extract solutions
+  const showProcessedImageTab = !isVerificationSolution && !isQrExtractSolution;
+  const showResultTab = isVerificationSolution || isQrExtractSolution;
   const hasProcessedImage = maskedBase64 && maskedBase64.length > 0;
 
   // Disable processed image tab when there's an error
@@ -266,10 +267,14 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
       return (
         <div className="text-center py-12 h-full flex flex-col items-center justify-center">
           <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Shield className="w-8 h-8 text-gray-600" />
+            {isQrExtractSolution ? (
+              <QrCode className="w-8 h-8 text-gray-600" />
+            ) : (
+              <Shield className="w-8 h-8 text-gray-600" />
+            )}
           </div>
           <p className="text-gray-400">
-            {loading ? getProcessingMessage(solutionType) : `${getFileRequirementText(solutionType)} to see the verification result`}
+            {loading ? getProcessingMessage(solutionType) : `${getFileRequirementText(solutionType)} to see the ${isQrExtractSolution ? 'extraction' : 'verification'} result`}
           </p>
           {loading && (
             <div className="w-16 h-16 border-4 border-gray-700 border-t-purple-500 rounded-full animate-spin mx-auto mt-4" />
@@ -278,7 +283,87 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
       );
     }
 
-    // Extract verification data
+    // Handle QR Extract result
+    if (isQrExtractSolution && data.qrResult) {
+      const qrResult = data.qrResult;
+      
+      return (
+        <div className="space-y-6 h-full flex flex-col">
+          {/* Header */}
+          <div className="text-center">
+            <h3 className="text-xl font-semibold text-white mb-2">QR Code Extraction Result</h3>
+            <p className="text-gray-400">QR code data successfully extracted</p>
+          </div>
+
+          {/* Main Result Card */}
+          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-3 border-b border-gray-700">
+                <div className="flex items-center space-x-3">
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <span className="text-gray-300 font-medium">Status:</span>
+                </div>
+                <span className="font-semibold text-green-400">
+                  {qrResult.success ? 'Success' : 'Failed'}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between py-3 border-b border-gray-700">
+                <div className="flex items-center space-x-3">
+                  <QrCode className="w-5 h-5 text-blue-400" />
+                  <span className="text-gray-300 font-medium">Extracted Data:</span>
+                </div>
+                <span className="font-semibold text-blue-400 max-w-md text-right break-words">
+                  {qrResult.result?.replace('QR code data: ', '') || 'No data found'}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between py-3 border-b border-gray-700">
+                <div className="flex items-center space-x-3">
+                  <Info className="w-5 h-5 text-purple-400" />
+                  <span className="text-gray-300 font-medium">Processing Status:</span>
+                </div>
+                <span className="font-semibold text-purple-400">
+                  {qrResult.status}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between py-3">
+                <div className="flex items-center space-x-3">
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                  <span className="text-gray-300 font-medium">Message:</span>
+                </div>
+                <span className="font-semibold text-green-400 max-w-md text-right">
+                  {qrResult.message}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Status Summary */}
+          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+            <div className="flex items-center justify-center space-x-3">
+              <QrCode className="w-5 h-5 text-purple-400" />
+              <span className="text-gray-300">
+                Extraction Status: 
+                <span className="ml-2 font-semibold text-green-400">
+                  Completed Successfully
+                </span>
+              </span>
+            </div>
+          </div>
+
+          {/* Metadata */}
+          <div className="text-xs text-gray-500 text-center mt-auto">
+            {qrResult.req_id && (
+              <p>Request ID: {qrResult.req_id}</p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Extract verification data for face-verify and signature-verification
     let verificationData = null;
     if (solutionType === 'face-verify' && data.faceResult?.data) {
       verificationData = data.faceResult.data;
@@ -467,7 +552,7 @@ const renderProcessedImageTab = () => {
     <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden h-full flex flex-col">
       {/* Tab Navigation */}
       <div className="flex border-b border-gray-700 flex-shrink-0">
-        {/* Result Tab for Verification Solutions */}
+        {/* Result Tab for Verification Solutions and QR Extract */}
         {showResultTab && (
           <button
             onClick={() => !isResultTabDisabled && setActiveTab('result')}
@@ -480,12 +565,16 @@ const renderProcessedImageTab = () => {
                   : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800'
             }`}
           >
-            <Shield className={`w-4 h-4 ${isResultTabDisabled ? 'text-gray-600' : ''}`} />
+            {isQrExtractSolution ? (
+              <QrCode className={`w-4 h-4 ${isResultTabDisabled ? 'text-gray-600' : ''}`} />
+            ) : (
+              <Shield className={`w-4 h-4 ${isResultTabDisabled ? 'text-gray-600' : ''}`} />
+            )}
             <span>Result</span>
           </button>
         )}
 
-        {/* Processed Image Tab for Non-Verification Solutions */}
+        {/* Processed Image Tab for Non-Verification and Non-QR Extract Solutions */}
         {showProcessedImageTab && (
           <button
             onClick={() => !isProcessedImageTabDisabled && setActiveTab('processed-image')}

@@ -90,7 +90,7 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
   const Icon = getIcon(solutionType);
 
   return (
-    <div className="bg-gray-900 rounded-lg border border-gray-700 p-6">
+    <div className="bg-gray-900 rounded-lg border border-gray-700 p-6 h-full">
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center space-x-3">

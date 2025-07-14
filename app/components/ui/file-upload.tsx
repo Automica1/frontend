@@ -80,6 +80,11 @@ export const FileUpload = ({
     const updatedFiles = files.filter((_, index) => index !== indexToRemove);
     setFiles(updatedFiles);
     onChange && onChange(updatedFiles.map(f => f as File));
+    
+    // Clear the file input value to allow re-uploading the same file
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleClick = () => {
@@ -112,10 +117,10 @@ export const FileUpload = ({
   const hasFiles = files.length > 0;
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full h-full flex flex-col max-h-[600px]">
       {/* Upload Area with GridPattern Background */}
       <div
-        className="w-full"
+        className="w-full h-full flex flex-col"
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -123,8 +128,8 @@ export const FileUpload = ({
         <motion.div
           onClick={!hasFiles ? handleClick : undefined}
           whileHover={!hasFiles ? "animate" : undefined}
-          className={`p-10 pb-0 group/file block rounded-lg cursor-pointer w-full relative overflow-hidden ${
-            !hasFiles ? 'hover:shadow-2xl' : ''
+          className={`flex-1 flex flex-col p-6 group/file block rounded-lg w-full relative overflow-hidden min-h-0 ${
+            !hasFiles ? 'cursor-pointer hover:shadow-2xl' : ''
           }`}
         >
           <input
@@ -141,10 +146,10 @@ export const FileUpload = ({
           </div>
 
           {!hasFiles ? (
-            // Upload prompt with animations
-            <div className="flex flex-col items-center justify-center relative z-20">
-              <div className="flex items-center justify-between w-full max-w-xl mx-auto mb-4">
-                <div className="flex-1 flex flex-col items-center justify-center space-y-2">
+            // Upload prompt with animations - centered in available space
+            <div className="flex-1 flex flex-col items-center justify-center relative z-20 min-h-0">
+              <div className="flex flex-col items-center justify-center w-full max-w-xl mx-auto space-y-4">
+                <div className="text-center">
                   <p className="relative z-20 font-sans font-bold text-neutral-300 text-base">
                     Upload file
                   </p>
@@ -152,42 +157,42 @@ export const FileUpload = ({
                     Drag or drop your files here or click to upload
                   </p>
                 </div>
-              </div>
-              
-              <div className="relative w-full mt-6 max-w-xl mx-auto">
-                <motion.div
-                  layoutId="file-upload"
-                  variants={mainVariant}
-                  transition={{
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 20,
-                  }}
-                  className="relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center h-32 mt-4 w-full max-w-[8rem] mx-auto rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
-                >
-                  {isDragActive ? (
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-neutral-600 flex flex-col items-center"
-                    >
-                      Drop it
-                      <Upload className="h-4 w-4 text-neutral-400 mt-1" />
-                    </motion.p>
-                  ) : (
-                    <Upload className="h-4 w-4 text-neutral-300" />
-                  )}
-                </motion.div>
+                
+                <div className="relative mt-4">
+                  <motion.div
+                    layoutId="file-upload"
+                    variants={mainVariant}
+                    transition={{
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 20,
+                    }}
+                    className="relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center h-32 w-32 rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
+                  >
+                    {isDragActive ? (
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-neutral-400 flex flex-col items-center text-xs "
+                      >
+                        Drop it
+                        <Upload className="h-4 w-4 text-neutral-400 mt-1" />
+                      </motion.p>
+                    ) : (
+                      <Upload className="h-4 w-4 text-neutral-300" />
+                    )}
+                  </motion.div>
 
-                <motion.div
-                  variants={secondaryVariant}
-                  className="absolute opacity-0 border border-dashed border-sky-400 inset-0 z-30 bg-transparent flex items-center justify-center h-32 mt-4 w-full max-w-[8rem] mx-auto rounded-md"
-                ></motion.div>
+                  <motion.div
+                    variants={secondaryVariant}
+                    className="absolute opacity-0 border border-dashed border-sky-400 inset-0 z-30 bg-transparent flex items-center justify-center h-32 w-32 rounded-md"
+                  ></motion.div>
+                </div>
               </div>
             </div>
           ) : (
             // File preview area
-            <div className="relative z-20">
+            <div className="flex-1 flex flex-col relative z-20 min-h-0">
               {files.map((file, idx) => (
                 <motion.div
                   key={`file-${idx}`}
@@ -297,19 +302,18 @@ export const FileUpload = ({
       </div>
 
       {/* Upload different file button */}
-      <div className="px-10 pb-1">
-
       {hasFiles && (
-        <motion.button
-        initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          onClick={handleClick}
-          className="mt-4 w-full px-6 py-3 text-sm font-medium text-neutral-300 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-all duration-200 border border-neutral-600 shadow-sm hover:shadow-md transform hover:scale-[1.02]"
-          >
-          Upload Different File
-        </motion.button>
+        <div className="px-6 pb-4 flex-shrink-0">
+          <motion.button
+          initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={handleClick}
+            className="mt-4 w-full px-6 py-3 text-sm font-medium text-neutral-300 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-all duration-200 border border-neutral-600 shadow-sm hover:shadow-md transform hover:scale-[1.02]"
+            >
+            Upload Different File
+          </motion.button>
+        </div>
       )}
-      </div>
     </div>
   );
 };

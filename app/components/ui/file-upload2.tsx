@@ -1,8 +1,6 @@
-import { cn } from "@/app/lib/utils";
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { IconUpload, IconX } from "@tabler/icons-react";
-import { useDropzone } from "react-dropzone";
+import { Upload, X } from "lucide-react";
 
 const mainVariant = {
   initial: {
@@ -29,6 +27,10 @@ interface FileWithPreview extends File {
   preview?: string;
 }
 
+function cn(...classes: string[]) {
+  return classes.filter(Boolean).join(' ');
+}
+
 export const FileUpload2 = ({
   onChange,
   maxFiles = 2,
@@ -40,6 +42,7 @@ export const FileUpload2 = ({
 }) => {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Create preview URLs for image files
@@ -110,22 +113,34 @@ export const FileUpload2 = ({
     }
   };
 
-  const { getRootProps, isDragActive } = useDropzone({
-    multiple: true,
-    noClick: true,
-    accept: {
-      'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
-    },
-    onDrop: handleFileChange,
-    onDropRejected: (error) => {
-      console.log(error);
-    },
-  });
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragActive(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragActive(false);
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length > 0) {
+      handleFileChange(droppedFiles);
+    }
+  };
 
   const canAcceptMore = files.length < maxFiles;
 
   return (
-    <div className={cn("w-full h-full flex flex-col max-h-[600px]", className)} {...getRootProps()}>
+    <div 
+      className={cn("w-full h-full flex flex-col max-h-[600px]", className)}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <motion.div
         onClick={files.length === 0 ? handleClick : undefined}
         whileHover={canAcceptMore ? "animate" : undefined}
@@ -151,7 +166,7 @@ export const FileUpload2 = ({
         </div>
 
         {files.length === 0 ? (
-          // Upload prompt with animations - centered in available space
+          // Upload prompt with animations - perfectly centered
           <div className="flex-1 flex flex-col items-center justify-center relative z-20 min-h-0">
             <div className="flex flex-col items-center justify-center w-full max-w-xl mx-auto space-y-4">
               <div className="text-center">
@@ -163,7 +178,7 @@ export const FileUpload2 = ({
                 </p>
               </div>
               
-              {/* Progress indicator */}
+              {/* Progress indicator - only show when files.length === 0 */}
               <div className="flex items-center gap-2">
                 <div className="text-sm font-medium text-neutral-400">
                   {files.length}/{maxFiles} images uploaded
@@ -174,12 +189,9 @@ export const FileUpload2 = ({
                     style={{ width: `${(files.length / maxFiles) * 100}%` }}
                   />
                 </div>
-                {files.length === maxFiles && (
-                  <span className="text-green-500 text-sm font-medium">✓ Ready</span>
-                )}
               </div>
               
-              <div className="relative">
+              <div className="relative mt-4">
                 <motion.div
                   layoutId="file-upload"
                   variants={mainVariant}
@@ -188,7 +200,7 @@ export const FileUpload2 = ({
                     stiffness: 300,
                     damping: 20,
                   }}
-                  className="relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center h-24 w-24 rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
+                  className="relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center h-32 w-32 rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
                 >
                   {isDragActive && canAcceptMore ? (
                     <motion.p
@@ -197,16 +209,16 @@ export const FileUpload2 = ({
                       className="text-neutral-400 flex flex-col items-center text-xs"
                     >
                       Drop it
-                      <IconUpload className="h-4 w-4 text-neutral-400 mt-1" />
+                      <Upload className="h-4 w-4 text-neutral-400 mt-1" />
                     </motion.p>
                   ) : (
-                    <IconUpload className="h-4 w-4 text-neutral-300" />
+                    <Upload className="h-4 w-4 text-neutral-300" />
                   )}
                 </motion.div>
 
                 <motion.div
                   variants={secondaryVariant}
-                  className="absolute opacity-0 border border-dashed border-sky-400 inset-0 z-30 bg-transparent flex items-center justify-center h-24 w-24 rounded-md"
+                  className="absolute opacity-0 border border-dashed border-sky-400 inset-0 z-30 bg-transparent flex items-center justify-center h-32 w-32 rounded-md"
                 ></motion.div>
               </div>
             </div>
@@ -214,7 +226,7 @@ export const FileUpload2 = ({
         ) : (
           // File preview area - responsive layout for 2 images
           <div className="flex-1 flex flex-col relative z-20 min-h-0">
-            {/* Progress indicator */}
+            {/* Progress indicator - only show when files.length > 0 */}
             <div className="flex items-center gap-2 mb-4 flex-shrink-0">
               <div className="text-sm font-medium text-neutral-400">
                 {files.length}/{maxFiles} images uploaded
@@ -250,7 +262,7 @@ export const FileUpload2 = ({
                         }}
                         className="absolute top-3 right-3 z-10 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                       >
-                        <IconX className="h-4 w-4" />
+                        <X className="h-4 w-4" />
                       </button>
 
                       {/* Image label */}
@@ -294,11 +306,11 @@ export const FileUpload2 = ({
                         e.stopPropagation();
                         handleClick();
                       }}
-                      className="relative bg-neutral-900 rounded-lg shadow-lg border-2 border-dashed border-blue-600 overflow-hidden cursor-pointer hover:border-blue-500 transition-all duration-200 hover:shadow-xl h-full flex flex-col"
+                      className="relative bg-neutral-900 rounded-lg shadow-lg  overflow-hidden cursor-pointer hover:border-blue-500 transition-all duration-200 hover:shadow-xl h-full flex flex-col"
                     >
                       <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
                         <div className="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center mb-3">
-                          <IconUpload className="h-6 w-6 text-blue-400" />
+                          <Upload className="h-6 w-6 text-blue-400" />
                         </div>
                         <h3 className="text-lg font-medium text-neutral-300 mb-2">
                           Upload Second Image
@@ -306,10 +318,10 @@ export const FileUpload2 = ({
                         <p className="text-sm text-neutral-400 mb-3">
                           Click here or drag and drop your second image
                         </p>
-                        <div className="flex items-center gap-2 text-xs text-neutral-500">
+                        {/* <div className="flex items-center gap-2 text-xs text-neutral-500">
                           <span>Image 2</span>
                           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        </div>
+                        </div> */}
                       </div>
                     </motion.div>
                   </div>
@@ -338,7 +350,7 @@ export const FileUpload2 = ({
                         }}
                         className="absolute top-3 right-3 z-10 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
                       >
-                        <IconX className="h-4 w-4" />
+                        <X className="h-4 w-4" />
                       </button>
 
                       {/* Image label */}
@@ -393,7 +405,7 @@ export const FileUpload2 = ({
               onClick={() => setPreviewImage(null)}
               className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 z-10"
             >
-              <IconX className="h-4 w-4" />
+              <X className="h-4 w-4" />
             </button>
             <motion.img
               initial={{ scale: 0.8 }}
@@ -432,3 +444,5 @@ export function GridPattern() {
     </div>
   );
 }
+
+export default FileUpload2;
