@@ -2,18 +2,18 @@
 import React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CanvasRevealEffect } from "../ui/canvas-reveal-effect";
-import { solutions, type SolutionKey } from "../../lib/solutions";
+import { getPopularSolutions, type Solution } from "../../lib/solutions";
 import { LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
 
 // Define the most popular solutions (you can modify this array)
-const POPULAR_SOLUTIONS: SolutionKey[] = [
-  'face-verify',
-  'qr-extract', 
-  'signature-verification'
-];
+// const POPULAR_SOLUTIONS: SolutionKey[] = [
+//   'face-verify',
+//   'qr-extract', 
+//   'signature-verification'
+// ];
 
 export function CanvasRevealEffectDemo() {
-  const popularSolutions = POPULAR_SOLUTIONS.map(key => solutions[key]);
+  const popularSolutions: Solution[] = getPopularSolutions();
 
   return (
     <div className="py-0 bg-black">
@@ -36,7 +36,7 @@ const SolutionCard = ({
   solution, 
   index 
 }: { 
-  solution: typeof solutions[SolutionKey];
+  solution: Solution;
   index: number;
 }) => {
   const [hovered, setHovered] = React.useState(false);
@@ -96,7 +96,7 @@ const SolutionCard = ({
         <div className="text-center w-full mx-auto flex items-center justify-center pt-0">
           <div className="relative w-full rounded-lg overflow-hidden shadow-lg transition-transform duration-300 hover:scale-[1.05]">
             <img 
-              src={`/images/${index + 1}.svg`}
+              src={solution.imageSrc}
               alt={solution.title}
               className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
             />

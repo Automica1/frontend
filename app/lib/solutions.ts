@@ -30,6 +30,10 @@ export interface Pricing {
 export interface Solution {
   title: string;
   slug: SolutionKey;
+  popular?: boolean;
+  imageSrc?: string;
+  available?: boolean;
+  soon?: boolean;
   tagline: string;
   description: string;
   icon: LucideIcon;
@@ -41,10 +45,11 @@ export interface Solution {
   documentation: string;
 }
 
-export const solutions: Record<SolutionKey, Solution> = {
+export const rawSolutions: Record<SolutionKey, Solution> = {
   'signature-verification': {
     title: "Signature Verification",
     slug: "signature-verification",
+    popular: true,
     tagline: "AI-powered signature authentication",
     description: "Advanced signature verification API that compares two signature images to detect forgeries. Uses machine learning algorithms to analyze signature patterns, stroke dynamics, and authenticity markers.",
     icon: FileCheck,
@@ -82,6 +87,7 @@ export const solutions: Record<SolutionKey, Solution> = {
   'qr-extract': {
     title: "QR Extract",
     slug: "qr-extract",
+    popular: true,
     tagline: "Advanced QR code detection and extraction",
     description: "Advanced QR code detection and extraction from images with high accuracy. Supports multiple QR codes in a single image and works even with damaged or partially obscured codes.",
     icon: QrCode,
@@ -120,6 +126,8 @@ export const solutions: Record<SolutionKey, Solution> = {
     title: "ID Crop",
     slug: "id-crop",
     tagline: "Intelligent document table extraction",
+    available: true,
+    soon: true,
     description: "Automatically detect, extract, and structure tabular data from documents, images, and scanned files with our Table Detection API. Essential for financial analysis, data migration, and document processing.",
     icon: Table,
     gradient: "from-cyan-600 to-teal-600",
@@ -156,6 +164,8 @@ export const solutions: Record<SolutionKey, Solution> = {
   'qr-masking': {
     title: "QR Masking",
     slug: "qr-masking",
+    available: true,
+    popular: true,
     tagline: "Create branded QR codes that work",
     description: "Create branded, visually appealing QR codes without compromising scan reliability. Our QR Masking API enables customization while ensuring optimal functionality.",
     icon: QrCode,
@@ -193,6 +203,7 @@ export const solutions: Record<SolutionKey, Solution> = {
   'face-verify': {
     title: "Face Verify",
     slug: "face-verify",
+    popular: true,
     tagline: "Secure facial recognition and verification",
     description: "Advanced facial recognition and verification system with high accuracy and privacy protection. Perfect for security applications and identity verification systems.",
     icon: User,
@@ -266,6 +277,19 @@ export const solutions: Record<SolutionKey, Solution> = {
   }
 };
 
+export const solutions: Record<string, Solution> = Object.fromEntries(
+  Object.entries(rawSolutions).map(
+    ([key, sol]): [string, Solution] => [
+      key,
+      {
+        ...sol,
+        imageSrc: `/images/${sol.slug}.png`
+      }
+    ]
+  )
+)
+
+
 // Helper functions
 export const getSolution = (slug: string): Solution | undefined => {
   return solutions[slug as SolutionKey];
@@ -295,4 +319,31 @@ export const generateSolutionStaticParams = () => {
   return getSolutionKeys().map((slug) => ({
     slug: slug,
   }));
+};
+
+export const getPopularSolutions = (): Solution[] => {
+  return Object.values(solutions).filter(sol => {
+    if (sol.soon === true) return false
+    if (sol.available === false) return false
+    return sol.popular === true
+  })
+};
+
+export const getAvailableSolutions = (): Solution[] => {
+  return Object.values(solutions).filter(sol => {
+    if (sol.soon === true) return false
+    if (sol.available === false) return false
+    return sol.available === true || sol.popular === true
+  })
+};
+
+export const getSoonSolutions = (): Solution[] => {
+  const all = Object.values(solutions)
+  console.debug('[getSoonSolutions] all:', all)
+
+  // 2. Filter by soon === true
+  const soon = all.filter(sol => sol.soon === true)
+  console.debug('[getSoonSolutions] filtered soon:', soon)
+
+  return soon
 };
