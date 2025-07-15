@@ -2,7 +2,7 @@
 'use client'
 import React from 'react';
 import ServiceCard from './ServiceCard2';
-import { getAllSolutions } from '@/app/lib/solutions';
+import { getAvailableSolutions } from '@/app/lib/solutions';
 
 interface AvailableSolutionsProps {
   hoveredCard: number | null;
@@ -13,11 +13,12 @@ const AvailableSolutions: React.FC<AvailableSolutionsProps> = ({
   hoveredCard, 
   setHoveredCard 
 }) => {
-  const solutions = getAllSolutions().map(solution => ({
+  const solutions = getAvailableSolutions().map(solution => ({
     title: solution.title,
     slug: solution.slug,
     description: solution.description,
     icon: solution.icon,
+    imageSrc : solution.imageSrc,
     link: `/services/${solution.slug}`,
     features: solution.features.slice(0, 3), // Show only first 3 features for card display
     gradient: solution.gradient

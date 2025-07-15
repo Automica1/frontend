@@ -48,6 +48,7 @@ const Button: React.FC<ButtonProps> = ({
 };
 
 type Service = {
+  imageSrc: string | Blob | undefined;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   title: string;
   description: string;
@@ -125,10 +126,15 @@ const ServiceCard2: React.FC<ServiceCard2Props> = ({
       >
         <div className="flex flex-col lg:flex-row">
           {/* Icon Section - Increased width */}
-          <div className="lg:w-80 bg-gradient-to-br from-purple-500/20 to-blue-500/20 p-12 flex items-center justify-center">
-            <div className={`w-20 h-20 bg-gradient-to-br ${service.gradient || 'from-purple-500 to-blue-500'} rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-              <Icon className="w-10 h-10" />
-            </div>
+          <div className={`w-80 bg-gradient-to-br ${service.gradient || 'from-purple-500/20 to-blue-500/20'} p-12 flex items-center justify-center`}>
+            {/* <div className={`w-44 h-44 bg-gradient-to-br ${service.gradient || 'from-purple-500 to-blue-500'} rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}> */}
+              {/* <Icon className="w-10 h-10" /> */}
+              <img
+                src={service.imageSrc}
+                alt={service.title}
+                className="object-contain group-hover:scale-110 transition-transform duration-300"
+              />
+            {/* </div> */}
           </div>
 
           {/* Content Section */}
