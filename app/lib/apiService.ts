@@ -14,7 +14,7 @@ interface QRExtractResponseWithCredits extends QRExtractResponse {
 }
 
 interface SignatureVerificationResponseWithCredits extends SignatureVerificationResponse {
-  remainingCredits?: number;
+  remaining_credits?: number;
   userId?: string;
 }
 
@@ -82,12 +82,19 @@ class ApiService {
 
   // Helper method to update credits after successful API calls
   private updateCreditsFromResponse(response: any) {
-    if (response && typeof response.remainingCredits === 'number') {
-      const { updateCredits } = useCreditsStore.getState();
-      updateCredits(response.remainingCredits);
-      console.log('Credits updated from API response:', response.remainingCredits);
-    }
+  // Check for both naming conventions: remainingCredits and remaining_credits
+  const credits = response?.remainingCredits ?? response?.remaining_credits;
+  
+  if (response && typeof credits === 'number') {
+    const { updateCredits } = useCreditsStore.getState();
+    updateCredits(credits);
+    console.log('Credits updated from API response:', credits);
+  } else {
+    console.log('No credits found in response:', response);
   }
+}
+
+
 
   // Enhanced request method with better error handling
   private async makeRequest<T>(

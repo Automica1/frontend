@@ -1,7 +1,7 @@
 'use client'
 import React, { useEffect, useRef, useState } from 'react';
 import { Mail, MessageCircle, Clock, Star, Zap, Shield, Globe, Code } from 'lucide-react';
-import ContactForm from '../components/ContactForm';
+import ContactForm from '../components/contact/ContactForm';
 
 // Extend Window interface to include VANTA
 declare global {
