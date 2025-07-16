@@ -3,7 +3,8 @@ import React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CanvasRevealEffect } from "../ui/canvas-reveal-effect";
 import { getPopularSolutions, type Solution } from "../../lib/solutions";
-import { LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-nextjs";
+import { useRouter } from "next/navigation";
 
 
 export function CanvasRevealEffectDemo() {
@@ -33,7 +34,18 @@ const SolutionCard = ({
   solution: Solution;
   index: number;
 }) => {
+
   const [hovered, setHovered] = React.useState(false);
+  const { isAuthenticated, user } = useKindeAuth();
+  const router = useRouter();
+
+  const handleClick = () => {
+    if (isAuthenticated) {
+      router.push(`/services/${solution.slug}`);
+    } else {
+      router.push("/api/auth/login?post_login_redirect_url=/services");
+    }
+  };
   
   // Different gradient colors for each card
   const gradientColors = [
@@ -110,9 +122,9 @@ const SolutionCard = ({
           
           {/* Try Now Button - Always visible */}
           <div className="mt-auto">
-            <LoginLink 
-              postLoginRedirectURL={`/services/${solution.slug}`}
-              className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-purple-500/90 to-purple-800/90 text-white font-medium text-lg rounded-lg transition-all duration-300 hover:from-purple-600/90 hover:to-purple-800/90 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black"
+            <button 
+              onClick={handleClick}
+              className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-purple-500/90 to-purple-800/90 text-white font-medium text-lg rounded-lg transition-all duration-300 hover:from-purple-600/90 hover:to-purple-800/90 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black cursor-pointer"
             >
               <span className="mr-2">Try Now</span>
               <svg 
@@ -128,7 +140,7 @@ const SolutionCard = ({
                   d="M9 5l7 7-7 7" 
                 />
               </svg>
-            </LoginLink>
+            </button>
           </div>
         </div>
       </div>

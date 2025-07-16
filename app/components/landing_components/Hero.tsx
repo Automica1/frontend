@@ -4,7 +4,8 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Trail } from '@react-three/drei';
 import { ArrowRight } from 'lucide-react';
 import * as THREE from 'three';
-import {LoginLink} from "@kinde-oss/kinde-auth-nextjs/components"
+import { useKindeAuth } from "@kinde-oss/kinde-auth-nextjs";
+import { useRouter } from "next/navigation";
 
 // Enhanced shader material with better initialization
 const createAtomShader = () => {
@@ -608,6 +609,17 @@ export default function ThemedAtomicHero() {
   const [loading, setLoading] = useState(true);
   const [atomInitialized, setAtomInitialized] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  const { isAuthenticated, user } = useKindeAuth();
+  const router = useRouter();
+
+  const handleClick = () => {
+    if (isAuthenticated) {
+      router.push("/services");
+    } else {
+      router.push("/api/auth/login?post_login_redirect_url=/services");
+    }
+  };
   
   useEffect(() => {
     // Initial loading
@@ -717,10 +729,13 @@ export default function ThemedAtomicHero() {
             Get production-ready AI, faster.
           </p>
           
-          <LoginLink postLoginRedirectURL="/services" className="group relative inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500 to-purple-800 rounded-lg text-white font-medium text-lg hover:from-purple-600 hover:to-purple-900 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
-            <span className="mr-3">TRY IT FREE</span>
-            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </LoginLink>
+          <button
+          onClick={handleClick}
+          className="group relative inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500 to-purple-800 rounded-lg text-white font-medium text-lg hover:from-purple-600 hover:to-purple-900 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer"
+        >
+          <span className="mr-3">TRY IT FREE</span>
+          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+        </button>
         </div>
       </div>
     </div>
