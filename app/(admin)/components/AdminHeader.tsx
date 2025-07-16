@@ -2,7 +2,7 @@ import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { KindeUser } from "@kinde-oss/kinde-auth-nextjs/types";
 
 interface AdminHeaderProps {
-  user: KindeUser;
+  user: KindeUser<any>;
 }
 
 export default function AdminHeader({ user }: AdminHeaderProps) {

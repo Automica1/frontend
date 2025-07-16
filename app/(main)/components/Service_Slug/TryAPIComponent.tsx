@@ -5,7 +5,7 @@ import { Solution, SolutionType } from '../../types/solution';
 import { useSolutionType } from '../../hooks/useSolutionType';
 import { useSolutionApi } from '../../hooks/useSolutionApi';
 // import { getFileRequirementText } from '../../../utils/solutionHelpers';
-import { fileToBase64, filesToBase64 } from '@/utils/fileUtils';
+import { fileToBase64, filesToBase64 } from '../../../utils/fileUtils';
 import { FileUpload2 } from '../ui/file-upload2';
 import { FileUpload } from '../ui/file-upload';
 // import { TabbedResponseSection } from '../../TabbedResponseSection';

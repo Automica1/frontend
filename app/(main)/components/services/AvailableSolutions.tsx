@@ -2,7 +2,7 @@
 'use client'
 import React from 'react';
 import ServiceCard from './ServiceCard2';
-import { getAvailableSolutions } from '@/app/lib/solutions';
+import { getAvailableSolutions } from '@/app/(main)/lib/solutions';
 
 interface AvailableSolutionsProps {
   hoveredCard: number | null;

@@ -1,7 +1,7 @@
 // app/solutions/[slug]/page.tsx
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { getSolution, generateSolutionStaticParams } from '@/app/lib/solutions';
+import { getSolution, generateSolutionStaticParams } from '@/app/(main)/lib/solutions';
 import SolutionPageClient from './SolutionPageClient';
 
 interface SolutionPageProps {

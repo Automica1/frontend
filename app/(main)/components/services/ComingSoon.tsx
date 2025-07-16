@@ -2,7 +2,7 @@
 'use client'
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
-import { getSoonSolutions, type Solution } from '@/app/lib/solutions';
+import { getSoonSolutions, type Solution } from '@/app/(main)/lib/solutions';
 import ServiceCard from './ServiceCard';
 
 interface ComingSoonProps {
