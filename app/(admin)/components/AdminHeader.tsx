@@ -20,7 +20,7 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
             <span className="text-sm text-gray-700">
               Welcome, {user.given_name || user.email}
             </span>
-            <LogoutLink className="text-sm text-red-600 hover:text-red-800">
+            <LogoutLink postLogoutRedirectURL="/" className="text-sm text-red-600 hover:text-red-800">
               Logout
             </LogoutLink>
           </div>
