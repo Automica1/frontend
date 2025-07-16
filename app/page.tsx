@@ -1,47 +1,21 @@
-// import Image from "next/image";
-// import ComingSoon from "./components/CommingSoon";
-// import ContactUs from "./components/ContactUs";
-// import FeaturedSolutions from "./components/landingPage/FeaturedSolution";
-// import Hero from "./components/landingPage/Hero";
-import Hero2 from "./components/landingPage/Hero2";
-import HowItWorks from "./components/landingPage/HowItWorks";
-// import WhatWeDo from "./components/landingPage/WhatWeDo";
-// import Test from "./components/Test"
-// import LogoMarque from "./components/landingPage/LogoMarque";
+import Hero2 from "./components/landing_components/Hero";
+import HowItWorks from "./components/landing_components/HowItWorks";
+// import LogoMarque from "./components/landing_components/LogoMarque";
 // import {TabsDemo} from "./components/landingPage/TabsDemo";
-// import StickyScrollRevealDemo from "./components/landingPage/StickyScrollRevealDemo";
-import { SpotlightNewDemo } from "./components/landingPage/SpotlightNewDemo";
-import { FeaturesSectionDemo } from "./components/landingPage/FeatureSectionDemo";
+import { SpotlightNewDemo } from "./components/landing_components/SpotlightNewDemo";
+import { FeaturesSectionDemo } from "./components/landing_components/FeatureSectionDemo";
 
 export default function Home() {
   return (
     <>
     <div className="pb-18 bg-[#0b0b0d]">
-
-    {/* <Navbar/> */}
     </div>
-    {/* <Test/> */}
-    {/* <Hero /> */}
     <Hero2 />
     {/* <LogoMarque /> */}
-    {/* <div className="px-40 bg-[#101312]"> */}
     <HowItWorks/>
     <SpotlightNewDemo />
-    
-    {/* <WhatWeDo /> */}
-    {/* <FeaturedSolutions /> */}
-    {/* <StickyScrollRevealDemo /> */}
-    <FeaturesSectionDemo/>
     {/* <TabsDemo /> */}
-    {/* <ComingSoon/> */}
-    {/* </div> */}
-    {/* <ContactUs/> */}
-    {/* <Footer/> */}
+    <FeaturesSectionDemo/>
     </>
   );
 }
-
-// bg-amber-500
-
-// #0f0f0f
-// #0b0b0d

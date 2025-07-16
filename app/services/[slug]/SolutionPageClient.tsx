@@ -20,9 +20,9 @@ import {
 } from 'lucide-react';
 
 // Import separate components
-import AboutComponent from '../../components/services/slug_/AboutComponent';
-import TryAPIComponent from '../../components/services/slug_/TryAPIComponent';
-import DocumentationComponent from '../../components/services/slug_/DocumentationComponent';
+import AboutComponent from '../../components/Service_Slug/AboutComponent';
+import TryAPIComponent from '../../components/Service_Slug/TryAPIComponent';
+import DocumentationComponent from '../../components/Service_Slug/DocumentationComponent';
 
 interface SolutionPageClientProps {
   solution: {
