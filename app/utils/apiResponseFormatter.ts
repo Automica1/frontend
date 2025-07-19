@@ -1,5 +1,5 @@
 // utils/apiResponseFormatter.ts
-import { SolutionType } from '../app/types/solution';
+import { SolutionType } from '../(main)/types/solution';
 
 export const formatApiResponse = (responseData: any, solutionType: SolutionType): string => {
   if (!responseData) return '';

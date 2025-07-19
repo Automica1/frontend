@@ -1,5 +1,5 @@
 // utils/solutionHelpers.ts
-import { SolutionType } from '../app/types/solution';
+import { SolutionType } from '../(main)/types/solution';
 
 export const getFileRequirementText = (solutionType: SolutionType): string => {
   switch (solutionType) {
