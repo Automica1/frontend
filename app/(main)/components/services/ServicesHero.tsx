@@ -242,10 +242,10 @@ const SolutionsHero = () => {
           }}
         >
           <span className="relative inline-block w-full">
-  <p className="text-4xl sm:text-5xl lg:text-7xl font-mono text-white tracking-tighter leading-tight max-w-5xl mx-auto text-center">
-    Powerful AI APIs Built for <br />
-    <span className="bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
-      Real-World Use
+  <p className="text-4xl sm:text-3xl lg:text-7xl font-mono text-white tracking-tighter leading-tight max-w-5xl mx-auto text-center">
+    Powerful AI APIs <br />
+    <span className="sm:text-3xl lg:text-5xl bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+       Built for Real-World Use Cases
     </span>
   </p>
 </span>
@@ -263,7 +263,7 @@ const SolutionsHero = () => {
             ease: "easeInOut"
           }}
         >
-          Enterprise-grade AI solutions to solve complex business challenges across all industries
+          Enterprise-grade AI solutions to solve complex business demands across all industries
         </motion.p>
         
         {/* Animated arrow down indicator */}

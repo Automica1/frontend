@@ -10,6 +10,7 @@ interface AboutComponentProps {
     title: string;
     tagline: string;
     description: string;
+    gifSrc?: string;
     icon: React.ComponentType<any>;
     gradient: string;
     features?: string[];
@@ -30,7 +31,7 @@ export default function AboutComponent({ solution, onSectionChange }: AboutCompo
       {/* Hero Section */}
       <section className="pt-14 pb-16 ">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
             {/* Content */}
             <div className="space-y-8">
               <div className="inline-flex items-center space-x-2 bg-purple-500/10 text-purple-400 px-4 py-2 rounded-full text-sm font-medium">
@@ -63,7 +64,7 @@ export default function AboutComponent({ solution, onSectionChange }: AboutCompo
                   onClick={() => onSectionChange('try-api')}
                   className={`px-8 py-4 bg-gradient-to-r ${solution.gradient} rounded-xl font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg flex items-center justify-center space-x-2`}
                 >
-                  <span>Get Started Free</span>
+                  <span>Get Started</span>
                   <ArrowRight className="w-5 h-5" />
                 </button>
                 <button 
@@ -78,9 +79,18 @@ export default function AboutComponent({ solution, onSectionChange }: AboutCompo
             {/* Hero Image */}
             <div className="relative">
               <div className={`absolute inset-0 bg-gradient-to-br ${solution.gradient} rounded-3xl blur-3xl opacity-20`} />
-              <div className="relative bg-gray-900 rounded-3xl p-8 border border-gray-700">
+              <div className={`relative bg-gradient-to-br ${solution.gradient} rounded-3xl p-3 border border-gray-700`}>
                 <div className="aspect-video bg-gray-800 rounded-2xl flex items-center justify-center">
-                  <Icon className="w-24 h-24 text-gray-600" />
+                  {/* <Icon className="w-24 h-24 text-gray-600" /> */}
+                        <img
+                          src={solution.gifSrc}
+                          alt="Animated illustration"
+                          className="w-full h-full object-cover"
+                        />
+                    {/* <video 
+                      src="file://Users/jainulhasan/Downloads/sign_verify_gif.gif" loop >
+                      Your browser doesn’t support the video tag.
+                    </video> */}
                 </div>
               </div>
             </div>

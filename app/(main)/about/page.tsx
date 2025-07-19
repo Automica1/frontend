@@ -123,6 +123,40 @@ export default function About() {
       
 
 
+      {/* Stats Section with Glassmorphism */}
+      <section className="py-16 px-4 relative">
+        {/* Background with subtle gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/10 via-transparent to-pink-900/10"></div>
+        
+        <div className="max-w-6xl mx-auto relative">
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { value: "< 1 sec", label: "Average Response Time" },
+              { value: "99.9%", label: "Uptime Guarantee" },
+              { value: "24/7", label: "Support Available" }
+            ].map((stat, index) => (
+              <div 
+                key={index}
+                className="relative p-8 rounded-xl backdrop-blur-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 group text-center"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+                }}
+              >
+                {/* Subtle inner glow */}
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                <div className="relative z-10">
+                  <div className="text-4xl font-light text-purple-400 mb-2">{stat.value}</div>
+                  <div className="text-gray-300 font-light">{stat.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* CTA Section */}
       <section className="py-16 px-4">
