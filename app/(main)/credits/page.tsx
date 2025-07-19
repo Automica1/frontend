@@ -35,12 +35,12 @@ export default function CreditsPage() {
     // Backend returns different structure - check for message presence instead of success field
     if (result.message && result.message.toLowerCase().includes('success')) {
       setStatus('success');
-      setCreditsAdded(result.credits || 0); // Backend uses 'credits' not 'creditsAdded'
+      setCreditsAdded(result.creditsAdded || 0); // Use 'creditsAdded' instead of 'credits'
       
       // Create a more detailed success message
       let successMessage = 'Token redeemed successfully!';
-      if (result.credits) {
-        successMessage += ` +${result.credits} credits added`;
+      if (result.creditsAdded) {
+        successMessage += ` +${result.creditsAdded} credits added`;
       }
       if (result.remainingCredits) {
         successMessage += ` • New balance: ${result.remainingCredits} credits`;
