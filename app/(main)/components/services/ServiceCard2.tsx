@@ -218,7 +218,7 @@ const ServiceCard2: React.FC<ServiceCard2Props> = ({
                     {service.features && (
                       <div className="mb-8">
                         <h4 className="text-sm font-semibold uppercase text-gray-400 mb-4 tracking-wider">
-                          Key Features
+                          Key Featuressssssssssssssss
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                           {service.features.map((feature, idx) => (

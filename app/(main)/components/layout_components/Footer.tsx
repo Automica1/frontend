@@ -7,22 +7,22 @@ import Link from 'next/link';
 export default function Footer() {
   const footerLinks = {
     Product: [
-      { name: 'Features', href: '/features' }, 
+      // { name: 'Features', href: '/features' }, 
       { name: 'Pricing', href: '/pricing' },
-      { name: 'API Documentation', href: '/api-docs' },
+      // { name: 'API Documentation', href: '/api-docs' },
       // { name: 'Integrations', href: '#integrations' }
     ],
     Company: [
       { name: 'About', href: '/about' },
-      { name: 'Blog', href: '/blog' },
-      { name: 'Careers', href: '/careers' },
+      // { name: 'Blog', href: '/blog' },
+      // { name: 'Careers', href: '/careers' },
       // { name: 'Contact', href: '/contact' }
     ],
-    Resources: [
+    Support: [
       // { name: 'Help Center', href: '#help' },
-      { name: 'Security', href: '/security' },
+      // { name: 'Security', href: '/security' },
       // { name: 'Status', href: '#status' },
-      { name: 'Terms of Service', href: '/terms-services' },
+      // { name: 'Terms of Service', href: '/terms-services' },
       { name: 'Contact', href: '/contact' }
 
     ],
@@ -42,11 +42,11 @@ export default function Footer() {
     // { icon: MessageSquare, href: '#discord', label: 'Discord' }
   ];
 
-  const legalLinks = [
-    { name: 'Privacy Policy', href: 'privacy-policy' },
-    { name: 'Terms of Service', href: 'terms-services' },
-    // { name: 'Cookie Policy', href: '#cookies' }
-  ];
+  // const legalLinks = [
+  //   { name: 'Privacy Policy', href: 'privacy-policy' },
+  //   { name: 'Terms of Service', href: 'terms-services' },
+  //   { name: 'Cookie Policy', href: '#cookies' }
+  // ];
 
   return (
     <footer className="bg-[#0b0b0d] text-white relative overflow-hidden">
@@ -126,11 +126,11 @@ export default function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
           {/* Copyright */}
           <div className="text-gray-500 text-sm">
-            © 2024 Automica.ai. All rights reserved.
+            © 2025 Automica.ai. All rights reserved.
           </div>
 
           {/* Legal Links */}
-          <div className="flex items-center space-x-6">
+          {/* <div className="flex items-center space-x-6">
             {legalLinks.map((link, index) => (
               <a
                 key={index}
@@ -140,7 +140,7 @@ export default function Footer() {
                 {link.name}
               </a>
             ))}
-          </div>
+          </div> */}
         </div>
       </div>
 

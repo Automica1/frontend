@@ -276,9 +276,9 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
                 );
               })}
             </div>
-            {formData.inquiryType.length === 0 && (
+            {/* {formData.inquiryType.length === 0 && (
               <p className="text-red-400 text-xs mt-2 font-light">Please select at least one service</p>
-            )}
+            )} */}
           </div>
 
           <div>
