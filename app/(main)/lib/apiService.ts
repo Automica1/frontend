@@ -184,7 +184,7 @@ class ApiService {
     }
   }
 
-  // Credit operations
+// Credit operations
   async getCreditsBalance(): Promise<{ credits: number; userId: string }> {
     const response = await this.makeRequest<{ credits: number; userId: string }>('/credits/balance');
     // Update credits store with initial data
@@ -193,6 +193,64 @@ class ApiService {
     
     return response;
   }
+
+ // Token redemption
+async redeemToken(token: string): Promise<{ 
+  success: boolean; 
+  message: string; 
+  remainingCredits?: number; 
+  userId?: string;
+  creditsAdded?: number;
+}> {
+  // Validate token input
+  if (!token || typeof token !== 'string' || token.trim().length === 0) {
+    throw new Error('Invalid token provided');
+  }
+
+  const cleanToken = token.trim();
+  
+  // Basic token format validation (assuming hex format based on example)
+  if (!/^[a-f0-9]{32}$/.test(cleanToken)) {
+    throw new Error('Invalid token format. Token must be a 32-character hexadecimal string.');
+  }
+
+  console.log('Redeeming token:', cleanToken.slice(0, 8) + '...');
+  
+  // Backend returns different structure than expected
+  const response = await this.makeRequest<{ 
+    message: string; 
+    credits: number;           // This is actually creditsAdded
+    remainingCredits: number; 
+    expiresAt?: string;
+    usedAt?: string;
+    description?: string;
+  }>('/tokens/redeem', {
+    method: 'POST',
+    body: JSON.stringify({
+      token: cleanToken,
+    }),
+  });
+
+  // Transform backend response to match frontend expectations
+  const transformedResponse = {
+    success: true, // If we reach here without throwing, it was successful
+    message: response.message,
+    remainingCredits: response.remainingCredits,
+    creditsAdded: response.credits, // Map credits to creditsAdded
+    userId: undefined as string | undefined // Backend doesn't provide userId
+  };
+
+  // Update credits store if redemption was successful and credits are provided
+  if (typeof response.remainingCredits === 'number') {
+    const { setCredits } = useCreditsStore.getState();
+    // Since we don't have userId from backend, use existing userId from store or empty string
+    const { userId: currentUserId } = useCreditsStore.getState();
+    setCredits(response.remainingCredits, currentUserId || '');
+    console.log('Credits updated after token redemption:', response.remainingCredits);
+  }
+
+  return transformedResponse;
+}
 
   // QR Code Masking
   async maskQRCode(base64Image: string): Promise<ApiResponseWithCredits> {

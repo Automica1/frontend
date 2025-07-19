@@ -1,13 +1,15 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Star, Wallet, Brain, ChevronDown, User, LogOut, Coins, Menu, X } from 'lucide-react';
+import { Star, Wallet, Brain, ChevronDown, User, LogOut, Coins, Menu, X, Settings } from 'lucide-react';
 import { RegisterLink, LoginLink, LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { useCredits } from '../../hooks/useCredits';
 import Link from 'next/link';
 
-export default function Navbar() {
+
+
+export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -17,6 +19,9 @@ export default function Navbar() {
   
   // Use the new Zustand-based credits hook
   const { credits, loading: creditsLoading, error: creditsError, refreshCredits } = useCredits();
+
+  // Helper function to check if user is admin
+  // const isAdmin = false
 
   // Helper function to determine if user picture should use default avatar
   const shouldUseDefaultAvatar = (userPicture: string | string[]) => {
@@ -216,6 +221,11 @@ export default function Navbar() {
                             : user.given_name || 'User'}
                         </div>
                         <div className="text-gray-400 text-sm truncate">{user.email}</div>
+                        {isAdmin && (
+                          <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 mt-1">
+                            Admin
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -249,6 +259,20 @@ export default function Navbar() {
                     )}
                   </div>
                   
+                  {/* Admin Dashboard Link */}
+                  {isAdmin && (
+                    <div className="py-1">
+                      <Link 
+                        href="/admin" 
+                        className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-purple-500/20 transition-colors duration-200"
+                        onClick={() => setShowUserDropdown(false)}
+                      >
+                        <Settings className="w-4 h-4 mr-3" />
+                        Admin Dashboard
+                      </Link>
+                    </div>
+                  )}
+                  
                   {/* <div className="py-1">
                     <a href="/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-purple-500/20 transition-colors duration-200">
                       <Brain className="w-4 h-4 mr-3" />
@@ -260,7 +284,7 @@ export default function Navbar() {
                     </a>
                   </div> */}
                   {/* <button onClick={() => console.log('kinde User', user)} className='px-4 py-2 bg-white text-black'>clickme</button> */}
-                  <div className="border-t border-white/10 pt-1">
+                  <div className={`${isAdmin ? 'border-t border-white/10 pt-1' : ''}`}>
                     <LogoutLink postLogoutRedirectURL="/" className="flex items-center w-full px-4 py-2 text-gray-300 hover:text-white hover:bg-red-500/20 transition-colors duration-200">
                       <LogOut className="w-4 h-4 mr-3" />
                       Sign Out
@@ -342,6 +366,17 @@ export default function Navbar() {
                 Pricing
               </Link>
 
+              {/* Admin Dashboard Link for Mobile */}
+              {!isLoading && isAuthenticated && isAdmin && (
+                <Link 
+                  href="/admin" 
+                  onClick={closeMobileMenu}
+                  className="block text-xl font-medium text-purple-300 hover:text-purple-400 transition-colors duration-200 py-2 border-b border-gray-800/50"
+                >
+                  Admin Dashboard
+                </Link>
+              )}
+
               {/* Mobile User Section (when authenticated) */}
               {!isLoading && isAuthenticated && user && (
                 <div className="border-t border-white/20 pt-4 mt-4">
@@ -366,6 +401,11 @@ export default function Navbar() {
                           : user.given_name || 'User'}
                       </div>
                       <div className="text-gray-300 text-sm truncate">{user.email}</div>
+                      {isAdmin && (
+                        <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 mt-1">
+                          Admin
+                        </div>
+                      )}
                       {/* Mobile Credits in User Section */}
                       <div className="flex items-center space-x-2 mt-1">
                         <Coins className="w-3 h-3 text-yellow-500" />
