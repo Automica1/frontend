@@ -26,30 +26,60 @@ export const ApiResponseTab: React.FC<ApiResponseTabProps> = ({
   const [copiedApiResponse, setCopiedApiResponse] = useState(false);
   const Icon = solution.IconComponent;
 
+  const reorderJsonKeys = (obj: any): any => {
+    if (!obj || typeof obj !== 'object') return obj;
+    
+    // Define the desired key order
+    const keyOrder = ['req_id', 'success', 'status', 'error_message', 'message', 'result', 'data'];
+    
+    const ordered: any = {};
+    
+    // Add keys in the specified order if they exist
+    keyOrder.forEach(key => {
+      if (obj.hasOwnProperty(key)) {
+        ordered[key] = obj[key];
+      }
+    });
+    
+    // Add any remaining keys that weren't in the predefined order
+    Object.keys(obj).forEach(key => {
+      if (!keyOrder.includes(key)) {
+        ordered[key] = obj[key];
+      }
+    });
+    
+    return ordered;
+  };
+
   const formatApiResponse = (responseData: any) => {
     if (!responseData) return '';
     
     // For face verification, show only faceResult
     if (solutionType === 'face-verify' && responseData.faceResult && typeof responseData.faceResult === 'object') {
-      return JSON.stringify(responseData.faceResult, null, 2);
+      const orderedFaceResult = reorderJsonKeys(responseData.faceResult);
+      return JSON.stringify(orderedFaceResult, null, 2);
     }
     
     if (solutionType === 'face-cropping' && responseData.faceResult && typeof responseData.faceResult === 'object') {
-      return JSON.stringify(responseData.faceResult, null, 2);
+      const orderedFaceResult = reorderJsonKeys(responseData.faceResult);
+      return JSON.stringify(orderedFaceResult, null, 2);
     }
 
     if (solutionType === 'qr-extract' && responseData.qrResult && typeof responseData.qrResult === 'object') {
-      return JSON.stringify(responseData.qrResult, null, 2);
+      const orderedQrResult = reorderJsonKeys(responseData.qrResult);
+      return JSON.stringify(orderedQrResult, null, 2);
     }
     
     // For signature verification, show only verification_result
     if (solutionType === 'signature-verification' && responseData.verification_result && typeof responseData.verification_result === 'object') {
-      return JSON.stringify(responseData.verification_result, null, 2);
+      const orderedVerificationResult = reorderJsonKeys(responseData.verification_result);
+      return JSON.stringify(orderedVerificationResult, null, 2);
     }
     
     // For qr-mask, show only qrResult
     if (solutionType === 'qr-mask' && responseData.qrResult && typeof responseData.qrResult === 'object') {
-      return JSON.stringify(responseData.qrResult, null, 2);
+      const orderedQrResult = reorderJsonKeys(responseData.qrResult);
+      return JSON.stringify(orderedQrResult, null, 2);
     }
     
     // Extract only the cropResult object if it exists
@@ -61,11 +91,13 @@ export const ApiResponseTab: React.FC<ApiResponseTabProps> = ({
         result: responseData.cropResult.result,
         message: responseData.cropResult.message
       };
-      return JSON.stringify(cropResult, null, 2);
+      const orderedCropResult = reorderJsonKeys(cropResult);
+      return JSON.stringify(orderedCropResult, null, 2);
     }
     
     // Fallback to full response if cropResult doesn't exist
-    return JSON.stringify(responseData, null, 2);
+    const orderedResponse = reorderJsonKeys(responseData);
+    return JSON.stringify(orderedResponse, null, 2);
   };
 
   const copyToClipboard = (text: string) => {
@@ -79,10 +111,41 @@ export const ApiResponseTab: React.FC<ApiResponseTabProps> = ({
   };
 
   const getErrorResponse = () => {
+    // Debug logging to see what's being passed
+    console.log('Error Details (full object):', errorDetails);
+    console.log('Error Details type:', typeof errorDetails);
+    console.log('Error:', error);
+    
     if (errorDetails) {
-      return JSON.stringify(errorDetails, null, 2);
+      // Check if errorDetails has original_response and return only that
+      if (errorDetails.original_response) {
+        console.log('Found original_response:', errorDetails.original_response);
+        const orderedResponse = reorderJsonKeys(errorDetails.original_response);
+        return JSON.stringify(orderedResponse, null, 2);
+      }
+      
+      // Additional checks for different possible structures
+      if (errorDetails.data && errorDetails.data.original_response) {
+        console.log('Found original_response in data:', errorDetails.data.original_response);
+        const orderedResponse = reorderJsonKeys(errorDetails.data.original_response);
+        return JSON.stringify(orderedResponse, null, 2);
+      }
+      
+      console.log('No original_response found, showing full errorDetails');
+      const orderedErrorDetails = reorderJsonKeys(errorDetails);
+      return JSON.stringify(orderedErrorDetails, null, 2);
     }
-    return JSON.stringify({ error: error }, null, 2);
+    
+    const errorObj = { error: error };
+    const orderedErrorObj = reorderJsonKeys(errorObj);
+    return JSON.stringify(orderedErrorObj, null, 2);
+  };
+
+  const getResponseForCopy = () => {
+    if (error) {
+      return getErrorResponse();
+    }
+    return formatApiResponse(data);
   };
 
   return (
@@ -112,7 +175,7 @@ export const ApiResponseTab: React.FC<ApiResponseTabProps> = ({
           <div className="bg-black rounded-none border-0 flex-1 min-h-0 flex flex-col">
             <div className="flex justify-end flex-shrink-0 cursor-pointer">
               <button
-                onClick={() => copyToClipboard(formatApiResponse(data))}
+                onClick={() => copyToClipboard(getResponseForCopy())}
                 className="flex items-center space-x-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors duration-300"
               >
                 {copiedApiResponse ? (
