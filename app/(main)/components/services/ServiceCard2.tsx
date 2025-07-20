@@ -124,20 +124,68 @@ const ServiceCard2: React.FC<ServiceCard2Props> = ({
         onMouseLeave={() => setHoveredCard(null)}
         onClick={() => handleCardClick(service)}
       >
-        <div className="flex flex-col lg:flex-row">
-          {/* Icon Section - Increased width */}
-          <div className={`w-80 bg-gradient-to-br ${service.gradient || 'from-purple-500/20 to-blue-500/20'} p-12 flex items-center justify-center`}>
-            {/* <div className={`w-44 h-44 bg-gradient-to-br ${service.gradient || 'from-purple-500 to-blue-500'} rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}> */}
-              {/* <Icon className="w-10 h-10" /> */}
+        {/* Mobile Layout */}
+        <div className="flex flex-col lg:hidden">
+          {/* Mobile Image Section - Full width and taller */}
+          <div className={`w-full h-64 bg-gradient-to-br ${service.gradient || 'from-purple-500/20 to-blue-500/20'} p-8 flex items-center justify-center relative overflow-hidden`}>
+            <div className="relative w-full h-full flex items-center justify-center">
               <img
                 src={service.imageSrc}
                 alt={service.title}
-                className="object-contain group-hover:scale-110 transition-transform duration-300"
+                className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-300"
+                style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%' }}
               />
-            {/* </div> */}
+            </div>
+          </div>
+          
+          {/* Mobile Content Section */}
+          <div className="flex-1 p-6">
+            <h3 className="text-xl font-bold mb-3 text-white group-hover:text-purple-300 transition-colors duration-300">
+              {service.title}
+            </h3>
+            <p className="text-gray-300 mb-4 leading-relaxed text-sm">{service.description}</p>
+
+            {service.features && (
+              <div className="mb-6">
+                <h4 className="text-xs font-semibold uppercase text-gray-400 mb-3 tracking-wider">
+                  Key Features
+                </h4>
+                <div className="space-y-2">
+                  {service.features.slice(0, 3).map((feature, idx) => (
+                    <div key={idx} className="flex items-start text-sm text-gray-300">
+                      <div className="w-4 h-4 bg-green-500/20 rounded-full flex items-center justify-center mr-3 flex-shrink-0 mt-0.5">
+                        <Check className="w-2.5 h-2.5 text-green-400" />
+                      </div>
+                      <span className="text-xs">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Button
+              onClick={(e) => handleLearnMoreClick(e, service)}
+              className="bg-purple-600 hover:bg-purple-700 cursor-pointer text-white shadow-lg transition-all duration-300 group/btn w-full"
+            >
+              <span className="mr-2">Learn More</span>
+              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden lg:flex flex-row">
+          {/* Desktop Icon Section */}
+          <div className={`w-80 bg-gradient-to-br ${service.gradient || 'from-purple-500/20 to-blue-500/20'} p-12 flex items-center justify-center`}>
+            <img
+              src={service.imageSrc}
+              alt={service.title}
+              className="object-contain group-hover:scale-110 transition-transform duration-300"
+              style={{ maxWidth: '200px', maxHeight: '200px' }}
+            />
           </div>
 
-          {/* Content Section */}
+          {/* Desktop Content Section */}
           <div className="flex-1 p-8">
             <h3 className="text-2xl font-bold mb-4 text-white group-hover:text-purple-300 transition-colors duration-300">
               {service.title}
@@ -200,15 +248,79 @@ const ServiceCard2: React.FC<ServiceCard2Props> = ({
                 onMouseLeave={() => setHoveredCard(null)}
                 onClick={() => handleCardClick(service)}
               >
-                <div className="flex flex-col lg:flex-row">
-                  {/* Icon Section - Increased width */}
-                  <div className="lg:w-80 bg-gradient-to-br from-purple-500/20 to-blue-500/20 p-12 flex items-center justify-center">
-                    <div className={`w-20 h-20 bg-gradient-to-br ${service.gradient || 'from-purple-500 to-blue-500'} rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                      <Icon className="w-10 h-10" />
+                {/* Mobile Layout */}
+                <div className="flex flex-col lg:hidden">
+                  {/* Mobile Image Section */}
+                  <div className={`w-full h-64 bg-gradient-to-br ${service.gradient || 'from-purple-500/20 to-blue-500/20'} p-8 flex items-center justify-center`}>
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      {service.imageSrc ? (
+                        <img
+                          src={service.imageSrc}
+                          alt={service.title}
+                          className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className={`w-20 h-20 bg-gradient-to-br ${service.gradient || 'from-purple-500 to-blue-500'} rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                          <Icon className="w-10 h-10" />
+                        </div>
+                      )}
                     </div>
                   </div>
+                  
+                  {/* Mobile Content */}
+                  <div className="flex-1 p-6">
+                    <h3 className="text-xl font-bold mb-3 text-white group-hover:text-purple-300 transition-colors duration-300">
+                      {service.title}
+                    </h3>
+                    <p className="text-gray-300 mb-4 leading-relaxed text-sm">{service.description}</p>
 
-                  {/* Content Section */}
+                    {service.features && (
+                      <div className="mb-6">
+                        <h4 className="text-xs font-semibold uppercase text-gray-400 mb-3 tracking-wider">
+                          Key Features
+                        </h4>
+                        <div className="space-y-2">
+                          {service.features.slice(0, 3).map((feature, idx) => (
+                            <div key={idx} className="flex items-start text-sm text-gray-300">
+                              <div className="w-4 h-4 bg-green-500/20 rounded-full flex items-center justify-center mr-3 flex-shrink-0 mt-0.5">
+                                <Check className="w-2.5 h-2.5 text-green-400" />
+                              </div>
+                              <span className="text-xs">{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={(e) => handleLearnMoreClick(e, service)}
+                      className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg transition-all duration-300 group/btn w-full"
+                    >
+                      <span className="mr-2">Learn More</span>
+                      <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform duration-300" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Desktop Layout */}
+                <div className="hidden lg:flex flex-row">
+                  {/* Desktop Icon Section */}
+                  <div className="lg:w-80 bg-gradient-to-br from-purple-500/20 to-blue-500/20 p-12 flex items-center justify-center">
+                    {service.imageSrc ? (
+                      <img
+                        src={service.imageSrc}
+                        alt={service.title}
+                        className="object-contain group-hover:scale-110 transition-transform duration-300"
+                        style={{ maxWidth: '200px', maxHeight: '200px' }}
+                      />
+                    ) : (
+                      <div className={`w-20 h-20 bg-gradient-to-br ${service.gradient || 'from-purple-500 to-blue-500'} rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                        <Icon className="w-10 h-10" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Desktop Content Section */}
                   <div className="flex-1 p-8">
                     <h3 className="text-2xl font-bold mb-4 text-white group-hover:text-purple-300 transition-colors duration-300">
                       {service.title}
