@@ -1,22 +1,61 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Star, Wallet, Brain, ChevronDown, User, LogOut, Coins, Menu, X } from 'lucide-react';
+import { Star, Wallet, Brain, ChevronDown, User, LogOut, Coins, Menu, X, Settings } from 'lucide-react';
 import { RegisterLink, LoginLink, LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { useCredits } from '../../hooks/useCredits';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
-export default function Navbar() {
+export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  
+  // Get current pathname for active link highlighting
+  const pathname = usePathname();
   
   // Get user authentication state
   const { user, isAuthenticated, isLoading } = useKindeBrowserClient();
   
   // Use the new Zustand-based credits hook
   const { credits, loading: creditsLoading, error: creditsError, refreshCredits } = useCredits();
+
+  // Navigation links configuration
+  const navLinks = [
+    { href: '/services', label: 'Services' },
+    { href: '/contact', label: 'Contact Us' },
+    { href: '/about', label: 'About Us' },
+    { href: '/pricing', label: 'Pricing' }
+  ];
+
+  // Function to check if a link is active
+  const isActiveLink = (href: string) => {
+    if (href === '/') {
+      return pathname === '/';
+    }
+    return pathname.startsWith(href);
+  };
+
+  // Function to get link classes based on active state
+  const getLinkClasses = (href: string, isMobile: boolean = false) => {
+    const isActive = isActiveLink(href);
+    
+    if (isMobile) {
+      return `block text-xl font-medium transition-all duration-300 py-2 border-b border-gray-800/50 ${
+        isActive 
+          ? 'text-purple-400 bg-purple-500/10 px-3 rounded-lg border-purple-500/30' 
+          : 'text-white hover:text-purple-400'
+      }`;
+    }
+    
+    return `relative transition-all duration-300 hover:scale-105 ${
+      isActive 
+        ? 'text-purple-400 font-semibold' 
+        : 'text-gray-300 hover:text-purple-400'
+    }`;
+  };
 
   // Helper function to determine if user picture should use default avatar
   const shouldUseDefaultAvatar = (userPicture: string | string[]) => {
@@ -34,7 +73,6 @@ export default function Navbar() {
   const getAvatarUrl = (userPicture: string | string[]) => {
     if (shouldUseDefaultAvatar(userPicture)) {
       const fullName = `${user?.given_name || ''} ${user?.family_name || ''}`.trim();
-      // return `https://api.dicebear.com/7.x/identicon/png?seed=${user?.email ?? 'default'}`;
       return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName)}&backgroundColor=4c1d95&fontSize=38`;
     }
     // If userPicture is an array, use the first element; otherwise, return as is
@@ -103,7 +141,11 @@ export default function Navbar() {
         {/* Logo */}
         <div className="flex items-center animate-[slideInLeft_0.8s_ease-out] z-50">
           <Link href="/">
-            <span className="flex items-center space-x-2">
+            <span className={`flex items-center space-x-2 ${
+              isActiveLink('/') 
+                ? 'text-purple-400 scale-105' 
+                : 'text-white hover:text-purple-400'
+            } transition-all duration-300 hover:scale-105`}>
               <Image
                 src="/logo.svg"
                 alt="Automica.ai Logo"
@@ -112,17 +154,26 @@ export default function Navbar() {
                 height={32}
                 priority
               />
-              <span className="text-xl font-semibold text-white  hover:text-purple-400 transition-all duration-300 hover:scale-105">Automica.ai</span>
+              <span className="text-xl font-semibold transition-all duration-300">Automica.ai</span>
             </span>
           </Link>
         </div>
         
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8 animate-[slideInDown_0.8s_ease-out_0.2s_both]">
-          <Link href="/services" className="text-gray-300 hover:text-purple-400 transition-all duration-300 hover:scale-105">Services</Link>
-          <Link href="/contact" className="text-gray-300 hover:text-purple-400 transition-all duration-300 hover:scale-105">Contact Us</Link>
-          <Link href="/about" className="text-gray-300 hover:text-purple-400 transition-all duration-300 hover:scale-105">About Us</Link>
-          <Link href="/pricing" className="text-gray-300 hover:text-purple-400 transition-all duration-300 hover:scale-105">Pricing</Link>
+          {navLinks.map((link) => (
+            <Link 
+              key={link.href} 
+              href={link.href} 
+              className={getLinkClasses(link.href)}
+            >
+              <span className="relative">
+                {link.label}
+                {/* Active indicator dot */}
+                
+              </span>
+            </Link>
+          ))}
         </div>
         
         {/* Desktop Auth Section */}
@@ -216,6 +267,11 @@ export default function Navbar() {
                             : user.given_name || 'User'}
                         </div>
                         <div className="text-gray-400 text-sm truncate">{user.email}</div>
+                        {isAdmin && (
+                          <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 mt-1">
+                            Admin
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -249,18 +305,28 @@ export default function Navbar() {
                     )}
                   </div>
                   
-                  {/* <div className="py-1">
-                    <a href="/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-purple-500/20 transition-colors duration-200">
-                      <Brain className="w-4 h-4 mr-3" />
-                      Dashboard
-                    </a>
-                    <a href="/profile" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-purple-500/20 transition-colors duration-200">
-                      <User className="w-4 h-4 mr-3" />
-                      Profile
-                    </a>
-                  </div> */}
-                  {/* <button onClick={() => console.log('kinde User', user)} className='px-4 py-2 bg-white text-black'>clickme</button> */}
-                  <div className="border-t border-white/10 pt-1">
+                  {/* Admin Dashboard Link */}
+                  {isAdmin && (
+                    <div className="py-1">
+                      <Link 
+                        href="/admin" 
+                        className={`flex items-center px-4 py-2 transition-colors duration-200 ${
+                          isActiveLink('/admin')
+                            ? 'text-purple-400 bg-purple-500/20 font-semibold'
+                            : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
+                        }`}
+                        onClick={() => setShowUserDropdown(false)}
+                      >
+                        <Settings className="w-4 h-4 mr-3" />
+                        Admin Dashboard
+                        {isActiveLink('/admin') && (
+                          <span className="ml-auto w-2 h-2 bg-purple-400 rounded-full"></span>
+                        )}
+                      </Link>
+                    </div>
+                  )}
+                  
+                  <div className={`${isAdmin ? 'border-t border-white/10 pt-1' : ''}`}>
                     <LogoutLink postLogoutRedirectURL="/" className="flex items-center w-full px-4 py-2 text-gray-300 hover:text-white hover:bg-red-500/20 transition-colors duration-200">
                       <LogOut className="w-4 h-4 mr-3" />
                       Sign Out
@@ -310,37 +376,41 @@ export default function Navbar() {
           <div className="min-h-full flex flex-col">
             {/* Navigation Links */}
             <div className="flex-1 px-4 py-4 space-y-3 bg-black/60 backdrop-blur-md mx-3 mt-3 rounded-2xl border border-white/10" style={{ backdropFilter: 'blur(16px)' }}>
-              <Link 
-                href="/services" 
-                onClick={closeMobileMenu}
-                className="block text-xl font-medium text-white hover:text-purple-400 transition-colors duration-200 py-2 border-b border-gray-800/50"
-              >
-                Services
-              </Link>
-              
-              <Link 
-                href="/contact" 
-                onClick={closeMobileMenu}
-                className="block text-xl font-medium text-white hover:text-purple-400 transition-colors duration-200 py-2 border-b border-gray-800/50"
-              >
-                Contact Us
-              </Link>
-              
-              <Link 
-                href="/about" 
-                onClick={closeMobileMenu}
-                className="block text-xl font-medium text-white hover:text-purple-400 transition-colors duration-200 py-2 border-b border-gray-800/50"
-              >
-                About Us
-              </Link>
-              
-              <Link 
-                href="/pricing" 
-                onClick={closeMobileMenu}
-                className="block text-xl font-medium text-white hover:text-purple-400 transition-colors duration-200 py-2 border-b border-gray-800/50"
-              >
-                Pricing
-              </Link>
+              {navLinks.map((link) => (
+                <Link 
+                  key={link.href}
+                  href={link.href} 
+                  onClick={closeMobileMenu}
+                  className={getLinkClasses(link.href, true)}
+                >
+                  <span className="flex items-center justify-between">
+                    {link.label}
+                    {isActiveLink(link.href) && (
+                      <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></span>
+                    )}
+                  </span>
+                </Link>
+              ))}
+
+              {/* Admin Dashboard Link for Mobile */}
+              {!isLoading && isAuthenticated && isAdmin && (
+                <Link 
+                  href="/admin" 
+                  onClick={closeMobileMenu}
+                  className={`block text-xl font-medium transition-all duration-300 py-2 border-b border-gray-800/50 ${
+                    isActiveLink('/admin')
+                      ? 'text-purple-400 bg-purple-500/10 px-3 rounded-lg border-purple-500/30'
+                      : 'text-purple-300 hover:text-purple-400'
+                  }`}
+                >
+                  <span className="flex items-center justify-between">
+                    Admin Dashboard
+                    {isActiveLink('/admin') && (
+                      <span className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></span>
+                    )}
+                  </span>
+                </Link>
+              )}
 
               {/* Mobile User Section (when authenticated) */}
               {!isLoading && isAuthenticated && user && (
@@ -366,6 +436,11 @@ export default function Navbar() {
                           : user.given_name || 'User'}
                       </div>
                       <div className="text-gray-300 text-sm truncate">{user.email}</div>
+                      {isAdmin && (
+                        <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 mt-1">
+                          Admin
+                        </div>
+                      )}
                       {/* Mobile Credits in User Section */}
                       <div className="flex items-center space-x-2 mt-1">
                         <Coins className="w-3 h-3 text-yellow-500" />

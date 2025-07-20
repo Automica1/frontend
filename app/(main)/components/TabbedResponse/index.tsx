@@ -46,12 +46,8 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
     }
   }, [isVerificationSolution, isQrExtractSolution]);
 
-  // Switch to API response tab when error occurs
-  useEffect(() => {
-    if (error) {
-      setActiveTab('api-response');
-    }
-  }, [error]);
+  // REMOVED: Auto-switch to API response tab when error occurs
+  // The error will now be handled in the Result tab instead
 
   // Show processed image tab only for non-verification and non-QR extract solutions
   const showProcessedImageTab = !isVerificationSolution && !isQrExtractSolution;
@@ -66,9 +62,9 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   // Get the actual base64 data - prefer maskedBase64 prop, fallback to data.result
   const imageBase64 = maskedBase64 || (data && data.result) || '';
 
-  // Disable tabs when there's an error
-  const isProcessedImageTabDisabled = !!error;
-  const isResultTabDisabled = !!error;
+  // Don't disable tabs when there's an error - let users navigate freely
+  const isProcessedImageTabDisabled = false;
+  const isResultTabDisabled = false;
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden h-full flex flex-col">
@@ -103,6 +99,8 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
               solutionType={solutionType}
               loading={loading}
               solution={solution}
+              error={error}
+              errorDetails={errorDetails}
             />
           </div>
         )}

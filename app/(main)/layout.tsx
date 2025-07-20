@@ -5,6 +5,7 @@ import { AuthProvider } from "./components/layout_components/AuthProvider";
 import Navbar from "./components/layout_components/Navbar"
 import Footer from "./components/layout_components/Footer";
 import CreditsProvider from "./components/layout_components/CreditsProvider";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,11 +22,18 @@ export const metadata: Metadata = {
   description: "Plug and Play Ai Automation Platform",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  const { getUser, getRoles } = getKindeServerSession();
+  const roles = await getRoles();
+
+  const isAdmin = roles?.some(role => 
+        role.key === 'admin'
+      );
   return (
     <AuthProvider>
      <CreditsProvider>
@@ -33,7 +41,7 @@ export default function RootLayout({
        <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-        <Navbar/>
+        <Navbar isAdmin={isAdmin} />
         {children}
         <Footer/>
        </body>
