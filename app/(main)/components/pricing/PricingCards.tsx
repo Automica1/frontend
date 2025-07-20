@@ -158,15 +158,17 @@ const PricingCards = () => {
                   </ul>
 
                   {/* CTA Button */}
-                  <button
-                    className={`w-full py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
-                      plan.popular
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-purple-500/25'
-                        : 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-white/30'
-                    }`}
-                  >
-                    {plan.popular ? 'Start Free Trial' : 'Get Started'}
-                  </button>
+                  <Link href="/contact">
+                    <button
+                      className={`w-full cursor-pointer py-3 px-6 rounded-xl font-medium transition-all duration-300 ${
+                        plan.popular
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-purple-500/25'
+                          : 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-white/30'
+                      }`}
+                    >
+                      {plan.popular ? 'Start Free Trial' : 'Get Started'}
+                    </button>
+                  </Link>
                 </div>
 
                 {/* Floating elements for visual interest */}
