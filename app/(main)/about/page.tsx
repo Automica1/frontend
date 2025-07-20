@@ -235,7 +235,7 @@ export default function About() {
         <div className="max-w-6xl mx-auto relative">
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { value: "10K+", label: "API Calls Daily" },
+              { value: "< 1 sec", label: "Average Response Time" },
               { value: "99.9%", label: "Uptime Guarantee" },
               { value: "24/7", label: "Support Available" }
             ].map((stat, index) => (
@@ -266,9 +266,9 @@ export default function About() {
       <section className="py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-light mb-6 text-white">Ready to Transform Your Business?</h2>
-          <p className="text-xl text-gray-300 mb-8 font-light opacity-90">
+          {/* <p className="text-xl text-gray-300 mb-8 font-light opacity-90">
             Join thousands of companies already leveraging our AI APIs to drive innovation and growth.
-          </p>
+          </p> */}
           <button onClick={handleClick} className="group relative inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500/90 to-purple-800/90 rounded-lg text-white font-medium text-lg hover:from-purple-600/90 hover:to-purple-900/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
             <span className="mr-3">Get Started Now</span>
             <div className="w-5 h-5 group-hover:translate-x-1 transition-transform">

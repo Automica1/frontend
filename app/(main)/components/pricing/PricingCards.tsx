@@ -7,64 +7,57 @@ import Link from 'next/link';
 const PricingCards = () => {
   const plans = [
     {
-      name: "Starter",
-      price: "29",
-      period: "month",
-      description: "Perfect for small teams getting started",
-      icon: <Zap className="w-6 h-6" />,
-      features: [
-        "Up to 5 team members",
-        "10 automation workflows",
-        "Basic analytics",
-        "Email support",
-        "API access",
-        "Cloud storage (10GB)"
-      ],
-      gradient: "from-blue-500/20 via-purple-500/20 to-pink-500/20",
-      borderGradient: "from-blue-500/50 to-purple-500/50",
-      popular: false
-    },
-    {
-      name: "Professional",
-      price: "79",
-      period: "month",
-      description: "Advanced features for growing businesses",
-      icon: <Star className="w-6 h-6" />,
-      features: [
-        "Up to 25 team members",
-        "Unlimited automation workflows",
-        "Advanced analytics & reports",
-        "Priority support",
-        "Advanced API access",
-        "Cloud storage (100GB)",
-        "Custom integrations",
-        "Advanced security"
-      ],
-      gradient: "from-purple-500/20 via-pink-500/20 to-orange-500/20",
-      borderGradient: "from-purple-500/50 to-pink-500/50",
-      popular: true
-    },
-    {
-      name: "Enterprise",
-      price: "199",
-      period: "month",
-      description: "Complete solution for large organizations",
-      icon: <Crown className="w-6 h-6" />,
-      features: [
-        "Unlimited team members",
-        "Enterprise automation suite",
-        "Custom analytics dashboard",
-        "24/7 dedicated support",
-        "Enterprise API & webhooks",
-        "Unlimited cloud storage",
-        "White-label solutions",
-        "Advanced security & compliance",
-        "Custom onboarding"
-      ],
-      gradient: "from-orange-500/20 via-red-500/20 to-pink-500/20",
-      borderGradient: "from-orange-500/50 to-red-500/50",
-      popular: false
-    }
+    name: "Starter",
+    price: "$ 12 / month",
+    period: "month",
+    description: "Everything you need to start integrating AI into your projects",
+    icon: <Zap className="w-6 h-6" />,
+    features: [
+      "1000 AI credits included",
+      "Use with any API",
+      "Email support (24 hr response)",
+      "Secure key management & audit logs"
+    ],
+    gradient: "from-blue-500/20 via-purple-500/20 to-pink-500/20",
+    borderGradient: "from-blue-500/50 to-purple-500/50",
+    popular: false
+  },
+  {
+    name: "Professional",
+    price: "$ 99 / month",
+    period: "month",
+    description: "Advanced tools and support for growing teams",
+    icon: <Star className="w-6 h-6" />,
+    features: [
+      "9000 AI credits included",
+      "Advanced features for growing teams",
+      "Use with any API (higher limits)",
+      "Priority support",
+      "Advanced analytics & reports",
+      "Custom integrations & webhooks (limited)",
+      "Secure key management & audit logs"
+    ],
+    gradient: "from-purple-500/20 via-pink-500/20 to-orange-500/20",
+    borderGradient: "from-purple-500/50 to-pink-500/50",
+    popular: false
+  },
+  {
+    name: "Enterprise",
+    price: "Custom pricing",
+    // period: "month",
+    description: "Comprehensive AI solutions tailored for large organizations",
+    icon: <Crown className="w-6 h-6" />,
+    features: [
+      "Unlimited AI credits (volume-based)",
+      "Tailored for large organizations",
+      "Dedicated SLA & 24/7 support",
+      "Custom integrations & deployment options",
+      "Secure key management & audit logs"
+    ],
+    gradient: "from-orange-500/20 via-red-500/20 to-pink-500/20",
+    borderGradient: "from-orange-500/50 to-red-500/50",
+    popular: false
+  }
   ];
 
   return (
@@ -139,11 +132,11 @@ const PricingCards = () => {
                   <div className="mb-6">
                     <div className="flex items-baseline">
                       <span className="text-4xl font-bold text-white">
-                        ${plan.price}
+                        {plan.price}
                       </span>
-                      <span className="text-gray-400 ml-2">
+                      {/* <span className="text-gray-400 ml-2">
                         /{plan.period}
-                      </span>
+                      </span> */}
                     </div>
                     <p className="text-gray-400 text-sm mt-2">
                       {plan.description}

@@ -1,5 +1,5 @@
 // lib/solutions.ts
-import { Table, QrCode, User, Scissors, Code, Zap, Shield, Globe, FileCheck } from 'lucide-react';
+import { Table, QrCode, User, Scissors, Code, Zap, Shield, Globe, FileCheck, Cpu } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export type SolutionKey =
@@ -8,7 +8,8 @@ export type SolutionKey =
   | 'id-crop'
   | 'qr-masking'
   | 'face-verify'
-  | 'face-cropping';
+  | 'face-cropping'
+  | 'ocr-engine';
 
 export interface UseCase {
   title: string;
@@ -32,6 +33,7 @@ export interface Solution {
   slug: SolutionKey;
   popular?: boolean;
   imageSrc?: string;
+  gifSrc?: string;
   available?: boolean;
   soon?: boolean;
   tagline: string;
@@ -50,18 +52,19 @@ export const rawSolutions: Record<SolutionKey, Solution> = {
     title: "Signature Verification",
     slug: "signature-verification",
     popular: true,
-    tagline: "AI-powered signature authentication",
-    description: "Advanced signature verification API that compares two signature images to detect forgeries. Uses machine learning algorithms to analyze signature patterns, stroke dynamics, and authenticity markers.",
+    tagline: "Authenticate Signatures—Fast and Flawless.",
+    description: "A concise, AI-driven service that authenticates both handwritten and digital signatures in real time, ensuring document integrity and preventing fraud. With seamless API integration and industry-leading accuracy, it automates your verification workflows to boost compliance and reduce operational risk.",
     icon: FileCheck,
     gradient: "from-purple-600 to-blue-600",
     heroImage: "/api/placeholder/800/400",
     features: [
-      "Advanced ML algorithms for signature analysis",
-      "Forgery detection with similarity scoring",
+      "Advanced AI for signature analysis",
+      // "Forgery detection with similarity scoring",
       "Support for various image formats",
-      "Real-time verification processing",
-      "Batch processing capabilities",
-      "High accuracy fraud detection"
+      // "Real-time verification processing",
+      // "Batch processing capabilities",
+      "High accuracy fraud detection",
+      "Quick response time"
     ],
     useCases: [
       {
@@ -87,19 +90,22 @@ export const rawSolutions: Record<SolutionKey, Solution> = {
   'qr-extract': {
     title: "QR Extract",
     slug: "qr-extract",
-    popular: true,
-    tagline: "Advanced QR code detection and extraction",
-    description: "Advanced QR code detection and extraction from images with high accuracy. Supports multiple QR codes in a single image and works even with damaged or partially obscured codes.",
+    popular: false,
+    available: true,
+    tagline: "Unlock Information Hidden in Every QR.",
+    description: "An intelligent API that accurately reads and decodes both digital and scanned QR codes in real time, transforming embedded data into structured formats. Seamlessly integrate it into your workflows to automate data capture, boost operational efficiency, and eliminate manual entry errors.",
     icon: QrCode,
     gradient: "from-blue-600 to-cyan-600",
     heroImage: "/api/placeholder/800/400",
     features: [
       "Batch processing for multiple QR codes",
-      "Damaged code recovery technology",
-      "Multi-format support (QR, Data Matrix, etc.)",
-      "Real-time video processing",
-      "Error correction algorithms",
-      "High-speed processing engine"
+      // "Damaged code recovery technology",
+      "Multi-format support",
+      // "Real-time video processing",
+      // "Error correction algorithms",
+      // "High-speed processing engine",
+      "High-Accuracy Decoding",
+      "Fast response: get your masked file back in seconds"
     ],
     useCases: [
       {
@@ -125,20 +131,18 @@ export const rawSolutions: Record<SolutionKey, Solution> = {
   'id-crop': {
     title: "ID Crop",
     slug: "id-crop",
-    tagline: "Intelligent document table extraction",
+    tagline: "Instant ID Cropping for Flawless Verification.",
     available: true,
-    soon: true,
-    description: "Automatically detect, extract, and structure tabular data from documents, images, and scanned files with our Table Detection API. Essential for financial analysis, data migration, and document processing.",
+    soon: false,
+    description: "Automatically locate and crop identity documents—passports, driver’s licenses, and more—from photos or scans with pinpoint precision. Simplify downstream processing, bolster privacy controls, and maintain consistent, compliant document workflows.",
     icon: Table,
     gradient: "from-cyan-600 to-teal-600",
     heroImage: "/api/placeholder/800/400",
     features: [
-      "Complex table recognition algorithms",
-      "CSV and Excel export capabilities",
-      "Maintains formatting integrity",
-      "Multi-page document support",
-      "Handwritten text recognition",
-      "Financial document optimization"
+      "Precision Cropping & Alignment",
+      "Real-Time & Batch Processing",
+      "Multi-format support",
+      "Lightning-fast processing."
     ],
     useCases: [
       {
@@ -166,18 +170,16 @@ export const rawSolutions: Record<SolutionKey, Solution> = {
     slug: "qr-masking",
     available: true,
     popular: true,
-    tagline: "Create branded QR codes that work",
-    description: "Create branded, visually appealing QR codes without compromising scan reliability. Our QR Masking API enables customization while ensuring optimal functionality.",
+    tagline: "Instant QR Masking. Total Document Privacy.",
+    description: "Obscure sensitive payloads inside QR codes to prevent unauthorized data exposure. Ensure compliance with industry regulations and audit requirements. Uphold privacy standards and securely share QR-enabled documents across workflows.",
     icon: QrCode,
     gradient: "from-teal-600 to-green-600",
     heroImage: "/api/placeholder/800/400",
     features: [
-      "Brand integration with logos and colors",
-      "Error correction optimization",
-      "Analytics tracking built-in",
-      "Custom design templates",
-      "Bulk generation capabilities",
-      "Quality assurance testing"
+      "Batch & Bulk Operations",
+      "Optimised performance",
+      "Works with multiple QRs in single document",
+      "Instant turnaround guaranteed."
     ],
     useCases: [
       {
@@ -203,19 +205,17 @@ export const rawSolutions: Record<SolutionKey, Solution> = {
   'face-verify': {
     title: "Face Verify",
     slug: "face-verify",
-    popular: true,
+    available: true,
     tagline: "Secure facial recognition and verification",
-    description: "Advanced facial recognition and verification system with high accuracy and privacy protection. Perfect for security applications and identity verification systems.",
+    description: "Match live facial captures against stored images for robust identity authentication. Maintain accuracy across lighting, poses, and device cameras with advanced deep learning. Reduce fraud and accelerate onboarding while ensuring a seamless user experience.",
     icon: User,
     gradient: "from-green-600 to-yellow-600",
     heroImage: "/api/placeholder/800/400",
     features: [
+      "High accuracy across varied document quality",
       "Privacy-first approach with data protection",
-      "Liveness detection to prevent spoofing",
-      "Cross-platform compatibility",
       "Real-time verification processing",
-      "Biometric template encryption",
-      "GDPR and privacy compliance"
+      "Multi-Angle Face Matching"
     ],
     useCases: [
       {
@@ -242,8 +242,46 @@ export const rawSolutions: Record<SolutionKey, Solution> = {
     title: "Face Cropping",
     slug: "face-cropping",
     tagline: "Intelligent face detection and cropping",
-    description: "Intelligent face detection and cropping with automatic optimization for profile pictures, ID photos, and document processing applications.",
+    description: "Automatically detect and isolate facial regions from photos or video frames. Standardize image inputs for recognition, analysis, or anonymization. Streamline downstream workflows while preserving user privacy and data consistency.",
     icon: Scissors,
+    available: true,
+    gradient: "from-yellow-600 to-orange-600",
+    heroImage: "/api/placeholder/800/400",
+    features: [
+      "Auto-alignment for perfect portraits",
+      // "Quality enhancement algorithms",
+      "Batch processing capabilities",
+      "Efficient, and Built for Maximum Throughput."
+    ],
+    useCases: [
+      {
+        title: "Profile Pictures",
+        description: "Optimize photos for social media and professional use",
+        icon: Globe
+      },
+      {
+        title: "Employee Photos",
+        description: "Process employee photos for company directories",
+        icon: Code
+      },
+      {
+        title: "ID Processing",
+        description: "Extract and optimize face photos from ID documents",
+        icon: Shield
+      }
+    ],
+
+    apiEndpoint: "https://api.yourcompany.com/v1/face-cropping",
+    documentation: "/docs/face-cropping"
+  },
+  'ocr-engine': {
+    title: "OCR Engine",
+    slug: "ocr-engine",
+    tagline: "OCR That Handles PDFs, Scans, and Screenshots.",
+    description: "Intelligent face detection and cropping with automatic optimization for profile pictures, ID photos, and document processing applications.",
+    icon: Cpu,
+    available: true,
+    soon: true,
     gradient: "from-yellow-600 to-orange-600",
     heroImage: "/api/placeholder/800/400",
     features: [
@@ -283,7 +321,8 @@ export const solutions: Record<string, Solution> = Object.fromEntries(
       key,
       {
         ...sol,
-        imageSrc: `/images/${sol.slug}.png`
+        imageSrc: `/images/${sol.slug}.png`,
+        gifSrc: `/images/${sol.slug}_gif.gif`
       }
     ]
   )

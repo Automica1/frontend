@@ -32,6 +32,7 @@ export default async function SolutionPage({ params }: SolutionPageProps) {
     gradient: solution.gradient,
     apiEndpoint: solution.apiEndpoint,
     features: solution.features,
+    gifSrc: solution.gifSrc,
     // Transform useCases to exclude icons
     useCases: solution.useCases.map(useCase => ({
       title: useCase.title,

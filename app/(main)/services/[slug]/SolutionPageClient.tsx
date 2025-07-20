@@ -29,6 +29,7 @@ interface SolutionPageClientProps {
     title: string;
     slug: string;
     tagline: string;
+    gifSrc?: string;
     description: string;
     gradient: string;
     apiEndpoint?: string;

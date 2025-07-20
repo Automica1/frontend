@@ -229,7 +229,7 @@ From compliance checks to data extraction, the process is fast, secure, and full
                   
                   {/* Hover indicator */}
                   <p className="text-sm border font-light border-white/[0.2] rounded-full text-gray-300 px-3 py-1.5 self-start opacity-70 group-hover:opacity-100 group-hover:border-purple-400/50 transition-all duration-300">
-                    Built for Enterprise
+                    Step {index+1}
                   </p>
                 </div>
 
