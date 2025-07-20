@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { Solution, SolutionType } from '../../types/solution';
 import { getFileRequirementText, getProcessingMessage } from '../../../utils/solutionHelpers';
-import { EnhancedErrorDisplay } from './EnhancedErrorDisplay';
+// import { EnhancedErrorDisplay } from './EnhancedErrorDisplay';
 import '../terminal.css';
 
 interface ApiResponseTabProps {
@@ -78,6 +78,13 @@ export const ApiResponseTab: React.FC<ApiResponseTabProps> = ({
     });
   };
 
+  const getErrorResponse = () => {
+    if (errorDetails) {
+      return JSON.stringify(errorDetails, null, 2);
+    }
+    return JSON.stringify({ error: error }, null, 2);
+  };
+
   return (
     <div className="h-full flex flex-col">
       {!data && !loading && !error && (
@@ -98,9 +105,9 @@ export const ApiResponseTab: React.FC<ApiResponseTabProps> = ({
         </div>
       )}
 
-      {error && <EnhancedErrorDisplay error={error} errorDetails={errorDetails} />}
+      {/* {error && <EnhancedErrorDisplay error={error} errorDetails={errorDetails} />} */}
 
-      {data && (
+      {(data || error) && (
         <div className="flex flex-col flex-1 min-h-0">
           <div className="bg-black rounded-none border-0 flex-1 min-h-0 flex flex-col">
             <div className="flex justify-end flex-shrink-0 cursor-pointer">
@@ -124,7 +131,7 @@ export const ApiResponseTab: React.FC<ApiResponseTabProps> = ({
             
             <div className="p-4 custom-scrollbar flex-1 min-h-0">
               <pre className="text-sm text-gray-300 whitespace-pre-wrap break-words overflow-wrap-anywhere leading-relaxed">
-                {formatApiResponse(data)}
+                {error ? getErrorResponse() : formatApiResponse(data)}
               </pre>
             </div>
           </div>

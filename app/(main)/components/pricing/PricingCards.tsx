@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check, Star, Zap, Crown } from 'lucide-react';
 import { HoverBorderGradient } from '../ui/hover-border-gradient';
+import Link from 'next/link';
 
 
 const PricingCards = () => {
@@ -188,16 +189,18 @@ const PricingCards = () => {
           <p className="text-gray-400 mb-6">
             Need a custom solution? We've got you covered.
           </p>
-          <div className="flex justify-center text-center">
-      <HoverBorderGradient
-        containerClassName="rounded-full"
-        as="button"
-        className="dark:bg-black cursor-pointer bg-white text-black dark:text-white flex items-center space-x-2"
-      >
-        
-        <span>Contact Sales</span>
-      </HoverBorderGradient>
-    </div>
+          
+<div className="flex justify-center text-center">
+  <Link href="/contact">
+    <HoverBorderGradient
+      containerClassName="rounded-full"
+      as="button"
+      className="dark:bg-black cursor-pointer bg-white text-black dark:text-white flex items-center space-x-2"
+    >
+      <span>Contact Sales</span>
+    </HoverBorderGradient>
+  </Link>
+</div>
           {/* <button className="inline-flex items-center px-6 py-3 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 text-white hover:bg-white/10 hover:border-white/20 transition-all duration-300">
             Contact Sales
           </button> */}
