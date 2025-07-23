@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { apiService } from '../lib/apiService'; // Adjust path as needed
+import { useCreditsStore } from '../stores/creditsStore'; // Adjust path as needed
 
 export default function CreditsPage() {
   const [token, setToken] = useState('');
@@ -10,30 +12,46 @@ export default function CreditsPage() {
   const [creditsAdded, setCreditsAdded] = useState<number | null>(null);
   const [previousCredits, setPreviousCredits] = useState<number | null>(null);
   
-  // Mock credits for demo - replace with actual store
-  const credits = 110;
+  // Get credits from store to display current balance
+  const { credits } = useCreditsStore();
 
   const handleSubmit = async () => {
     if (!token.trim()) {
       setStatus('error');
-      setMessage('Please enter a valid token');
+      setMessage('Please enter a token.');
       return;
     }
 
     setIsSubmitting(true);
     setStatus('loading');
-    setMessage('Redeeming your token...');
+    setMessage('Redeeming token...');
     
+    // Store current credits before redemption
     setPreviousCredits(credits || 0);
 
-    // Simulate API call for demo
-    setTimeout(() => {
-      if (token === 'demo123') {
+    try {
+      const result = await apiService.redeemToken(token);
+      
+      // Backend returns different structure - check for message presence instead of success field
+      if (result.message && result.message.toLowerCase().includes('success')) {
         setStatus('success');
-        setCreditsAdded(50);
-        setMessage('Token redeemed successfully! +50 credits added • New balance: 160 credits');
+        setCreditsAdded(result.creditsAdded || 0); // Use 'creditsAdded' instead of 'credits'
+        
+        // Create a more detailed success message
+        let successMessage = 'Token redeemed successfully!';
+        if (result.creditsAdded) {
+          successMessage += ` +${result.creditsAdded} credits added`;
+        }
+        if (result.remainingCredits) {
+          successMessage += ` • New balance: ${result.remainingCredits} credits`;
+        }
+        
+        setMessage(successMessage);
+        
+        // Clear the token input after successful redemption
         setToken('');
         
+        // Auto-hide success message after 5 seconds
         setTimeout(() => {
           if (status === 'success') {
             setStatus('idle');
@@ -44,14 +62,33 @@ export default function CreditsPage() {
         }, 5000);
       } else {
         setStatus('error');
-        setMessage('Invalid token. Please check your token and try again.');
+        setMessage(`${result.message || 'Token redemption failed'}`);
       }
+    } catch (error: any) {
+      setStatus('error');
+      
+      // Handle different types of errors
+      if (error.message.includes('Invalid token format')) {
+        setMessage('Invalid token format. Please check your token and try again.');
+      } else if (error.message.includes('Authentication failed')) {
+        setMessage('Authentication failed. Please log in and try again.');
+      } else if (error.message.includes('Network error')) {
+        setMessage('Network error. Please check your connection and try again.');
+      } else {
+        // Use the error message from the API if available, otherwise use generic message
+        const errorMessage = error.errorData?.message || error.message || 'Failed to redeem token. Please try again.';
+        setMessage(`${errorMessage}`);
+      }
+      
+      console.error('Token redemption failed:', error);
+    } finally {
       setIsSubmitting(false);
-    }, 2000);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setToken(e.target.value);
+    // Clear previous messages when user starts typing
     if (status !== 'idle') {
       setStatus('idle');
       setMessage('');
@@ -92,7 +129,9 @@ export default function CreditsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Current Balance</p>
-              <p className="text-2xl font-bold text-white">{credits} credits</p>
+              <p className="text-2xl font-bold text-white">
+                {typeof credits === 'number' ? `${credits} credits` : 'Loading...'}
+              </p>
             </div>
             <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center">
               <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -114,7 +153,7 @@ export default function CreditsPage() {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Enter your 32-character token"
+                  placeholder="Enter your token (e.g., 64ee48b483a3571a52578438d39cf4d1)"
                   value={token}
                   onChange={handleInputChange}
                   onKeyPress={handleKeyPress}
@@ -198,11 +237,8 @@ export default function CreditsPage() {
 
           {/* Help Text */}
           <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500 mb-2">
-              Enter a valid 32-character redemption token to add credits
-            </p>
-            <p className="text-xs text-gray-600">
-              Demo: Use token "demo123" to test the interface
+            <p className="text-xs text-gray-500">
+              Enter a valid 32-character token to add credits to your account.
             </p>
           </div>
         </div>
