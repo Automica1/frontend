@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Star, Wallet, Brain, ChevronDown, User, LogOut, Coins, Menu, X, Settings } from 'lucide-react';
+import { Star, Wallet, Brain, ChevronDown, User, LogOut, Coins, Menu, X, Settings, Plus } from 'lucide-react';
 import { RegisterLink, LoginLink, LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { useCredits } from '../../hooks/useCredits';
@@ -178,24 +178,37 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
         
         {/* Desktop Auth Section */}
         <div className="hidden md:flex items-center space-x-4 animate-[slideInRight_0.8s_ease-out_0.4s_both]">
-          {/* Only show credits if user is authenticated */}
+          {/* Credits and Add Credits section - only show if user is authenticated */}
           {!isLoading && isAuthenticated && (
-            <button 
-              onClick={refreshCredits}
-              className="flex items-center space-x-2 text-gray-300 hover:text-purple-400 transition-all duration-300 hover:scale-105 cursor-pointer"
-              title="Click to refresh credits"
-            >
-              <Coins className="w-4 h-4 text-yellow-500" />
-              <span>
-                {creditsLoading ? (
-                  <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                ) : creditsError ? (
-                  'Error'
-                ) : (
-                  credits !== null ? credits.toLocaleString() : '—'
-                )}
-              </span>
-            </button>
+            <div className="flex items-center space-x-3">
+              {/* Credits Display */}
+              <button 
+                onClick={refreshCredits}
+                className="flex items-center space-x-2 text-gray-300 hover:text-purple-400 transition-all duration-300 hover:scale-105 cursor-pointer"
+                title="Click to refresh credits"
+              >
+                <Coins className="w-4 h-4 text-yellow-500" />
+                <span>
+                  {creditsLoading ? (
+                    <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                  ) : creditsError ? (
+                    'Error'
+                  ) : (
+                    credits !== null ? credits.toLocaleString() : '—'
+                  )}
+                </span>
+              </button>
+              
+              {/* Add Credits Button */}
+              {/* <Link 
+                href="/credits"
+                className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-green-500/20 to-green-600/20 backdrop-blur-sm border border-green-500/30 rounded-lg text-green-300 hover:text-green-200 hover:from-green-500/30 hover:to-green-600/30 transition-all duration-300 hover:scale-105"
+                title="Add more credits"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="text-sm font-medium">Add Credits</span>
+              </Link> */}
+            </div>
           )}
           
           {/* Show loading state */}
@@ -278,7 +291,7 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
 
                   {/* Credits Section */}
                   <div className="px-4 py-3 border-b border-white/10">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
                         <Coins className="w-4 h-4 text-yellow-500" />
                         <span className="text-gray-300 text-sm">Credits</span>
@@ -301,8 +314,17 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
                       </div>
                     </div>
                     {creditsError && (
-                      <div className="text-red-400 text-xs mt-1">{creditsError}</div>
+                      <div className="text-red-400 text-xs mb-2">{creditsError}</div>
                     )}
+                    {/* Add Credits link in dropdown */}
+                    <Link 
+                      href="/credits"
+                      onClick={() => setShowUserDropdown(false)}
+                      className="flex items-center justify-center space-x-2 w-full px-3 py-2 bg-gradient-to-r from-green-500/20 to-green-600/20 border border-green-500/30 rounded-md text-green-300 hover:text-green-200 hover:from-green-500/30 hover:to-green-600/30 transition-all duration-200"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span className="text-xs font-medium">Add Credits</span>
+                    </Link>
                   </div>
                   
                   {/* Admin Dashboard Link */}
@@ -391,6 +413,29 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
                   </span>
                 </Link>
               ))}
+
+              {/* Add Credits Link for Mobile */}
+              {!isLoading && isAuthenticated && (
+                <Link 
+                  href="/credits" 
+                  onClick={closeMobileMenu}
+                  className={`block text-xl font-medium transition-all duration-300 py-2 border-b border-gray-800/50 ${
+                    isActiveLink('/credits')
+                      ? 'text-green-400 bg-green-500/10 px-3 rounded-lg border-green-500/30'
+                      : 'text-green-300 hover:text-green-400'
+                  }`}
+                >
+                  <span className="flex items-center justify-between">
+                    <span className="flex items-center space-x-2">
+                      <Plus className="w-5 h-5" />
+                      <span>Add Credits</span>
+                    </span>
+                    {isActiveLink('/credits') && (
+                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    )}
+                  </span>
+                </Link>
+              )}
 
               {/* Admin Dashboard Link for Mobile */}
               {!isLoading && isAuthenticated && isAdmin && (
