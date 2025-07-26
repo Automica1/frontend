@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Upload, X, File } from "lucide-react";
+import { Upload, X, File, FileText } from "lucide-react";
 
 const mainVariant = {
   initial: {
@@ -27,6 +27,34 @@ interface FileWithPreview extends File {
   preview?: string;
 }
 
+// File validation constants
+const ACCEPTED_FILE_TYPES = [
+  'image/jpeg',
+  'image/jpg', 
+  'image/png',
+  'application/pdf'
+];
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+
+const validateFile = (file: File): { isValid: boolean; error?: string } => {
+  if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+    return { 
+      isValid: false, 
+      error: `File type ${file.type} not supported. Please upload PDF, JPEG, JPG, or PNG files only.` 
+    };
+  }
+  
+  if (file.size > MAX_FILE_SIZE) {
+    return { 
+      isValid: false, 
+      error: `File size ${(file.size / (1024 * 1024)).toFixed(2)}MB exceeds 10MB limit.` 
+    };
+  }
+  
+  return { isValid: true };
+};
+
 export const FileUpload = ({
   onChange,
 }: {
@@ -34,6 +62,7 @@ export const FileUpload = ({
 }) => {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Create preview URLs for image files
@@ -58,19 +87,42 @@ export const FileUpload = ({
   }, [files]);
 
   const handleFileChange = (newFiles: File[]) => {
-    // Clean up existing previews
-    files.forEach(file => {
-      if (file.preview) {
-        URL.revokeObjectURL(file.preview);
-      }
-    });
+    setError(null);
     
-    const filesWithPreviews = newFiles.map(createPreview);
-    setFiles(filesWithPreviews);
-    onChange && onChange(newFiles);
+    // Validate each file
+    const validFiles: File[] = [];
+    let firstError: string | null = null;
+    
+    for (const file of newFiles) {
+      const validation = validateFile(file);
+      if (validation.isValid) {
+        validFiles.push(file);
+      } else if (!firstError) {
+        firstError = validation.error || 'Invalid file';
+      }
+    }
+    
+    if (firstError) {
+      setError(firstError);
+    }
+    
+    if (validFiles.length > 0) {
+      // Clean up existing previews
+      files.forEach(file => {
+        if (file.preview) {
+          URL.revokeObjectURL(file.preview);
+        }
+      });
+      
+      const filesWithPreviews = validFiles.map(createPreview);
+      setFiles(filesWithPreviews);
+      onChange && onChange(validFiles);
+    }
   };
 
   const handleRemoveFile = (indexToRemove: number) => {
+    setError(null);
+    
     // Clean up preview URL for removed file
     const fileToRemove = files[indexToRemove];
     if (fileToRemove.preview) {
@@ -114,10 +166,21 @@ export const FileUpload = ({
     return file.type.startsWith('image/');
   };
 
+  const isPDFFile = (file: FileWithPreview) => {
+    return file.type === 'application/pdf';
+  };
+
   const hasFiles = files.length > 0;
 
   return (
     <div className="w-full h-full flex flex-col max-h-[500px]">
+      {/* Error message */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-lg">
+          <p className="text-red-300 text-sm">{error}</p>
+        </div>
+      )}
+
       {/* Upload Area with GridPattern Background */}
       <div
         className="flex-1 flex flex-col min-h-0 overflow-hidden"
@@ -135,7 +198,7 @@ export const FileUpload = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept=".pdf,.jpeg,.jpg,.png,image/jpeg,image/png,application/pdf"
             onChange={(e) => handleFileChange(Array.from(e.target.files || []))}
             className="hidden"
           />
@@ -155,6 +218,9 @@ export const FileUpload = ({
                   </p>
                   <p className="relative z-20 font-sans font-normal text-neutral-400 text-xs sm:text-base mt-2">
                     Drag or drop your files here or click to upload
+                  </p>
+                  <p className="relative z-20 font-sans font-normal text-neutral-500 text-xs mt-1">
+                    Supports PDF, JPEG, JPG, PNG (max 10MB)
                   </p>
                 </div>
                 
@@ -260,14 +326,18 @@ export const FileUpload = ({
                       </div>
                     </div>
                   ) : (
-                    // Non-image file preview
+                    // PDF or other file preview
                     <div className="p-4 sm:p-6 flex items-center space-x-3 sm:space-x-4 h-full">
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-neutral-800 rounded-lg flex items-center justify-center"
                       >
-                        <File className="h-6 w-6 sm:h-8 sm:w-8 text-neutral-400" />
+                        {isPDFFile(file) ? (
+                          <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-red-400" />
+                        ) : (
+                          <File className="h-6 w-6 sm:h-8 sm:w-8 text-neutral-400" />
+                        )}
                       </motion.div>
                       <div className="flex-1 min-w-0 pr-6 sm:pr-8">
                         <motion.p

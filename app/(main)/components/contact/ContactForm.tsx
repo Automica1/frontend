@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Send, CheckCircle, ArrowRight, FileCheck, QrCode, Table, Shield, User, Scissors, Pen } from 'lucide-react';
+import { useKindeAuth } from "@kinde-oss/kinde-auth-nextjs";
 
 // Services data
 const servicesData = {
@@ -83,6 +84,8 @@ interface ContactFormProps {
 }
 
 const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
+  const { isAuthenticated, user } = useKindeAuth();
+  
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -93,6 +96,18 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pre-fill form data when user is authenticated (but keep fields empty for editing)
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Don't pre-fill, just set empty values to let placeholder show
+      setFormData(prev => ({
+        ...prev,
+        name: '',
+        email: ''
+      }));
+    }
+  }, [isAuthenticated, user]);
 
   const handleInputChange = (e: { target: { name: any; value: any; }; }) => {
     const { name, value } = e.target;
@@ -124,20 +139,26 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          // Include user ID if authenticated for backend reference
+          userId: isAuthenticated ? user?.id : null
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
         setIsSubmitted(true);
-        setFormData({
+        // Reset only the fields that should be cleared (keep name/email empty for next time)
+        setFormData(prev => ({
+          ...prev,
           name: '',
           email: '',
           company: '',
           message: '',
           inquiryType: []
-        });
+        }));
       } else {
         setError(data.error || 'Failed to send message. Please try again.');
       }
@@ -191,7 +212,12 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
                 onChange={handleInputChange}
                 required
                 className="w-full px-3 py-2.5 bg-[#161616] border border-gray-600 rounded-lg focus:border-purple-400 focus:outline-none text-white placeholder-gray-400 transition-all duration-200 font-light"
-                placeholder="John Doe"
+                placeholder={isAuthenticated && user ? 
+                  (user.given_name && user.family_name 
+                    ? `${user.given_name} ${user.family_name}` 
+                    : user.given_name || user.family_name || "Your Name"
+                  ) : "John Doe"
+                }
               />
             </div>
             <div>
@@ -206,7 +232,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
                 onChange={handleInputChange}
                 required
                 className="w-full px-3 py-2.5 bg-[#161616] border border-gray-600 rounded-lg focus:border-purple-400 focus:outline-none text-white placeholder-gray-400 transition-all duration-200 font-light"
-                placeholder="john@company.com"
+                placeholder={isAuthenticated && user?.email ? user.email : "john@company.com"}
               />
             </div>
           </div>
@@ -226,10 +252,10 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
             />
           </div>
 
-          {/* Compact Services Selection */}
+          {/* Services Selection - Now Optional */}
           <div>
             <label className="block text-sm font-light text-gray-300 mb-3">
-              Select AI Services You're Interested In *
+              Select AI Services You're Interested In (Optional)
             </label>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(servicesData).map(([key, service]) => {
@@ -276,9 +302,6 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
                 );
               })}
             </div>
-            {/* {formData.inquiryType.length === 0 && (
-              <p className="text-red-400 text-xs mt-2 font-light">Please select at least one service</p>
-            )} */}
           </div>
 
           <div>
@@ -299,17 +322,17 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
 
           <button
             type="submit"
-            disabled={isSubmitting || formData.inquiryType.length === 0}
+            disabled={isSubmitting}
             className="group relative inline-flex items-center justify-center w-full px-8 py-4 bg-gradient-to-r from-purple-500/90 to-purple-800/90 rounded-lg text-white font-medium text-lg hover:from-purple-600/90 hover:to-purple-900/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:scale-100"
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 <span>Sending Message...</span>
               </>
             ) : (
               <>
-                <Send className="w-4 h-4" />
+                <Send className="w-4 h-4 mr-2" />
                 <span>Send Message</span>
               </>
             )}

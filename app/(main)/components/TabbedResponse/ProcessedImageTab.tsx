@@ -1,6 +1,6 @@
 // components/TabbedResponseSection/ProcessedImageTab.tsx
 import React, { useState } from 'react';
-import { Copy, Check, Download, Image as ImageIcon } from 'lucide-react';
+import { Copy, Check, Download, Image as ImageIcon, AlertCircle, Info } from 'lucide-react';
 import { SolutionType } from '../../types/solution';
 import { getFileRequirementText, getProcessingMessage, getDownloadFileName } from '../../../utils/solutionHelpers';
 
@@ -12,6 +12,8 @@ interface ProcessedImageTabProps {
   hasProcessedImage: boolean;
   copiedBase64: boolean;
   onCopyBase64: (base64: string) => void;
+  error?: string | null;
+  errorDetails?: any | null;
 }
 
 export const ProcessedImageTab: React.FC<ProcessedImageTabProps> = ({
@@ -21,7 +23,9 @@ export const ProcessedImageTab: React.FC<ProcessedImageTabProps> = ({
   fileName,
   hasProcessedImage,
   copiedBase64,
-  onCopyBase64
+  onCopyBase64,
+  error,
+  errorDetails
 }) => {
   const base64ToBlob = (base64: string, mimeType: string = 'image/png'): Blob => {
     const byteCharacters = atob(base64);
@@ -53,6 +57,44 @@ export const ProcessedImageTab: React.FC<ProcessedImageTabProps> = ({
       alert('Failed to download image. Please try again.');
     }
   };
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="space-y-4 h-full flex flex-col">
+        <div className="text-center mb-4">
+          <h3 className="text-xl font-semibold text-white mb-2">
+            Image Processing Failed
+          </h3>
+        </div>
+
+        <div className="bg-red-900/20 border border-red-500 rounded-lg p-6">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-6 h-6 text-red-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="font-semibold text-red-400 mb-3 text-lg">Technical Error</h4>
+              <p className="text-red-300 mb-4 leading-relaxed">{error}</p>
+              
+              {errorDetails?.technical_message && (
+                <div className="">
+                  <div>
+                    <p className="text-gray-300 text-sm">{errorDetails.technical_message}</p>
+                  </div>
+                </div>
+              )}
+
+              {errorDetails?.status && (
+                <div className="text-xs text-gray-500 mt-4 p-2 bg-gray-800/30 rounded">
+                  <span>Status: {errorDetails.status}</span>
+                  {errorDetails.type && <span className="ml-4">Type: {errorDetails.type}</span>}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!hasProcessedImage) {
     return (

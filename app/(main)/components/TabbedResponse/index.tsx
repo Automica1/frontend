@@ -115,6 +115,8 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
               hasProcessedImage={hasProcessedImage}
               copiedBase64={copiedBase64}
               onCopyBase64={copyBase64}
+              error={error}
+              errorDetails={errorDetails}
             />
           </div>
         )}

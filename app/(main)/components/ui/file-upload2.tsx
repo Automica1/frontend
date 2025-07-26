@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Upload, X } from "lucide-react";
+import { Upload, X, AlertCircle } from "lucide-react";
 
 const mainVariant = {
   initial: {
@@ -27,6 +27,11 @@ interface FileWithPreview extends File {
   preview?: string;
 }
 
+interface ValidationError {
+  message: string;
+  type: 'size' | 'type';
+}
+
 function cn(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
 }
@@ -43,9 +48,44 @@ export const FileUpload2 = ({
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [validationError, setValidationError] = useState<ValidationError | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Create preview URLs for image files
+  // File validation constants
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+  const ALLOWED_TYPES = [
+    'image/jpeg',
+    'image/jpg', 
+    'image/png',
+    'application/pdf'
+  ];
+  const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.pdf'];
+
+  // Validate file type and size
+  const validateFile = (file: File): ValidationError | null => {
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      return {
+        type: 'size',
+        message: `File "${file.name}" is too large. Maximum size is 10MB.`
+      };
+    }
+
+    // Check file type
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    const isValidType = ALLOWED_TYPES.includes(file.type) || ALLOWED_EXTENSIONS.includes(fileExtension || '');
+    
+    if (!isValidType) {
+      return {
+        type: 'type',
+        message: `File "${file.name}" is not supported. Only JPEG, JPG, PNG, and PDF files are allowed.`
+      };
+    }
+
+    return null;
+  };
+
+  // Create preview URLs for image files (not for PDFs)
   const createPreview = (file: File): FileWithPreview => {
     if (file.type.startsWith('image/')) {
       const fileWithPreview = file as FileWithPreview;
@@ -54,6 +94,16 @@ export const FileUpload2 = ({
     }
     return file as FileWithPreview;
   };
+
+  // Clear validation error after 5 seconds
+  useEffect(() => {
+    if (validationError) {
+      const timer = setTimeout(() => {
+        setValidationError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [validationError]);
 
   // Clean up all preview URLs only when component unmounts
   useEffect(() => {
@@ -67,12 +117,28 @@ export const FileUpload2 = ({
   }, []); // Empty dependency array - only run on unmount
 
   const handleFileChange = (newFiles: File[]) => {
+    // Clear any existing validation error
+    setValidationError(null);
+
     // Calculate how many files we can add
     const remainingSlots = maxFiles - files.length;
     
     if (remainingSlots <= 0) {
       // No more slots available
+      setValidationError({
+        type: 'type',
+        message: `Maximum ${maxFiles} files allowed. Remove some files first.`
+      });
       return;
+    }
+    
+    // Validate each file
+    for (const file of newFiles) {
+      const error = validateFile(file);
+      if (error) {
+        setValidationError(error);
+        return; // Stop processing if any file is invalid
+      }
     }
     
     // Take only the files we can fit
@@ -96,6 +162,9 @@ export const FileUpload2 = ({
   };
 
   const removeFile = (indexToRemove: number) => {
+    // Clear validation error when removing files
+    setValidationError(null);
+    
     // Clean up preview URL for the specific file being removed
     const fileToRemove = files[indexToRemove];
     if (fileToRemove.preview) {
@@ -134,6 +203,28 @@ export const FileUpload2 = ({
 
   const canAcceptMore = files.length < maxFiles;
 
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (file: File) => {
+    if (file.type === 'application/pdf') {
+      return (
+        <div className="w-full h-32 bg-red-100 rounded-lg flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-4xl mb-2">📄</div>
+            <div className="text-xs text-red-600 font-medium">PDF</div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div 
       className={cn("w-full h-full flex flex-col max-h-[600px]", className)}
@@ -141,6 +232,21 @@ export const FileUpload2 = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
+      {/* Validation Error Display */}
+      {validationError && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="mb-4 p-3 bg-red-900/50 border border-red-500 rounded-lg"
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-red-400 flex-shrink-0" />
+            <p className="text-sm text-red-200">{validationError.message}</p>
+          </div>
+        </motion.div>
+      )}
+
       <motion.div
         onClick={files.length === 0 ? handleClick : undefined}
         whileHover={canAcceptMore ? "animate" : undefined}
@@ -154,7 +260,7 @@ export const FileUpload2 = ({
           id="file-upload-handle"
           type="file"
           multiple
-          accept="image/*"
+          accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
           onChange={(e) => handleFileChange(Array.from(e.target.files || []))}
           className="hidden"
           disabled={!canAcceptMore}
@@ -171,17 +277,17 @@ export const FileUpload2 = ({
             <div className="flex flex-col items-center justify-center w-full max-w-xl mx-auto space-y-4">
               <div className="text-center">
                 <p className="relative z-20 font-sans font-bold text-neutral-300 text-base">
-                  Upload Images
+                  Upload Files
                 </p>
                 <p className="relative z-20 font-sans font-normal text-neutral-400 text-sm mt-2">
-                  Upload exactly 2 images for comparison
+                  Upload up to {maxFiles} files (JPEG, JPG, PNG, PDF - Max 10MB each)
                 </p>
               </div>
               
               {/* Progress indicator - only show when files.length === 0 */}
               <div className="flex items-center gap-2">
                 <div className="text-sm font-medium text-neutral-400">
-                  {files.length}/{maxFiles} images uploaded
+                  {files.length}/{maxFiles} files uploaded
                 </div>
                 <div className="w-24 bg-neutral-700 rounded-full h-2">
                   <div 
@@ -224,12 +330,12 @@ export const FileUpload2 = ({
             </div>
           </div>
         ) : (
-          // File preview area - responsive layout for 2 images
+          // File preview area - responsive layout for files
           <div className="flex-1 flex flex-col relative z-20 min-h-0">
             {/* Progress indicator - only show when files.length > 0 */}
             <div className="flex items-center gap-2 mb-4 flex-shrink-0">
               <div className="text-sm font-medium text-neutral-400">
-                {files.length}/{maxFiles} images uploaded
+                {files.length}/{maxFiles} files uploaded
               </div>
               <div className="w-24 bg-neutral-700 rounded-full h-2">
                 <div 
@@ -242,12 +348,12 @@ export const FileUpload2 = ({
               )}
             </div>
 
-            {/* Images layout - side by side or stacked depending on available space */}
+            {/* Files layout - side by side or stacked depending on available space */}
             <div className="flex-1 flex flex-col gap-4 min-h-0">
               {files.length === 1 && (
-                // Single image + upload area
+                // Single file + upload area
                 <div className="flex-1 flex flex-col gap-4 min-h-0">
-                  {/* First image */}
+                  {/* First file */}
                   <div className="flex-1 min-h-0">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -265,39 +371,48 @@ export const FileUpload2 = ({
                         <X className="h-4 w-4" />
                       </button>
 
-                      {/* Image label */}
+                      {/* File label */}
                       <div className="absolute top-3 left-3 z-10">
                         <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-900 text-blue-200">
-                          Image 1
+                          File 1
                         </span>
                       </div>
 
-                      {/* Image preview */}
+                      {/* File preview */}
                       <div className="p-4 pt-12 flex-1 flex flex-col min-h-0">
                         <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center min-h-0 max-h-[200px] cursor-pointer hover:bg-neutral-700 transition-colors duration-200"
-                             onClick={() => setPreviewImage(files[0].preview || null)}>
-                          <motion.img
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            src={files[0].preview}
-                            alt={files[0].name}
-                            className="max-w-full max-h-full object-contain"
-                          />
+                             onClick={() => files[0].preview && setPreviewImage(files[0].preview)}>
+                          {files[0].preview ? (
+                            <motion.img
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              src={files[0].preview}
+                              alt={files[0].name}
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          ) : (
+                            getFileIcon(files[0])
+                          )}
                         </div>
                         
-                        {/* File name */}
-                        <motion.p
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="text-sm font-medium text-neutral-300 truncate flex-shrink-0"
-                        >
-                          {files[0].name}
-                        </motion.p>
+                        {/* File info */}
+                        <div className="flex-shrink-0 space-y-1">
+                          <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-sm font-medium text-neutral-300 truncate"
+                          >
+                            {files[0].name}
+                          </motion.p>
+                          <p className="text-xs text-neutral-400">
+                            {formatFileSize(files[0].size)}
+                          </p>
+                        </div>
                       </div>
                     </motion.div>
                   </div>
 
-                  {/* Upload area for second Image */}
+                  {/* Upload area for second file */}
                   <div className="flex-1 min-h-0">
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
@@ -306,22 +421,21 @@ export const FileUpload2 = ({
                         e.stopPropagation();
                         handleClick();
                       }}
-                      className="relative bg-neutral-900 rounded-lg shadow-lg  overflow-hidden cursor-pointer hover:border-blue-500 transition-all duration-200 hover:shadow-xl h-full flex flex-col"
+                      className="relative bg-neutral-900 rounded-lg shadow-lg overflow-hidden cursor-pointer hover:border-blue-500 transition-all duration-200 hover:shadow-xl h-full flex flex-col"
                     >
                       <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
                         <div className="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center mb-3">
                           <Upload className="h-6 w-6 text-blue-400" />
                         </div>
                         <h3 className="text-lg font-medium text-neutral-300 mb-2">
-                          Upload Second Image
+                          Upload Second File
                         </h3>
                         <p className="text-sm text-neutral-400 mb-3">
-                          Click here or drag and drop your second image
+                          Click here or drag and drop your second file
                         </p>
-                        {/* <div className="flex items-center gap-2 text-xs text-neutral-500">
-                          <span>Image 2</span>
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        </div> */}
+                        <p className="text-xs text-neutral-500">
+                          JPEG, JPG, PNG, PDF (Max 10MB)
+                        </p>
                       </div>
                     </motion.div>
                   </div>
@@ -329,11 +443,11 @@ export const FileUpload2 = ({
               )}
 
               {files.length === 2 && (
-                // Two images side by side
+                // Two files side by side
                 <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
                   {files.map((file, idx) => (
                     <motion.div
-                      key={`image-${idx}`}
+                      key={`file-${idx}`}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
@@ -353,34 +467,43 @@ export const FileUpload2 = ({
                         <X className="h-4 w-4" />
                       </button>
 
-                      {/* Image label */}
+                      {/* File label */}
                       <div className="absolute top-3 left-3 z-10">
                         <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-900 text-blue-200">
-                          Image {idx + 1}
+                          File {idx + 1}
                         </span>
                       </div>
 
-                      {/* Image preview */}
+                      {/* File preview */}
                       <div className="p-4 pt-12 flex-1 flex flex-col min-h-0">
                         <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center min-h-0 max-h-[150px] cursor-pointer hover:bg-neutral-700 transition-colors duration-200"
-                             onClick={() => setPreviewImage(file.preview || null)}>
-                          <motion.img
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            src={file.preview}
-                            alt={file.name}
-                            className="max-w-full max-h-full object-contain"
-                          />
+                             onClick={() => file.preview && setPreviewImage(file.preview)}>
+                          {file.preview ? (
+                            <motion.img
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              src={file.preview}
+                              alt={file.name}
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          ) : (
+                            getFileIcon(file)
+                          )}
                         </div>
                         
-                        {/* File name */}
-                        <motion.p
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="text-sm font-medium text-neutral-300 truncate flex-shrink-0"
-                        >
-                          {file.name}
-                        </motion.p>
+                        {/* File info */}
+                        <div className="flex-shrink-0 space-y-1">
+                          <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-sm font-medium text-neutral-300 truncate"
+                          >
+                            {file.name}
+                          </motion.p>
+                          <p className="text-xs text-neutral-400">
+                            {formatFileSize(file.size)}
+                          </p>
+                        </div>
                       </div>
                     </motion.div>
                   ))}
