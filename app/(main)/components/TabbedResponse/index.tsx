@@ -37,6 +37,47 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   const isVerificationSolution = solutionType === 'face-verify' || solutionType === 'signature-verification';
   const isQrExtractSolution = solutionType === 'qr-extract';
 
+  // Detect file type based on various sources
+  const detectFileType = (): 'image' | 'pdf' => {
+    // Check fileName extension
+    if (fileName) {
+      const extension = fileName.toLowerCase().split('.').pop();
+      if (extension === 'pdf') return 'pdf';
+      if (['png', 'jpg', 'jpeg'].includes(extension || '')) return 'image';
+    }
+
+    // Check solution type - some solutions typically output PDFs
+    const pdfSolutionTypes: SolutionType[] = [
+      // Add solution types that typically output PDFs
+      // Example: 'pdf-extract', 'document-process', etc.
+    ];
+    if (pdfSolutionTypes.includes(solutionType)) return 'pdf';
+
+    // Check data response for mime type hints
+    if (data?.mimeType) {
+      if (data.mimeType.includes('pdf')) return 'pdf';
+      if (data.mimeType.includes('image')) return 'image';
+    }
+
+    // Check if base64 data starts with PDF header
+    const base64Data = maskedBase64 || (data && data.result) || '';
+    if (base64Data) {
+      try {
+        // Decode first few bytes to check for PDF signature
+        const decoded = atob(base64Data.substring(0, 20));
+        if (decoded.startsWith('%PDF')) return 'pdf';
+      } catch (e) {
+        // Ignore decode errors
+      }
+    }
+
+    // Default to image for backward compatibility
+    return 'image';
+  };
+
+  const fileType = detectFileType();
+  const mimeType = fileType === 'pdf' ? 'application/pdf' : 'image/png';
+
   // Set initial tab based on solution type
   useEffect(() => {
     if (isVerificationSolution || isQrExtractSolution) {
@@ -77,6 +118,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         isProcessedImageTabDisabled={isProcessedImageTabDisabled}
         isResultTabDisabled={isResultTabDisabled}
         isQrExtractSolution={isQrExtractSolution}
+        fileType={fileType} // Pass file type to navigation for dynamic titles
       />
 
       {/* Tab Content */}
@@ -117,6 +159,8 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
               onCopyBase64={copyBase64}
               error={error}
               errorDetails={errorDetails}
+              fileType={fileType} // Pass detected file type
+              mimeType={mimeType} // Pass corresponding mime type
             />
           </div>
         )}

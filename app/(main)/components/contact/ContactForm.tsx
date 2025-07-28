@@ -97,14 +97,15 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Pre-fill form data when user is authenticated (but keep fields empty for editing)
+  // Pre-fill form data when user is authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      // Don't pre-fill, just set empty values to let placeholder show
       setFormData(prev => ({
         ...prev,
-        name: '',
-        email: ''
+        name: user.given_name && user.family_name 
+          ? `${user.given_name} ${user.family_name}` 
+          : user.given_name || user.family_name || '',
+        email: user.email || ''
       }));
     }
   }, [isAuthenticated, user]);
@@ -150,11 +151,13 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
 
       if (response.ok) {
         setIsSubmitted(true);
-        // Reset only the fields that should be cleared (keep name/email empty for next time)
+        // Reset form but keep user data for next submission
         setFormData(prev => ({
-          ...prev,
-          name: '',
-          email: '',
+          name: isAuthenticated && user ? 
+            (user.given_name && user.family_name 
+              ? `${user.given_name} ${user.family_name}` 
+              : user.given_name || user.family_name || '') : '',
+          email: isAuthenticated && user?.email ? user.email : '',
           company: '',
           message: '',
           inquiryType: []
@@ -212,12 +215,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
                 onChange={handleInputChange}
                 required
                 className="w-full px-3 py-2.5 bg-[#161616] border border-gray-600 rounded-lg focus:border-purple-400 focus:outline-none text-white placeholder-gray-400 transition-all duration-200 font-light"
-                placeholder={isAuthenticated && user ? 
-                  (user.given_name && user.family_name 
-                    ? `${user.given_name} ${user.family_name}` 
-                    : user.given_name || user.family_name || "Your Name"
-                  ) : "John Doe"
-                }
+                placeholder="John Doe"
               />
             </div>
             <div>
@@ -232,7 +230,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
                 onChange={handleInputChange}
                 required
                 className="w-full px-3 py-2.5 bg-[#161616] border border-gray-600 rounded-lg focus:border-purple-400 focus:outline-none text-white placeholder-gray-400 transition-all duration-200 font-light"
-                placeholder={isAuthenticated && user?.email ? user.email : "john@company.com"}
+                placeholder="john@company.com"
               />
             </div>
           </div>

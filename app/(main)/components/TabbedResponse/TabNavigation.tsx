@@ -11,6 +11,7 @@ interface TabNavigationProps {
   isProcessedImageTabDisabled: boolean;
   isResultTabDisabled: boolean;
   isQrExtractSolution: boolean;
+  fileType: 'image' | 'pdf';
 }
 
 export const TabNavigation: React.FC<TabNavigationProps> = ({

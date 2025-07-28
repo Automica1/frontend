@@ -1,6 +1,6 @@
 // components/TabbedResponseSection/ProcessedImageTab.tsx
 import React, { useState } from 'react';
-import { Copy, Check, Download, Image as ImageIcon, AlertCircle, Info } from 'lucide-react';
+import { Copy, Check, Download, Image as ImageIcon, FileText, AlertCircle, Info } from 'lucide-react';
 import { SolutionType } from '../../types/solution';
 import { getFileRequirementText, getProcessingMessage, getDownloadFileName } from '../../../utils/solutionHelpers';
 
@@ -14,6 +14,9 @@ interface ProcessedImageTabProps {
   onCopyBase64: (base64: string) => void;
   error?: string | null;
   errorDetails?: any | null;
+  fileType?: 'image' | 'pdf'; // New prop to specify file type
+  mimeType?: string; // Optional mime type for more specific handling
+  tabTitle?: string; // Optional custom tab title
 }
 
 export const ProcessedImageTab: React.FC<ProcessedImageTabProps> = ({
@@ -25,9 +28,30 @@ export const ProcessedImageTab: React.FC<ProcessedImageTabProps> = ({
   copiedBase64,
   onCopyBase64,
   error,
-  errorDetails
+  errorDetails,
+  fileType = 'image', // Default to image for backward compatibility
+  mimeType,
+  tabTitle
 }) => {
-  const base64ToBlob = (base64: string, mimeType: string = 'image/png'): Blob => {
+  // Determine actual file type and mime type
+  const getActualFileType = (): 'image' | 'pdf' => {
+    if (mimeType) {
+      if (mimeType.includes('pdf')) return 'pdf';
+      if (mimeType.includes('image')) return 'image';
+    }
+    return fileType;
+  };
+
+  const getActualMimeType = (): string => {
+    if (mimeType) return mimeType;
+    const actualFileType = getActualFileType();
+    return actualFileType === 'pdf' ? 'application/pdf' : 'image/png';
+  };
+
+  const actualFileType = getActualFileType();
+  const actualMimeType = getActualMimeType();
+
+  const base64ToBlob = (base64: string, mimeType: string): Blob => {
     const byteCharacters = atob(base64);
     const byteNumbers = new Array(byteCharacters.length);
     
@@ -39,9 +63,9 @@ export const ProcessedImageTab: React.FC<ProcessedImageTabProps> = ({
     return new Blob([byteArray], { type: mimeType });
   };
 
-  const downloadBase64Image = (base64: string, filename: string = 'processed-image.png') => {
+  const downloadBase64File = (base64: string, filename: string) => {
     try {
-      const blob = base64ToBlob(base64);
+      const blob = base64ToBlob(base64, actualMimeType);
       const url = URL.createObjectURL(blob);
       
       const link = document.createElement('a');
@@ -53,8 +77,63 @@ export const ProcessedImageTab: React.FC<ProcessedImageTabProps> = ({
       
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error downloading image:', error);
-      alert('Failed to download image. Please try again.');
+      console.error('Error downloading file:', error);
+      alert(`Failed to download ${actualFileType}. Please try again.`);
+    }
+  };
+
+  const getDefaultFileName = (): string => {
+    const baseFileName = getDownloadFileName(solutionType, fileName);
+    if (actualFileType === 'pdf') {
+      return baseFileName.replace(/\.(png|jpg|jpeg)$/i, '.pdf');
+    }
+    return baseFileName;
+  };
+
+  const renderPreview = () => {
+    if (actualFileType === 'pdf') {
+      return (
+        <div className="w-full h-full flex flex-col items-center justify-center p-4">
+          <FileText className="w-16 h-16 text-gray-400 mb-4" />
+          {/* <p className="text-gray-300 text-center mb-2">PDF Document</p>
+          <p className="text-gray-500 text-sm text-center mb-4">
+            Click "Download PDF" to view the processed document
+          </p> */}
+          {/* Optional: Add embedded PDF viewer */}
+          <div className="w-full max-w-md border border-gray-600 rounded bg-gray-600">
+            <iframe
+              src={`data:${actualMimeType};base64,${maskedBase64}`}
+              width="100%"
+              height="200"
+              className="rounded"
+              title="PDF Preview"
+              onError={() => console.error('PDF preview failed')}
+            />
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div className="w-full h-full flex items-center justify-center p-2">
+          <img 
+            src={`data:${actualMimeType};base64,${maskedBase64}`} 
+            alt="Processed Image" 
+            className="max-w-full max-h-full object-contain w-auto h-auto"
+            style={{ 
+              maxWidth: '100%', 
+              maxHeight: '100%',
+              width: 'auto',
+              height: 'auto'
+            }}
+            onError={(e) => {
+              console.error('Failed to load image preview');
+              console.log('Base64 length:', maskedBase64?.length);
+              console.log('Base64 preview:', maskedBase64?.substring(0, 100) + '...');
+            }}
+            onLoad={() => console.log('Image loaded successfully')}
+          />
+        </div>
+      );
     }
   };
 
@@ -64,7 +143,7 @@ export const ProcessedImageTab: React.FC<ProcessedImageTabProps> = ({
       <div className="space-y-4 h-full flex flex-col">
         <div className="text-center mb-4">
           <h3 className="text-xl font-semibold text-white mb-2">
-            Image Processing Failed
+            {actualFileType === 'pdf' ? 'PDF' : 'Image'} Processing Failed
           </h3>
         </div>
 
@@ -100,10 +179,14 @@ export const ProcessedImageTab: React.FC<ProcessedImageTabProps> = ({
     return (
       <div className="text-center py-12 h-full flex flex-col items-center justify-center">
         <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-          <ImageIcon className="w-8 h-8 text-gray-600" />
+          {actualFileType === 'pdf' ? (
+            <FileText className="w-8 h-8 text-gray-600" />
+          ) : (
+            <ImageIcon className="w-8 h-8 text-gray-600" />
+          )}
         </div>
         <p className="text-gray-400">
-          {loading ? getProcessingMessage(solutionType) : `${getFileRequirementText(solutionType)} to see the processed image`}
+          {loading ? getProcessingMessage(solutionType) : `${getFileRequirementText(solutionType)} to see the processed ${actualFileType}`}
         </p>
         {loading && (
           <div className="w-16 h-16 border-4 border-gray-700 border-t-purple-500 rounded-full animate-spin mx-auto mt-4" />
@@ -117,25 +200,7 @@ export const ProcessedImageTab: React.FC<ProcessedImageTabProps> = ({
       <div className="bg-gray-800 rounded-lg p-4 flex-1 flex flex-col min-h-0">
         <p className="text-sm text-gray-400 mb-2 flex-shrink-0">Preview:</p>
         <div className="flex-1 rounded-lg bg-gray-700 flex items-center justify-center overflow-hidden min-h-0 relative">
-          <div className="w-full h-full flex items-center justify-center p-2">
-            <img 
-              src={`data:image/png;base64,${maskedBase64}`} 
-              alt="Processed Image" 
-              className="max-w-full max-h-full object-contain w-auto h-auto"
-              style={{ 
-                maxWidth: '100%', 
-                maxHeight: '100%',
-                width: 'auto',
-                height: 'auto'
-              }}
-              onError={(e) => {
-                console.error('Failed to load image preview');
-                console.log('Base64 length:', maskedBase64?.length);
-                console.log('Base64 preview:', maskedBase64?.substring(0, 100) + '...');
-              }}
-              onLoad={() => console.log('Image loaded successfully')}
-            />
-          </div>
+          {renderPreview()}
         </div>
       </div>
 
@@ -158,16 +223,19 @@ export const ProcessedImageTab: React.FC<ProcessedImageTabProps> = ({
         </button>
         
         <button
-          onClick={() => downloadBase64Image(maskedBase64!, getDownloadFileName(solutionType, fileName))}
+          onClick={() => downloadBase64File(maskedBase64!, getDefaultFileName())}
           className="flex-1 flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-medium transition-colors duration-300"
         >
           <Download className="w-4 h-4" />
-          <span>Download Image</span>
+          <span>Download {actualFileType === 'pdf' ? 'PDF' : 'Image'}</span>
         </button>
       </div>
 
       <div className="text-xs text-gray-500 mt-2 flex-shrink-0">
-        Base64 length: {maskedBase64?.length.toLocaleString()} characters
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1">
+          <span>Base64 length: {maskedBase64?.length.toLocaleString()} characters</span>
+          <span>Type: {actualFileType.toUpperCase()} ({actualMimeType})</span>
+        </div>
       </div>
     </div>
   );

@@ -36,7 +36,7 @@ export default function Footer() {
   };
 
   const socialLinks = [
-    { icon: Twitter, href: '#twitter', label: 'Twitter' },
+    { icon: Twitter, href: 'https://x.com/automica_ai', label: 'Twitter' },
     { icon: Linkedin, href: '#linkedin', label: 'LinkedIn' },
     // { icon: Github, href: '#github', label: 'GitHub' },
     // { icon: MessageSquare, href: '#discord', label: 'Discord' }

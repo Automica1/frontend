@@ -5,10 +5,10 @@ export async function POST(request: Request) {
   try {
     const { name, email, company, message, inquiryType } = await request.json();
 
-    // Validate required fields
-    if (!name || !email || !message || !inquiryType || inquiryType.length === 0) {
+    // Validate required fields - only name and email are necessary
+    if (!name || !email) {
       return Response.json(
-        { error: 'Missing required fields' },
+        { error: 'Name and email are required' },
         { status: 400 }
       );
     }
@@ -22,8 +22,8 @@ export async function POST(request: Request) {
       },
     });
 
-    // Format selected services
-    const selectedServices = inquiryType.map((service: string) => {
+    // Format selected services (if any)
+    const selectedServices = inquiryType && inquiryType.length > 0 ? inquiryType.map((service: string) => {
       const serviceNames: { [key: string]: string } = {
         'signature-verification': 'Signature Verification',
         'qr-extract': 'QR Extract',
@@ -34,7 +34,8 @@ export async function POST(request: Request) {
         'custom-requirement': 'Custom Requirement'
       };
       return serviceNames[service] || service;
-    }).join(', ');
+    }).join(', ') : 'No services selected';
+
 // Email content with improved CSS
 const mailOptions = {
   from: 'automicaai@gmail.com',
@@ -80,14 +81,17 @@ const mailOptions = {
                   <a href="mailto:${email}" style="color: #3b82f6; text-decoration: none;">${email}</a>
                 </span>
               </div>
+              ${company ? `
               <div style="display: flex; align-items: center; padding: 8px 0;">
                 <span style="color: #64748b; font-weight: 600; width: 80px; font-size: 14px;">Company:</span>
-                <span style="color: #1e293b; font-weight: 500; font-size: 16px;">${company || 'Not provided'}</span>
+                <span style="color: #1e293b; font-weight: 500; font-size: 16px;">${company}</span>
               </div>
+              ` : ''}
             </div>
           </div>
 
-          <!-- Services of Interest Card -->
+          <!-- Services of Interest Card (only show if services are selected) -->
+          ${inquiryType && inquiryType.length > 0 ? `
           <div style="background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 100%); padding: 25px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid #8b5cf6; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
             <h2 style="color: #1e293b; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
               🎯 Services of Interest
@@ -110,8 +114,10 @@ const mailOptions = {
               </div>
             </div>
           </div>
+          ` : ''}
 
-          <!-- Message Card -->
+          <!-- Message Card (only show if message exists) -->
+          ${message ? `
           <div style="background: linear-gradient(135deg, #fefce8 0%, #fef3c7 100%); padding: 25px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid #f59e0b; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
             <h2 style="color: #1e293b; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
               💬 Project Details
@@ -120,6 +126,16 @@ const mailOptions = {
               <p style="color: #374151; margin: 0; white-space: pre-wrap; font-size: 15px; line-height: 1.7;">${message}</p>
             </div>
           </div>
+          ` : `
+          <div style="background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%); padding: 25px; border-radius: 12px; margin-bottom: 25px; border-left: 4px solid #6b7280; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+            <h2 style="color: #1e293b; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
+              💬 Project Details
+            </h2>
+            <div style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; line-height: 1.6;">
+              <p style="color: #6b7280; margin: 0; font-style: italic; font-size: 15px;">No specific project details provided</p>
+            </div>
+          </div>
+          `}
 
           <!-- Action Buttons -->
           <div style="text-align: center; margin: 30px 0;">
