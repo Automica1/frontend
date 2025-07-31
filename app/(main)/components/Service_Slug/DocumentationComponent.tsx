@@ -1,6 +1,7 @@
 // app/solutions/[slug]/components/DocumentationComponent.tsx
 import React, { useState } from 'react';
-import { Copy, Check, ArrowRight, Code, Book, Zap } from 'lucide-react';
+import { Copy, Check, ArrowRight, Code, Book, Zap, Key, Loader2, Eye, EyeOff } from 'lucide-react';
+import { apiService } from '../../lib/apiService'; // Adjust the import path as needed
 
 interface DocumentationComponentProps {
   solution: {
@@ -14,6 +15,13 @@ interface DocumentationComponentProps {
 export default function DocumentationComponent({ solution }: DocumentationComponentProps) {
   const [copied, setCopied] = useState('');
   const [activeTab, setActiveTab] = useState('quickstart');
+  
+  // API Key creation states
+  const [isCreatingApiKey, setIsCreatingApiKey] = useState(false);
+  const [createdApiKey, setCreatedApiKey] = useState<string>('');
+  const [apiKeyVisible, setApiKeyVisible] = useState(false);
+  const [showApiKeySuccess, setShowApiKeySuccess] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState<string>('');
 
   const Icon = solution.icon;
 
@@ -21,6 +29,32 @@ export default function DocumentationComponent({ solution }: DocumentationCompon
     navigator.clipboard.writeText(text);
     setCopied(id);
     setTimeout(() => setCopied(''), 2000);
+  };
+
+  const handleCreateApiKey = async () => {
+    try {
+      setIsCreatingApiKey(true);
+      setApiKeyError('');
+      
+      const response = await apiService.createApiKey();
+      
+      setCreatedApiKey(response.apiKey);
+      setApiKeyVisible(true);
+      setShowApiKeySuccess(true);
+      
+      // Hide the success state after 30 seconds for security
+      setTimeout(() => {
+        setShowApiKeySuccess(false);
+        setCreatedApiKey('');
+        setApiKeyVisible(false);
+      }, 30000);
+      
+    } catch (error) {
+      console.error('Failed to create API key:', error);
+      setApiKeyError(error instanceof Error ? error.message : 'Failed to create API key');
+    } finally {
+      setIsCreatingApiKey(false);
+    }
   };
 
   const tabs = [
@@ -47,9 +81,104 @@ export default function DocumentationComponent({ solution }: DocumentationCompon
             <p className="text-gray-300 mb-4 text-sm sm:text-base">
               Sign up for a free account and get your API key from the dashboard.
             </p>
-            <button className={`px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r ${solution.gradient} rounded-lg font-semibold text-xs sm:text-sm`}>
-              Get API Key
-            </button>
+
+            {/* API Key Creation UI */}
+            {!showApiKeySuccess ? (
+              <div className="space-y-3">
+                <button 
+                  onClick={handleCreateApiKey}
+                  disabled={isCreatingApiKey}
+                  className={`cursor-pointer px-3 py-2 sm:px-4 sm:py-2 bg-gradient-to-r ${solution.gradient} rounded-lg font-semibold text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-all duration-300`}
+                >
+                  {isCreatingApiKey ? (
+                    <>
+                      <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Key className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span>Generate API Key</span>
+                    </>
+                  )}
+                </button>
+                
+                {apiKeyError && (
+                  <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-3">
+                    <p className="text-red-400 text-xs sm:text-sm">{apiKeyError}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Success Message */}
+                <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Check className="w-4 h-4 text-green-400" />
+                    <span className="text-green-400 font-semibold text-sm">API Key Created Successfully!</span>
+                  </div>
+                  <p className="text-green-300 text-xs">
+                    Your API key has been generated. Copy it now - it won't be shown again.
+                  </p>
+                </div>
+
+                {/* API Key Display */}
+                <div className="bg-black rounded-lg p-3 sm:p-4 border border-gray-600">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-gray-300 font-semibold text-xs sm:text-sm">Your API Key</label>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setApiKeyVisible(!apiKeyVisible)}
+                        className="p-1 hover:bg-gray-700 rounded transition-colors"
+                        title={apiKeyVisible ? 'Hide API Key' : 'Show API Key'}
+                      >
+                        {apiKeyVisible ? (
+                          <EyeOff className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+                        ) : (
+                          <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => copyToClipboard(createdApiKey, 'api-key')}
+                        className="p-1 hover:bg-gray-700 rounded transition-colors"
+                        title="Copy API Key"
+                      >
+                        {copied === 'api-key' ? (
+                          <Check className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
+                        ) : (
+                          <Copy className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="bg-gray-900 rounded p-2">
+                    <code className="text-xs sm:text-sm text-gray-300 font-mono break-all">
+                      {apiKeyVisible 
+                        ? createdApiKey 
+                        : createdApiKey.replace(/.(?=.{8})/g, '•')
+                      }
+                    </code>
+                  </div>
+                </div>
+
+                {/* Warning Message */}
+                <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-3">
+                  <p className="text-yellow-400 text-xs">
+                    ⚠️ Store this API key securely. This message will disappear in 30 seconds for security.
+                  </p>
+                </div>
+
+                {/* Generate Another Key Button */}
+                <button 
+                  onClick={handleCreateApiKey}
+                  disabled={isCreatingApiKey}
+                  className="cursor-pointer px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-all duration-300"
+                >
+                  <Key className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span>Generate Another Key</span>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
@@ -63,7 +192,7 @@ export default function DocumentationComponent({ solution }: DocumentationCompon
             <div className="bg-black rounded-lg p-3 sm:p-4 relative">
               <button
                 onClick={() => copyToClipboard(`curl -X POST "${solution.apiEndpoint || 'https://api.example.com/v1/process'}" \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Authorization: Bearer ${createdApiKey || 'YOUR_API_KEY'}" \\
   -H "Content-Type: application/json" \\
   -d '{"image": "base64_encoded_image"}'`, 'quickstart-curl')}
                 className="absolute top-2 right-2 p-1.5 sm:p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs sm:text-sm transition-colors duration-300"
@@ -76,7 +205,7 @@ export default function DocumentationComponent({ solution }: DocumentationCompon
               </button>
               <pre className="text-xs sm:text-sm text-gray-300 font-mono pr-8 sm:pr-12 overflow-x-auto">
 {`curl -X POST "${solution.apiEndpoint || 'https://api.example.com/v1/process'}" \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Authorization: Bearer ${createdApiKey || 'YOUR_API_KEY'}" \\
   -H "Content-Type: application/json" \\
   -d '{"image": "base64_encoded_image"}'`}
               </pre>
@@ -153,7 +282,7 @@ export default function DocumentationComponent({ solution }: DocumentationCompon
             <h5 className="font-semibold mb-2 text-sm sm:text-base">Request Headers</h5>
             <div className="bg-black rounded-lg p-3 sm:p-4">
               <pre className="text-xs sm:text-sm text-gray-300 font-mono overflow-x-auto">
-{`Authorization: Bearer YOUR_API_KEY
+{`Authorization: Bearer ${createdApiKey || 'YOUR_API_KEY'}
 Content-Type: application/json`}
               </pre>
             </div>
@@ -215,7 +344,7 @@ Content-Type: application/json`}
 {`fetch('${solution.apiEndpoint || 'https://api.example.com/v1/process'}', {
   method: 'POST',
   headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
+    'Authorization': 'Bearer ${createdApiKey || 'YOUR_API_KEY'}',
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
@@ -235,7 +364,7 @@ Content-Type: application/json`}
 
 url = '${solution.apiEndpoint || 'https://api.example.com/v1/process'}'
 headers = {
-  'Authorization': 'Bearer YOUR_API_KEY',
+  'Authorization': 'Bearer ${createdApiKey || 'YOUR_API_KEY'}',
   'Content-Type': 'application/json'
 }
 data = {

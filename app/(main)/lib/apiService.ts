@@ -1,4 +1,4 @@
-// src/services/apiService.ts
+// src/lib/apiService.ts
 import { ApiResponse, QRExtractResponse, SignatureVerificationResponse, FaceDetectionResponse, FaceVerificationResponse, IdCropResponse } from '../types/api';
 import { useCreditsStore } from '../stores/creditsStore';
 
@@ -31,6 +31,16 @@ interface FaceVerificationResponseWithCredits extends FaceVerificationResponse {
 interface IdCropResponseWithCredits extends IdCropResponse {
   remainingCredits: number;
   userId: string;
+}
+
+// API Key related interfaces
+interface CreateApiKeyResponse {
+  message: string;
+  apiKey: string;
+  keyName: string;
+  keyPrefix: string;
+  expiresAt: string;
+  createdAt: string;
 }
 
 class ApiService {
@@ -251,6 +261,25 @@ async redeemToken(token: string): Promise<{
 
   return transformedResponse;
 }
+
+  // API Key Management
+  async createApiKey(): Promise<CreateApiKeyResponse> {
+    console.log('Creating API key with default settings...');
+    
+    const response = await this.makeRequest<CreateApiKeyResponse>('/api-keys', {
+      method: 'POST',
+      body: JSON.stringify({}), // Empty body since backend handles defaults
+    });
+
+    console.log('API key created successfully:', {
+      keyName: response.keyName,
+      keyPrefix: response.keyPrefix,
+      expiresAt: response.expiresAt,
+      createdAt: response.createdAt
+    });
+
+    return response;
+  }
 
   // QR Code Masking
   async maskQRCode(base64Image: string): Promise<ApiResponseWithCredits> {
