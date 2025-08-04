@@ -41,6 +41,68 @@ interface AuthResponse {
   expiresIn: number;
 }
 
+// User management types
+interface UserInfo {
+  id: string;
+  userId: string;  // Add this field - the actual unique identifier
+  email: string;
+  name?: string;   // Make optional since it might not always be present
+  role?: string;   // Make optional since your API doesn't always return this
+  credits: number;
+  isActive?: boolean;  // Make optional with default handling
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt?: string;
+}
+
+interface UserListResponse {
+  message: string;
+  count?: number;
+  users: UserInfo[];
+}
+
+interface UserDetailsResponse {
+  message: string;
+  user: UserInfo;
+}
+
+interface UserStatsResponse {
+  message: string;
+  stats: {
+    totalUsers: number;
+    activeUsers: number;
+    inactiveUsers: number;
+    totalCredits: number;
+    averageCreditsPerUser: number;
+    newUsersThisMonth: number;
+    adminUsers: number;
+    regularUsers: number;
+  };
+}
+
+interface UserActivity {
+  id: string;
+  userId: string;
+  action: string;
+  description: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+interface UserActivityResponse {
+  message: string;
+  count?: number;
+  activities: UserActivity[];
+}
+
+interface UserCreditsResponse {
+  message: string;
+  userId: string;
+  credits: number;
+  lastUpdated: string;
+}
+
 class ApiService {
   private baseUrl: string;
   private authToken: string | null = null;
@@ -173,6 +235,46 @@ class ApiService {
     return this.makeAuthenticatedRequest<TokenListResponse>('/tokens/unused');
   }
 
+  // User Management Methods (Admin Only)
+
+  /**
+   * Get all users in the system (Admin Only)
+   */
+  async getAllUsers(): Promise<UserListResponse> {
+    return this.makeAuthenticatedRequest<UserListResponse>('/admin/users');
+  }
+
+  /**
+   * Get user details by ID (Admin Only)
+   * @param userId The ID of the user to retrieve
+   */
+  async getUserById(userId: string): Promise<UserDetailsResponse> {
+    return this.makeAuthenticatedRequest<UserDetailsResponse>(`/admin/users/${userId}`);
+  }
+
+  /**
+   * Get aggregated user statistics (Admin Only)
+   */
+  async getUserStats(): Promise<UserStatsResponse> {
+    return this.makeAuthenticatedRequest<UserStatsResponse>('/admin/users/stats');
+  }
+
+  /**
+   * Get activity history for a specific user (Admin Only)
+   * @param userId The ID of the user whose activity to retrieve
+   */
+  async getUserActivity(userId: string): Promise<UserActivityResponse> {
+    return this.makeAuthenticatedRequest<UserActivityResponse>(`/admin/users/${userId}/activity`);
+  }
+
+  /**
+   * Get credit balance for a specific user (Admin Only)
+   * @param userId The ID of the user whose credits to retrieve
+   */
+  async getUserCredits(userId: string): Promise<UserCreditsResponse> {
+    return this.makeAuthenticatedRequest<UserCreditsResponse>(`/admin/users/${userId}/credits`);
+  }
+
   // Utility methods for better UX
 
   /**
@@ -225,6 +327,33 @@ class ApiService {
   }
 
   /**
+   * Get comprehensive dashboard stats (Admin Only)
+   */
+  async getDashboardStats(): Promise<{
+    tokenStats: {
+      total: number;
+      used: number;
+      unused: number;
+      myTokens: number;
+    };
+    userStats: UserStatsResponse['stats'];
+  }> {
+    try {
+      const [tokenStats, userStatsResponse] = await Promise.all([
+        this.getTokenStats(),
+        this.getUserStats(),
+      ]);
+
+      return {
+        tokenStats,
+        userStats: userStatsResponse.stats,
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch dashboard statistics: ${error}`);
+    }
+  }
+
+  /**
    * Validate token format (client-side validation)
    */
   isValidTokenFormat(token: string): boolean {
@@ -255,6 +384,36 @@ class ApiService {
   isTokenExpired(expiresAt: string): boolean {
     return new Date(expiresAt) < new Date();
   }
+
+  /**
+   * Format user role for display
+   */
+  formatUserRole(role: string): string {
+    return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+  }
+
+  /**
+   * Check if user is active based on last login
+   */
+  isUserRecentlyActive(lastLoginAt?: string): boolean {
+    if (!lastLoginAt) return false;
+    const lastLogin = new Date(lastLoginAt);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    return lastLogin > thirtyDaysAgo;
+  }
+
+  /**
+   * Format date for display
+   */
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
 }
 
 // Export singleton instance
@@ -267,5 +426,12 @@ export type {
   TokenGenerateResponse, 
   TokenDeleteResponse,
   TokenInfo, 
-  TokenListResponse 
+  TokenListResponse,
+  UserInfo,
+  UserListResponse,
+  UserDetailsResponse,
+  UserStatsResponse,
+  UserActivity,
+  UserActivityResponse,
+  UserCreditsResponse
 };
