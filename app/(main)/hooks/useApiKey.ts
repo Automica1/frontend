@@ -1,21 +1,28 @@
 // hooks/useApiKey.ts
 import { useState } from 'react';
+// Import your service - adjust the path as needed
+import createApiKey from '../lib/apiService'; // Adjust import path
 
 export const useApiKey = () => {
   const [isCreatingApiKey, setIsCreatingApiKey] = useState(false);
-  const [createdApiKey, setCreatedApiKey] = useState<string>('');
+  const [createdApiKey, setCreatedApiKey] = useState('');
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
   const [showApiKeySuccess, setShowApiKeySuccess] = useState(false);
-  const [apiKeyError, setApiKeyError] = useState<string>('');
+  const [apiKeyError, setApiKeyError] = useState('');
+
+  // Initialize your service instance
+  const apiService = createApiKey; // Adjust as needed
 
   const handleCreateApiKey = async () => {
     try {
       setIsCreatingApiKey(true);
       setApiKeyError('');
       
-      // Simulate API key creation
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      const newApiKey = `ak_${Math.random().toString(36).substr(2, 32)}`;
+      // 🔥 REAL API CALL - Replace the mock with actual service call
+      const response = await apiService.createApiKey();
+      
+      // Use the real API key from your backend response
+      const newApiKey = response.apiKey; // Based on your Postman response structure
       
       setCreatedApiKey(newApiKey);
       setApiKeyVisible(true);
