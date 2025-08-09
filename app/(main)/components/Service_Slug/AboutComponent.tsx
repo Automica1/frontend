@@ -26,6 +26,18 @@ interface AboutComponentProps {
 export default function AboutComponent({ solution, onSectionChange }: AboutComponentProps) {
   const Icon = solution.icon;
 
+  const getResponsiveTextClass = (text: string) => {
+  const length = text.length;
+  
+    if (length <= 10) {
+      return "text-4xl md:text-6xl"; // Short names - largest
+    } else if (length <= 22) {
+      return "text-3xl md:text-5xl"; // Medium names - medium
+    } else {
+      return "text-2xl md:text-4xl"; // Long names - smaller
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4">
       {/* Hero Section */}
@@ -44,8 +56,8 @@ export default function AboutComponent({ solution, onSectionChange }: AboutCompo
                   <div className={`w-16 h-16 bg-gradient-to-br ${solution.gradient} rounded-2xl flex items-center justify-center`}>
                     <Icon className="w-8 h-8 text-white" />
                   </div>
-                  <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">
-                    {solution.title}
+                  <h1 className={`font-bold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent leading-tight ${getResponsiveTextClass(solution.title)}`}>
+                  {solution.title}
                   </h1>
                 </div>
                 

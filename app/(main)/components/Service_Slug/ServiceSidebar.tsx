@@ -1,14 +1,9 @@
 // app/components/Service_Slug/ServicesSidebar.tsx
 import React from 'react';
 import { 
-  QrCode, 
-  FileText, 
-  Scan, 
-  Search,
-  Shield,
   ChevronRight,
-  X,
-  PenTool
+  ChevronLeft,
+  Menu
 } from 'lucide-react';
 
 interface Service {
@@ -19,110 +14,75 @@ interface Service {
 }
 
 interface ServicesSidebarProps {
-  services?: Service[];
+  services: Service[]; // Made required - no default fallback
   currentService: string;
   onServiceChange: (slug: string) => void;
   gradient: string;
 }
 
-// Updated default services with new routes
-const defaultServices: Service[] = [
-  {
-    title: 'QR Extract',
-    slug: 'qr-extract',
-    gradient: 'from-blue-500 to-purple-600',
-    icon: QrCode,
-  },
-  {
-    title: 'Signature Verification',
-    slug: 'signature-verification',
-    gradient: 'from-green-500 to-teal-600',
-    icon: PenTool,
-  },
-  {
-    title: 'ID Crop',
-    slug: 'id-crop',
-    gradient: 'from-orange-500 to-red-600',
-    icon: FileText,
-  },
-  {
-    title: 'QR Masking',
-    slug: 'qr-masking',
-    gradient: 'from-purple-500 to-pink-600',
-    icon: QrCode,
-  },
-  {
-    title: 'Face Verify',
-    slug: 'face-verify',
-    gradient: 'from-yellow-500 to-orange-600',
-    icon: Shield,
-  },
-  {
-    title: 'Face Cropping',
-    slug: 'face-cropping',
-    gradient: 'from-cyan-500 to-blue-600',
-    icon: Scan,
-  },
-];
-
 export default function ServicesSidebar({ 
-  services = defaultServices, 
+  services, // Now required, no default
   currentService, 
   onServiceChange,
   gradient
 }: ServicesSidebarProps) {
-  const [isHovered, setIsHovered] = React.useState(false);
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
+  // Early return if no services provided
+  if (!services || services.length === 0) {
+    return null;
+  }
 
   return (
     <>
-      {/* Custom Scrollbar Styles */}
+      {/* Hide Scrollbar Styles - No space reserved */}
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
+        .no-scrollbar {
+          overflow: overlay;
+          -ms-overflow-style: none;  /* Internet Explorer 10+ */
+          scrollbar-width: none;  /* Firefox */
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 3px;
+        .no-scrollbar::-webkit-scrollbar { 
+          width: 0px;
+          background: transparent;
+          display: none;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
-          border-radius: 3px;
-          transition: background 0.3s ease;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2));
-        }
-        /* Firefox scrollbar */
-        .custom-scrollbar {
-          scrollbar-width: thin;
-          scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
+        /* Fallback for browsers that don't support overlay */
+        @supports not (overflow: overlay) {
+          .no-scrollbar {
+            overflow-y: auto;
+            margin-right: -17px;
+            padding-right: 17px;
+          }
         }
       `}</style>
       
-      <div 
-        className="fixed top-20 right-0 z-30 h-96 transition-all duration-300 ease-out"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div className={`h-full transition-all duration-300 ${isHovered ? 'w-64' : 'w-6'}`}>
-          {/* Ultra-subtle background */}
+      <div className="fixed top-20 right-0 z-30 h-96 transition-all duration-300 ease-out">
+        <div className={`h-full transition-all duration-300 ${isExpanded ? 'w-64' : 'w-16'}`}>
+          {/* Background */}
           <div className={`absolute inset-0 transition-all duration-300 ${
-            isHovered 
+            isExpanded 
               ? 'bg-gradient-to-l from-black/40 to-black/10 backdrop-blur-xl' 
-              : 'bg-gradient-to-l from-white/5 to-transparent'
+              : 'bg-gradient-to-l from-black/20 to-black/5 backdrop-blur-md'
           }`} />
           
           {/* Content */}
           <div className="relative h-full">
-            {isHovered ? (
+            {isExpanded ? (
               // Expanded State
               <div className="p-4 space-y-3">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-white text-sm font-medium">Services</h4>
-                  <div className={`w-6 h-0.5 bg-gradient-to-r ${gradient} rounded-full`} />
+                  <button
+                    onClick={() => setIsExpanded(false)}
+                    className="p-1 rounded-md hover:bg-white/10 transition-colors duration-200 text-gray-400 hover:text-white"
+                    title="Collapse sidebar"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
                 
-                <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">
+                <div className="space-y-2 max-h-80 no-scrollbar">
                   {services.map((service) => {
                     const ServiceIcon = service.icon;
                     const isActive = currentService === service.slug;
@@ -169,42 +129,71 @@ export default function ServicesSidebar({
                 </div>
               </div>
             ) : (
-              // Minimized State - Just dots/indicators
-              <div className="p-2 pt-6 space-y-3 flex flex-col items-center">
-                {services.map((service) => {
-                  const ServiceIcon = service.icon;
-                  const isActive = currentService === service.slug;
-                  
-                  return (
-                    <div key={service.slug} className="relative group">
-                      <button
-                        onClick={() => onServiceChange(service.slug)}
-                        className={`w-4 h-4 rounded-full transition-all duration-200 flex items-center justify-center ${
-                          isActive 
-                            ? `bg-gradient-to-br ${service.gradient} shadow-md` 
-                            : 'bg-white/20 hover:bg-white/30 hover:scale-110'
-                        }`}
-                        title={service.title}
-                      >
-                        {isActive && (
-                          <ServiceIcon className="w-2 h-2 text-white" />
-                        )}
-                      </button>
-                      
-                      {/* Tooltip */}
-                      <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-                        <div className="bg-gray-900/90 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-md whitespace-nowrap shadow-lg border border-white/10">
-                          {service.title}
-                          <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-gray-900/90 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+              // Collapsed State - More obvious design
+              <div className="h-full flex flex-col">
+                {/* Header with expand button */}
+                <div className="p-3 border-b border-white/10">
+                  <button
+                    onClick={() => setIsExpanded(true)}
+                    className="w-full flex items-center justify-center p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all duration-200 text-gray-400 hover:text-white group"
+                    title="Expand services"
+                  >
+                    <Menu className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
+                  </button>
+                </div>
+                
+                {/* Services list */}
+                <div className="flex-1 p-2 space-y-2 no-scrollbar">
+                  {services.map((service) => {
+                    const ServiceIcon = service.icon;
+                    const isActive = currentService === service.slug;
+                    
+                    return (
+                      <div key={service.slug} className="relative group">
+                        <button
+                          onClick={() => onServiceChange(service.slug)}
+                          className={`w-full p-2 rounded-lg transition-all duration-200 flex items-center justify-center ${
+                            isActive 
+                              ? `bg-gradient-to-br ${service.gradient} shadow-md` 
+                              : 'bg-white/5 hover:bg-white/10 hover:scale-105'
+                          }`}
+                          title={service.title}
+                        >
+                          <ServiceIcon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'} transition-colors duration-200`} />
+                        </button>
+                        
+                        {/* Tooltip */}
+                        <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-10 delay-300">
+                          <div className="bg-gray-900/95 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-lg border border-white/20">
+                            {service.title}
+                            <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-gray-900/95 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+                
+                {/* Expand hint at bottom */}
+                <div className="p-2 border-t border-white/10">
+                  <button
+                    onClick={() => setIsExpanded(true)}
+                    className="w-full flex items-center justify-center p-1 text-xs text-gray-500 hover:text-gray-300 transition-colors duration-200"
+                  >
+                    <ChevronLeft className="w-3 h-3 animate-pulse" />
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
+        
+        {/* Subtle glow effect for collapsed state */}
+        {!isExpanded && (
+          <div className="absolute inset-0 -z-10">
+            <div className={`absolute right-0 top-8 w-16 h-16 bg-gradient-to-l ${gradient} opacity-10 blur-xl rounded-full`} />
+          </div>
+        )}
       </div>
     </>
   );

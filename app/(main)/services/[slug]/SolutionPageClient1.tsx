@@ -57,7 +57,7 @@ interface SerializableService {
 
 interface SolutionPageClientProps {
   solution: SerializableSolution;
-  services?: SerializableService[];
+  services: SerializableService[];
   onServiceChange?: (slug: string) => void;
 }
 
@@ -111,7 +111,7 @@ const getUseCaseIcon = (title: string) => {
 
 export default function SolutionPageClient({ 
   solution, 
-  services = [], 
+  services,
   onServiceChange 
 }: SolutionPageClientProps) {
   const [activeSection, setActiveSection] = useState<ActiveSection>('about');
@@ -127,7 +127,7 @@ export default function SolutionPageClient({
     
     // Navigate to the new service page
     try {
-      router.push(`/services/${slug}`); // Updated to match your route structure
+      router.push(`/services/${slug}`);
     } catch (error) {
       console.error('Navigation failed:', error);
       // Fallback to window.location
@@ -175,12 +175,22 @@ export default function SolutionPageClient({
 
   return (
     <div className="bg-black text-white min-h-screen">
-      {/* Navigation Bar */}
+      {/* Solution Navigation Bar */}
       <SolutionNavbar 
         activeSection={activeSection}
         onSectionChange={setActiveSection}
         gradient={solution.gradient}
       />
+
+      {/* Mobile Services Navigation - Only show if we have multiple services */}
+      {servicesWithIcons.length > 1 && (
+        <MobileSwipeIndicator
+          services={servicesWithIcons}
+          currentService={solution.slug}
+          onServiceChange={handleServiceChange}
+          gradient={solution.gradient}
+        />
+      )}
 
       {/* Desktop Sidebar - Only visible on desktop */}
       <div className="hidden lg:block">
@@ -192,18 +202,8 @@ export default function SolutionPageClient({
         />
       </div>
 
-      {/* Mobile Service Navigation */}
-      {servicesWithIcons.length > 0 && (
-        <MobileSwipeIndicator
-          services={servicesWithIcons}
-          currentService={solution.slug}
-          onServiceChange={handleServiceChange}
-          gradient={solution.gradient}
-        />
-      )}
-
-      {/* Main Content Area - Extra top padding on mobile for swipe indicator */}
-      <div className="pt-12 sm:pt-16 md:pt-20 lg:pt-12 lg:sm:pt-16 lg:md:pt-20">
+      {/* Main Content Area */}
+      <div className="pt-12 pl-4 sm:pt-16 md:pt-20 lg:pt-12 lg:pr-20 xl:pr-24">
         {renderActiveComponent()}
       </div>
     </div>
