@@ -1,7 +1,7 @@
 // app/components/Service_Slug/MobileSwipeIndicator.tsx
 "use client";
-import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, X, Grid3X3 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Grid3X3 } from 'lucide-react';
 
 interface Service {
   title: string;
@@ -25,71 +25,77 @@ export default function MobileSwipeIndicator({
   gradient
 }: MobileSwipeIndicatorProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   const currentIndex = services.findIndex(service => service.slug === currentService);
   const currentServiceData = services.find(service => service.slug === currentService);
 
-  const navigateToNext = () => {
-    const nextIndex = (currentIndex + 1) % services.length;
-    onServiceChange(services[nextIndex].slug);
-  };
+  // Detect if mobile menu is open by checking for the mobile-menu class in the DOM
+  useEffect(() => {
+    const checkMobileMenuStatus = () => {
+      const mobileMenu = document.querySelector('.mobile-menu');
+      setIsMobileMenuOpen(!!mobileMenu);
+    };
 
-  const navigateToPrevious = () => {
-    const prevIndex = currentIndex === 0 ? services.length - 1 : currentIndex - 1;
-    onServiceChange(services[prevIndex].slug);
-  };
+    // Check immediately
+    checkMobileMenuStatus();
 
-  if (!currentServiceData || services.length <= 1) return null;
+    // Create a MutationObserver to watch for DOM changes
+    const observer = new MutationObserver(checkMobileMenuStatus);
+    
+    // Watch for changes in the entire document
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Close the service selector if mobile menu opens
+  useEffect(() => {
+    if (isMobileMenuOpen && isOpen) {
+      setIsOpen(false);
+    }
+  }, [isMobileMenuOpen, isOpen]);
+
+
+
+  // Don't render if mobile menu is open, no current service data, or only one service
+  if (!currentServiceData || services.length <= 1 || isMobileMenuOpen) return null;
 
   const displayTitle = currentServiceData.shortTitle || currentServiceData.title;
 
   return (
     <>
-      {/* Swipe Indicator Bar - Bottom Right Position */}
-      <div className="fixed bottom-6 right-6 z-50 lg:hidden">
-        <div className="flex items-center bg-black/80 backdrop-blur-xl rounded-full border border-white/10 shadow-lg">
-          {/* Previous Button */}
-          <button 
-            onClick={navigateToPrevious}
-            className="p-3 text-gray-400 hover:text-white transition-colors duration-200 hover:bg-white/5 rounded-l-full"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          
-          {/* Current Service Display */}
-          <button
-            onClick={() => setIsOpen(true)}
-            className="flex items-center space-x-3 px-4 py-3 hover:bg-white/5 transition-colors duration-200"
-          >
-            <div className={`p-1.5 rounded-md bg-gradient-to-br ${currentServiceData.gradient} flex-shrink-0`}>
-              <currentServiceData.icon className="w-3.5 h-3.5 text-white" />
+      {/* Service Selector Button - Bottom Center Position */}
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 lg:hidden">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="flex items-center space-x-3 px-4 py-3 bg-black/80 backdrop-blur-xl rounded-full border border-white/10 shadow-lg hover:bg-white/5 transition-all duration-200 hover:scale-105"
+        >
+          <div className={`p-1.5 rounded-md bg-gradient-to-br ${currentServiceData.gradient} flex-shrink-0`}>
+            <currentServiceData.icon className="w-3.5 h-3.5 text-white" />
+          </div>
+          <div className="text-left min-w-0">
+            <p className="text-white text-sm font-medium truncate">{displayTitle}</p>
+            <div className="flex items-center space-x-1 mt-0.5">
+              {services.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                    index === currentIndex
+                      ? `bg-gradient-to-r ${currentServiceData.gradient}`
+                      : 'bg-white/30'
+                  }`}
+                />
+              ))}
             </div>
-            <div className="text-left min-w-0">
-              <p className="text-white text-sm font-medium truncate">{displayTitle}</p>
-              <div className="flex items-center space-x-1 mt-0.5">
-                {services.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
-                      index === currentIndex
-                        ? `bg-gradient-to-r ${currentServiceData.gradient}`
-                        : 'bg-white/30'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-            <Grid3X3 className="w-3.5 h-3.5 text-gray-400" />
-          </button>
-          
-          {/* Next Button */}
-          <button 
-            onClick={navigateToNext}
-            className="p-3 text-gray-400 hover:text-white transition-colors duration-200 hover:bg-white/5 rounded-r-full"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+          </div>
+          <Grid3X3 className="w-3.5 h-3.5 text-gray-400" />
+        </button>
       </div>
 
       {/* Full Service Grid Modal */}

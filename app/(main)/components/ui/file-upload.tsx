@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Upload, X, File, FileText, Lock } from "lucide-react";
 import { useKindeAuth } from "@kinde-oss/kinde-auth-nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 const mainVariant = {
   initial: {
@@ -67,9 +67,24 @@ export const FileUpload = ({
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Authentication
+  // Authentication with dynamic redirect
   const { isAuthenticated, user } = useKindeAuth();
   const router = useRouter();
+  const pathname = usePathname(); // Get current path for dynamic redirect
+
+  // Create dynamic redirect URL based on current path
+  const getRedirectUrl = () => {
+    // If we're on a service page, use current path
+    if (pathname.startsWith('/service/')) {
+      return encodeURIComponent(pathname);
+    }
+    // If we're on services page, use current path
+    if (pathname.startsWith('/services')) {
+      return encodeURIComponent(pathname);
+    }
+    // Fallback to services page
+    return encodeURIComponent('/services');
+  };
 
   // Create preview URLs for image files
   const createPreview = (file: File): FileWithPreview => {
@@ -92,10 +107,11 @@ export const FileUpload = ({
     };
   }, [files]);
 
-  // Handle authentication check before file operations
+  // Handle authentication check with dynamic redirect
   const handleAuthCheck = (): boolean => {
     if (!isAuthenticated) {
-      router.push("/api/auth/login?post_login_redirect_url=/services");
+      const redirectUrl = getRedirectUrl();
+      router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}`);
       return false;
     }
     return true;
@@ -188,6 +204,11 @@ export const FileUpload = ({
     }
   };
 
+  const handleSignInClick = () => {
+    const redirectUrl = getRedirectUrl();
+    router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}`);
+  };
+
   const isImageFile = (file: FileWithPreview) => {
     return file.type.startsWith('image/');
   };
@@ -227,7 +248,7 @@ export const FileUpload = ({
         onDrop={handleDrop}
       >
         <motion.div
-          onClick={!hasFiles && isAuthenticated ? handleClick : isAuthenticated ? undefined : handleAuthCheck}
+          onClick={!hasFiles && isAuthenticated ? handleClick : isAuthenticated ? undefined : handleSignInClick}
           whileHover={!hasFiles && isAuthenticated ? "animate" : undefined}
           className={`flex-1 flex flex-col p-4 sm:p-6 group/file block rounded-lg w-full relative overflow-hidden min-h-0 ${
             !hasFiles && isAuthenticated ? 'cursor-pointer hover:shadow-2xl' : 
@@ -434,13 +455,13 @@ export const FileUpload = ({
         </div>
       )}
 
-      {/* Login button when not authenticated */}
+      {/* Login button when not authenticated - with dynamic redirect */}
       {!isAuthenticated && (
         <div className="flex-shrink-0 p-4 sm:p-6 pt-4">
           <motion.button
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            onClick={() => router.push("/api/auth/login?post_login_redirect_url=/services")}
+            onClick={handleSignInClick}
             className="w-full px-6 py-4 text-sm sm:text-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-3 shadow-sm hover:shadow-md transform"
           >
             <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
