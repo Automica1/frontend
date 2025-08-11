@@ -1,6 +1,8 @@
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Upload, X, AlertCircle } from "lucide-react";
+import { Upload, X, AlertCircle, Lock } from "lucide-react";
+import { useKindeAuth } from "@kinde-oss/kinde-auth-nextjs";
+import { useRouter, usePathname } from "next/navigation";
 
 const mainVariant = {
   initial: {
@@ -51,6 +53,11 @@ export const FileUpload2 = ({
   const [validationError, setValidationError] = useState<ValidationError | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Authentication with dynamic redirect
+  const { isAuthenticated, user } = useKindeAuth();
+  const router = useRouter();
+  const pathname = usePathname(); // Get current path for dynamic redirect
+
   // File validation constants
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
   const ALLOWED_TYPES = [
@@ -60,6 +67,36 @@ export const FileUpload2 = ({
     'application/pdf'
   ];
   const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.pdf'];
+
+  // Create dynamic redirect URL based on current path
+  const getRedirectUrl = () => {
+    // If we're on a service page, use current path
+    if (pathname.startsWith('/service/')) {
+      return encodeURIComponent(pathname);
+    }
+    // If we're on services page, use current path
+    if (pathname.startsWith('/services')) {
+      return encodeURIComponent(pathname);
+    }
+    // Fallback to services page
+    return encodeURIComponent('/services');
+  };
+
+  // Handle authentication check with dynamic redirect
+  const handleAuthCheck = (): boolean => {
+    if (!isAuthenticated) {
+      const redirectUrl = getRedirectUrl();
+      router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}`);
+      return false;
+    }
+    return true;
+  };
+
+  // Handle sign in click with dynamic redirect
+  const handleSignInClick = () => {
+    const redirectUrl = getRedirectUrl();
+    router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}`);
+  };
 
   // Validate file type and size
   const validateFile = (file: File): ValidationError | null => {
@@ -117,6 +154,9 @@ export const FileUpload2 = ({
   }, []); // Empty dependency array - only run on unmount
 
   const handleFileChange = (newFiles: File[]) => {
+    // Check authentication first
+    if (!handleAuthCheck()) return;
+
     // Clear any existing validation error
     setValidationError(null);
 
@@ -162,6 +202,9 @@ export const FileUpload2 = ({
   };
 
   const removeFile = (indexToRemove: number) => {
+    // Check authentication first
+    if (!handleAuthCheck()) return;
+
     // Clear validation error when removing files
     setValidationError(null);
     
@@ -177,6 +220,7 @@ export const FileUpload2 = ({
   };
 
   const handleClick = () => {
+    if (!handleAuthCheck()) return;
     if (files.length < maxFiles) {
       fileInputRef.current?.click();
     }
@@ -184,6 +228,7 @@ export const FileUpload2 = ({
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    if (!isAuthenticated) return;
     setIsDragActive(true);
   };
 
@@ -195,13 +240,16 @@ export const FileUpload2 = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragActive(false);
+    
+    if (!handleAuthCheck()) return;
+    
     const droppedFiles = Array.from(e.dataTransfer.files);
     if (droppedFiles.length > 0) {
       handleFileChange(droppedFiles);
     }
   };
 
-  const canAcceptMore = files.length < maxFiles;
+  const canAcceptMore = files.length < maxFiles && isAuthenticated;
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -232,6 +280,16 @@ export const FileUpload2 = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
+      {/* Authentication required message */}
+      {!isAuthenticated && (
+        <div className="mb-4 p-3 bg-amber-900/50 border border-amber-700 rounded-lg">
+          <p className="text-amber-300 text-sm flex items-center">
+            <Lock className="h-4 w-4 mr-2" />
+            Please log in to upload files
+          </p>
+        </div>
+      )}
+
       {/* Validation Error Display */}
       {validationError && (
         <motion.div
@@ -247,45 +305,106 @@ export const FileUpload2 = ({
         </motion.div>
       )}
 
-      <motion.div
-        onClick={files.length === 0 ? handleClick : undefined}
-        whileHover={canAcceptMore ? "animate" : undefined}
-        className={cn(
-          "flex-1 flex flex-col p-6 group/file block rounded-lg w-full relative overflow-hidden min-h-0",
-          files.length === 0 && canAcceptMore ? "cursor-pointer hover:shadow-2xl" : ""
-        )}
-      >
-        <input
-          ref={fileInputRef}
-          id="file-upload-handle"
-          type="file"
-          multiple
-          accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
-          onChange={(e) => handleFileChange(Array.from(e.target.files || []))}
-          className="hidden"
-          disabled={!canAcceptMore}
-        />
-        
-        {/* GridPattern Background */}
-        <div className="absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,white,transparent)]">
-          <GridPattern />
-        </div>
+      <div className={cn(
+        "flex-1 flex flex-col min-h-0 overflow-hidden",
+        !isAuthenticated ? 'opacity-50' : ''
+      )}>
+        <motion.div
+          onClick={files.length === 0 ? (isAuthenticated ? handleClick : handleSignInClick) : undefined}
+          whileHover={canAcceptMore ? "animate" : undefined}
+          className={cn(
+            "flex-1 flex flex-col p-6 group/file block rounded-lg w-full relative overflow-hidden min-h-0",
+            files.length === 0 && isAuthenticated ? "cursor-pointer hover:shadow-2xl" : 
+            files.length === 0 && !isAuthenticated ? "cursor-pointer" : ""
+          )}
+        >
+          <input
+            ref={fileInputRef}
+            id="file-upload-handle"
+            type="file"
+            multiple
+            accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+            onChange={(e) => handleFileChange(Array.from(e.target.files || []))}
+            className="hidden"
+            disabled={!canAcceptMore}
+          />
+          
+          {/* GridPattern Background */}
+          <div className="absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,white,transparent)]">
+            <GridPattern />
+          </div>
 
-        {files.length === 0 ? (
-          // Upload prompt with animations - perfectly centered
-          <div className="flex-1 flex flex-col items-center justify-center relative z-20 min-h-0">
-            <div className="flex flex-col items-center justify-center w-full max-w-xl mx-auto space-y-4">
-              <div className="text-center">
-                <p className="relative z-20 font-sans font-bold text-neutral-300 text-base">
-                  Upload Files
-                </p>
-                <p className="relative z-20 font-sans font-normal text-neutral-400 text-sm mt-2">
-                  Upload up to {maxFiles} files (JPEG, JPG, PNG, PDF - Max 10MB each)
-                </p>
+          {files.length === 0 ? (
+            // Upload prompt with animations - perfectly centered
+            <div className="flex-1 flex flex-col items-center justify-center relative z-20 min-h-0">
+              <div className="flex flex-col items-center justify-center w-full max-w-xl mx-auto space-y-4">
+                <div className="text-center">
+                  <p className="relative z-20 font-sans font-bold text-neutral-300 text-base">
+                    {isAuthenticated ? 'Upload Files' : 'Sign in to upload files'}
+                  </p>
+                  <p className="relative z-20 font-sans font-normal text-neutral-400 text-sm mt-2">
+                    {isAuthenticated 
+                      ? `Upload up to ${maxFiles} files (JPEG, JPG, PNG, PDF - Max 10MB each)`
+                      : 'Please sign in to start uploading files'
+                    }
+                  </p>
+                </div>
+                
+                {/* Progress indicator - only show when files.length === 0 */}
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-medium text-neutral-400">
+                    {files.length}/{maxFiles} files uploaded
+                  </div>
+                  <div className="w-24 bg-neutral-700 rounded-full h-2">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(files.length / maxFiles) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                
+                <div className="relative mt-4">
+                  <motion.div
+                    layoutId="file-upload"
+                    variants={mainVariant}
+                    transition={{
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 20,
+                    }}
+                    className="relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center h-32 w-32 rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
+                  >
+                    {!isAuthenticated ? (
+                      <Lock className="h-8 w-8 text-neutral-400" />
+                    ) : isDragActive && canAcceptMore ? (
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-neutral-400 flex flex-col items-center text-xs"
+                      >
+                        Drop it
+                        <Upload className="h-4 w-4 text-neutral-400 mt-1" />
+                      </motion.p>
+                    ) : (
+                      <Upload className="h-4 w-4 text-neutral-300" />
+                    )}
+                  </motion.div>
+
+                  <motion.div
+                    variants={secondaryVariant}
+                    className={cn(
+                      "absolute opacity-0 border border-dashed inset-0 z-30 bg-transparent flex items-center justify-center h-32 w-32 rounded-md",
+                      isAuthenticated ? "border-sky-400" : "border-amber-400"
+                    )}
+                  ></motion.div>
+                </div>
               </div>
-              
-              {/* Progress indicator - only show when files.length === 0 */}
-              <div className="flex items-center gap-2">
+            </div>
+          ) : (
+            // File preview area - responsive layout for files
+            <div className="flex-1 flex flex-col relative z-20 min-h-0">
+              {/* Progress indicator - only show when files.length > 0 */}
+              <div className="flex items-center gap-2 mb-4 flex-shrink-0">
                 <div className="text-sm font-medium text-neutral-400">
                   {files.length}/{maxFiles} files uploaded
                 </div>
@@ -295,224 +414,194 @@ export const FileUpload2 = ({
                     style={{ width: `${(files.length / maxFiles) * 100}%` }}
                   />
                 </div>
+                {files.length === maxFiles && (
+                  <span className="text-green-500 text-sm font-medium">✓ Ready</span>
+                )}
               </div>
-              
-              <div className="relative mt-4">
-                <motion.div
-                  layoutId="file-upload"
-                  variants={mainVariant}
-                  transition={{
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 20,
-                  }}
-                  className="relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center h-32 w-32 rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
-                >
-                  {isDragActive && canAcceptMore ? (
-                    <motion.p
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-neutral-400 flex flex-col items-center text-xs"
-                    >
-                      Drop it
-                      <Upload className="h-4 w-4 text-neutral-400 mt-1" />
-                    </motion.p>
-                  ) : (
-                    <Upload className="h-4 w-4 text-neutral-300" />
-                  )}
-                </motion.div>
 
-                <motion.div
-                  variants={secondaryVariant}
-                  className="absolute opacity-0 border border-dashed border-sky-400 inset-0 z-30 bg-transparent flex items-center justify-center h-32 w-32 rounded-md"
-                ></motion.div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          // File preview area - responsive layout for files
-          <div className="flex-1 flex flex-col relative z-20 min-h-0">
-            {/* Progress indicator - only show when files.length > 0 */}
-            <div className="flex items-center gap-2 mb-4 flex-shrink-0">
-              <div className="text-sm font-medium text-neutral-400">
-                {files.length}/{maxFiles} files uploaded
-              </div>
-              <div className="w-24 bg-neutral-700 rounded-full h-2">
-                <div 
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(files.length / maxFiles) * 100}%` }}
-                />
-              </div>
-              {files.length === maxFiles && (
-                <span className="text-green-500 text-sm font-medium">✓ Ready</span>
-              )}
-            </div>
-
-            {/* Files layout - side by side or stacked depending on available space */}
-            <div className="flex-1 flex flex-col gap-4 min-h-0">
-              {files.length === 1 && (
-                // Single file + upload area
-                <div className="flex-1 flex flex-col gap-4 min-h-0">
-                  {/* First file */}
-                  <div className="flex-1 min-h-0">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="relative bg-neutral-900 rounded-lg shadow-lg border border-l-4 border-l-blue-500 overflow-hidden h-full flex flex-col"
-                    >
-                      {/* Remove button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeFile(0);
-                        }}
-                        className="absolute top-3 right-3 z-10 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+              {/* Files layout - side by side or stacked depending on available space */}
+              <div className="flex-1 flex flex-col gap-4 min-h-0">
+                {files.length === 1 && (
+                  // Single file + upload area
+                  <div className="flex-1 flex flex-col gap-4 min-h-0">
+                    {/* First file */}
+                    <div className="flex-1 min-h-0">
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="relative bg-neutral-900 rounded-lg shadow-lg border border-l-4 border-l-blue-500 overflow-hidden h-full flex flex-col"
                       >
-                        <X className="h-4 w-4" />
-                      </button>
+                        {/* Remove button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFile(0);
+                          }}
+                          className="absolute top-3 right-3 z-10 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
 
-                      {/* File label */}
-                      <div className="absolute top-3 left-3 z-10">
-                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-900 text-blue-200">
-                          File 1
-                        </span>
-                      </div>
+                        {/* File label */}
+                        <div className="absolute top-3 left-3 z-10">
+                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-900 text-blue-200">
+                            File 1
+                          </span>
+                        </div>
 
-                      {/* File preview */}
-                      <div className="p-4 pt-12 flex-1 flex flex-col min-h-0">
-                        <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center min-h-0 max-h-[200px] cursor-pointer hover:bg-neutral-700 transition-colors duration-200"
-                             onClick={() => files[0].preview && setPreviewImage(files[0].preview)}>
-                          {files[0].preview ? (
-                            <motion.img
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              src={files[0].preview}
-                              alt={files[0].name}
-                              className="max-w-full max-h-full object-contain"
-                            />
-                          ) : (
-                            getFileIcon(files[0])
-                          )}
+                        {/* File preview */}
+                        <div className="p-4 pt-12 flex-1 flex flex-col min-h-0">
+                          <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center min-h-0 max-h-[200px] cursor-pointer hover:bg-neutral-700 transition-colors duration-200"
+                               onClick={() => files[0].preview && setPreviewImage(files[0].preview)}>
+                            {files[0].preview ? (
+                              <motion.img
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                src={files[0].preview}
+                                alt={files[0].name}
+                                className="max-w-full max-h-full object-contain"
+                              />
+                            ) : (
+                              getFileIcon(files[0])
+                            )}
+                          </div>
+                          
+                          {/* File info */}
+                          <div className="flex-shrink-0 space-y-1">
+                            <motion.p
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="text-sm font-medium text-neutral-300 truncate"
+                            >
+                              {files[0].name}
+                            </motion.p>
+                            <p className="text-xs text-neutral-400">
+                              {formatFileSize(files[0].size)}
+                            </p>
+                          </div>
                         </div>
-                        
-                        {/* File info */}
-                        <div className="flex-shrink-0 space-y-1">
-                          <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="text-sm font-medium text-neutral-300 truncate"
-                          >
-                            {files[0].name}
-                          </motion.p>
-                          <p className="text-xs text-neutral-400">
-                            {formatFileSize(files[0].size)}
-                          </p>
-                        </div>
+                      </motion.div>
+                    </div>
+
+                    {/* Upload area for second file */}
+                    {isAuthenticated && (
+                      <div className="flex-1 min-h-0">
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleClick();
+                          }}
+                          className="relative bg-neutral-900 rounded-lg shadow-lg overflow-hidden cursor-pointer hover:border-blue-500 transition-all duration-200 hover:shadow-xl h-full flex flex-col"
+                        >
+                          <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+                            <div className="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center mb-3">
+                              <Upload className="h-6 w-6 text-blue-400" />
+                            </div>
+                            <h3 className="text-lg font-medium text-neutral-300 mb-2">
+                              Upload Second File
+                            </h3>
+                            <p className="text-sm text-neutral-400 mb-3">
+                              Click here or drag and drop your second file
+                            </p>
+                            <p className="text-xs text-neutral-500">
+                              JPEG, JPG, PNG, PDF (Max 10MB)
+                            </p>
+                          </div>
+                        </motion.div>
                       </div>
-                    </motion.div>
+                    )}
                   </div>
+                )}
 
-                  {/* Upload area for second file */}
-                  <div className="flex-1 min-h-0">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleClick();
-                      }}
-                      className="relative bg-neutral-900 rounded-lg shadow-lg overflow-hidden cursor-pointer hover:border-blue-500 transition-all duration-200 hover:shadow-xl h-full flex flex-col"
-                    >
-                      <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
-                        <div className="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center mb-3">
-                          <Upload className="h-6 w-6 text-blue-400" />
-                        </div>
-                        <h3 className="text-lg font-medium text-neutral-300 mb-2">
-                          Upload Second File
-                        </h3>
-                        <p className="text-sm text-neutral-400 mb-3">
-                          Click here or drag and drop your second file
-                        </p>
-                        <p className="text-xs text-neutral-500">
-                          JPEG, JPG, PNG, PDF (Max 10MB)
-                        </p>
-                      </div>
-                    </motion.div>
-                  </div>
-                </div>
-              )}
-
-              {files.length === 2 && (
-                // Two files side by side
-                <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
-                  {files.map((file, idx) => (
-                    <motion.div
-                      key={`file-${idx}`}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className={cn(
-                        "flex-1 relative bg-neutral-900 rounded-lg shadow-lg border overflow-hidden flex flex-col",
-                        idx === 0 ? "border-l-4 border-l-blue-500" : "border-l-4 border-l-green-500"
-                      )}
-                    >
-                      {/* Remove button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeFile(idx);
-                        }}
-                        className="absolute top-3 right-3 z-10 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                {files.length === 2 && (
+                  // Two files side by side
+                  <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
+                    {files.map((file, idx) => (
+                      <motion.div
+                        key={`file-${idx}`}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className={cn(
+                          "flex-1 relative bg-neutral-900 rounded-lg shadow-lg border overflow-hidden flex flex-col",
+                          idx === 0 ? "border-l-4 border-l-blue-500" : "border-l-4 border-l-green-500"
+                        )}
                       >
-                        <X className="h-4 w-4" />
-                      </button>
+                        {/* Remove button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFile(idx);
+                          }}
+                          className="absolute top-3 right-3 z-10 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
 
-                      {/* File label */}
-                      <div className="absolute top-3 left-3 z-10">
-                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-900 text-blue-200">
-                          File {idx + 1}
-                        </span>
-                      </div>
+                        {/* File label */}
+                        <div className="absolute top-3 left-3 z-10">
+                          <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-900 text-blue-200">
+                            File {idx + 1}
+                          </span>
+                        </div>
 
-                      {/* File preview */}
-                      <div className="p-4 pt-12 flex-1 flex flex-col min-h-0">
-                        <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center min-h-0 max-h-[150px] cursor-pointer hover:bg-neutral-700 transition-colors duration-200"
-                             onClick={() => file.preview && setPreviewImage(file.preview)}>
-                          {file.preview ? (
-                            <motion.img
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              src={file.preview}
-                              alt={file.name}
-                              className="max-w-full max-h-full object-contain"
-                            />
-                          ) : (
-                            getFileIcon(file)
-                          )}
+                        {/* File preview */}
+                        <div className="p-4 pt-12 flex-1 flex flex-col min-h-0">
+                          <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center min-h-0 max-h-[150px] cursor-pointer hover:bg-neutral-700 transition-colors duration-200"
+                               onClick={() => file.preview && setPreviewImage(file.preview)}>
+                            {file.preview ? (
+                              <motion.img
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                src={file.preview}
+                                alt={file.name}
+                                className="max-w-full max-h-full object-contain"
+                              />
+                            ) : (
+                              getFileIcon(file)
+                            )}
+                          </div>
+                          
+                          {/* File info */}
+                          <div className="flex-shrink-0 space-y-1">
+                            <motion.p
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="text-sm font-medium text-neutral-300 truncate"
+                            >
+                              {file.name}
+                            </motion.p>
+                            <p className="text-xs text-neutral-400">
+                              {formatFileSize(file.size)}
+                            </p>
+                          </div>
                         </div>
-                        
-                        {/* File info */}
-                        <div className="flex-shrink-0 space-y-1">
-                          <motion.p
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="text-sm font-medium text-neutral-300 truncate"
-                          >
-                            {file.name}
-                          </motion.p>
-                          <p className="text-xs text-neutral-400">
-                            {formatFileSize(file.size)}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </motion.div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Login button when not authenticated - with dynamic redirect */}
+      {!isAuthenticated && (
+        <div className="flex-shrink-0 p-4 pt-4">
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={handleSignInClick}
+            className="w-full px-6 py-4 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-3 shadow-sm hover:shadow-md transform"
+          >
+            <Lock className="w-4 h-4" />
+            <span>Sign In to Upload Files</span>
+          </motion.button>
+        </div>
+      )}
 
       {/* Full-screen image preview modal */}
       {previewImage && (

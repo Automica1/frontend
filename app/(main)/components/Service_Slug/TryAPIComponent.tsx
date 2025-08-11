@@ -205,10 +205,10 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   // Determine height based on solution type
   const containerHeight = shouldUseFileUpload2 ? 'h-[500px]' : 'h-[500px]';
   return (
-    <div className="pt-16 pb-16 px-4">
+    <div className="md:pt-24 pt-16 pb-16 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-12">
+        {/* <div className="text-center mb-12">
           <div className="flex items-center justify-center space-x-4 mb-6">
             <div className={`w-12 h-12 bg-gradient-to-br ${solution.gradient} rounded-xl flex items-center justify-center`}>
               <Icon className="w-6 h-6 text-white" />
@@ -217,7 +217,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
               Try {solution.title}
             </h1>
           </div>
-        </div>
+        </div> */}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

@@ -1,0 +1,136 @@
+// app/solutions/[slug]/SolutionPageClient.tsx
+"use client";
+import React, { useState } from 'react';
+
+// Import icons that might be used
+import { 
+  QrCode, 
+  FileText, 
+  Image, 
+  Scan, 
+  Database,
+  Brain,
+  Camera,
+  Search,
+  Shield,
+  Zap,
+} from 'lucide-react';
+
+// Import separate components
+import AboutComponent from '../../components/Service_Slug/AboutComponent';
+import TryAPIComponent from '../../components/Service_Slug/TryAPIComponent';
+import DocumentationComponent from '../../components/Service_Slug/DocumentationComponent';
+import SolutionNavbar from '../../components/Service_Slug/SolutionNavbar';
+
+interface SolutionPageClientProps {
+  solution: {
+    title: string;
+    slug: string;
+    tagline: string;
+    gifSrc?: string;
+    description: string;
+    gradient: string;
+    apiEndpoint?: string;
+    features?: string[];
+    useCases?: Array<{
+      title: string;
+      description: string;
+    }>;
+    pricing?: any;
+    documentation?: any;
+    heroImage?: string;
+  };
+}
+
+type ActiveSection = 'about' | 'try-api' | 'documentation';
+
+// Icon mapping based on solution slug or title
+const getIconForSolution = (slug: string) => {
+  const iconMap: { [key: string]: React.ComponentType<any> } = {
+    'qr-extract': QrCode,
+    'sign-verify': Search,
+    'id-crop': FileText,
+    'qr-masking': QrCode,
+    'face-verify': Shield,
+    'face-cropping': Scan,
+  };
+
+  return iconMap[slug] || QrCode;
+};
+
+// Icon mapping for use cases
+const getUseCaseIcon = (title: string) => {
+  const iconMap: { [key: string]: React.ComponentType<any> } = {
+    'Retail Analysis': Search,
+    'Urban Planning': Shield,
+    'Accessibility': Zap,
+    'Inventory Management': Database,
+    'Event Management': Zap,
+    'Document Processing': FileText,
+    'Financial Analysis': Shield,
+    'Data Migration': Database,
+    'Marketing Campaigns': Search,
+    'Product Packaging': Shield,
+    'Event Branding': Zap,
+    'Access Control': Shield,
+    'Identity Verification': Database,
+    'Attendance Systems': Zap,
+    'Profile Pictures': Camera,
+    'Employee Photos': Database,
+    'ID Processing': Shield,
+  };
+
+  return iconMap[title] || Zap;
+};
+
+export default function SolutionPageClient({ solution }: SolutionPageClientProps) {
+  const [activeSection, setActiveSection] = useState<ActiveSection>('about');
+
+  const renderActiveComponent = () => {
+    const IconComponent = getIconForSolution(solution.slug);
+
+    const solutionWithIcon = {
+      ...solution,
+      icon: IconComponent,
+      useCases: solution.useCases?.map(useCase => ({
+        ...useCase,
+        icon: getUseCaseIcon(useCase.title)
+      })) || [],
+    };
+
+    // Prepare the minimal solution object for TryAPIComponent
+    const tryApiSolution = {
+      title: solution.title,
+      IconComponent,
+      gradient: solution.gradient,
+      apiEndpoint: solution.apiEndpoint,
+    };
+
+    switch (activeSection) {
+      case 'about':
+        return <AboutComponent solution={solutionWithIcon} onSectionChange={setActiveSection} />;
+      case 'try-api':
+        return <TryAPIComponent solution={tryApiSolution} />;
+      case 'documentation':
+        return <DocumentationComponent solution={solutionWithIcon} />;
+      default:
+        return <AboutComponent solution={solutionWithIcon} onSectionChange={setActiveSection} />;
+    }
+  };
+
+  return (
+    <div className="bg-black text-white min-h-screen">
+      {/* Navigation Bar */}
+      <SolutionNavbar 
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+        gradient={solution.gradient}
+      />
+
+      {/* Main Content Area - Responsive top padding */}
+      <div className="pt-12 sm:pt-16 md:pt-20">
+        {renderActiveComponent()}
+      </div>
+    </div>
+  );
+}

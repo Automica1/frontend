@@ -26,12 +26,24 @@ interface AboutComponentProps {
 export default function AboutComponent({ solution, onSectionChange }: AboutComponentProps) {
   const Icon = solution.icon;
 
+  const getResponsiveTextClass = (text: string) => {
+    const length = text.length;
+    
+    if (length <= 10) {
+      return "text-4xl md:text-6xl"; // Short names - largest
+    } else if (length <= 22) {
+      return "text-3xl md:text-5xl"; // Medium names - medium
+    } else {
+      return "text-2xl md:text-4xl"; // Long names - smaller
+    }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto px-4">
+    <div className="max-w-7xl mx-auto px-4 min-h-screen flex items-center">
       {/* Hero Section */}
-      <section className="pt-14 pb-16 ">
+      <section className="w-full py-16">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-center min-h-[60vh]">
             {/* Content */}
             <div className="space-y-8">
               <div className="inline-flex items-center space-x-2 bg-purple-500/10 text-purple-400 px-4 py-2 rounded-full text-sm font-medium">
@@ -44,7 +56,7 @@ export default function AboutComponent({ solution, onSectionChange }: AboutCompo
                   <div className={`w-16 h-16 bg-gradient-to-br ${solution.gradient} rounded-2xl flex items-center justify-center`}>
                     <Icon className="w-8 h-8 text-white" />
                   </div>
-                  <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">
+                  <h1 className={`font-bold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent leading-tight ${getResponsiveTextClass(solution.title)}`}>
                     {solution.title}
                   </h1>
                 </div>
@@ -77,20 +89,19 @@ export default function AboutComponent({ solution, onSectionChange }: AboutCompo
             </div>
             
             {/* Hero Image */}
-            <div className="relative">
+            <div className="relative flex items-center justify-center">
               <div className={`absolute inset-0 bg-gradient-to-br ${solution.gradient} rounded-3xl blur-3xl opacity-20`} />
               <div className={`relative bg-gradient-to-br ${solution.gradient} rounded-3xl p-3 border border-gray-700`}>
                 <div className="aspect-video bg-gray-800 rounded-2xl flex items-center justify-center">
-                  {/* <Icon className="w-24 h-24 text-gray-600" /> */}
-                        <img
-                          src={solution.gifSrc}
-                          alt="Animated illustration"
-                          className="w-full h-full object-cover"
-                        />
-                    {/* <video 
-                      src="file://Users/jainulhasan/Downloads/sign_verify_gif.gif" loop >
-                      Your browser doesn’t support the video tag.
-                    </video> */}
+                  {solution.gifSrc ? (
+                    <img
+                      src={solution.gifSrc}
+                      alt="Animated illustration"
+                      className="w-full h-full object-cover rounded-2xl"
+                    />
+                  ) : (
+                    <Icon className="w-24 h-24 text-gray-600" />
+                  )}
                 </div>
               </div>
             </div>
