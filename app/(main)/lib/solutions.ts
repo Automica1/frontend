@@ -206,6 +206,7 @@ export const rawSolutions: Record<SolutionKey, Solution> = {
     title: "Face Verify",
     slug: "face-verify",
     available: true,
+    soon:true,
     tagline: "Secure facial recognition and verification",
     description: "Match live facial captures against stored images for robust identity authentication. Maintain accuracy across lighting, poses, and device cameras with advanced deep learning. Reduce fraud and accelerate onboarding while ensuring a seamless user experience.",
     icon: User,
