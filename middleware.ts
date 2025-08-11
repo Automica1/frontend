@@ -1,15 +1,28 @@
+// middleware.ts
 import { withAuth } from "@kinde-oss/kinde-auth-nextjs/middleware";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 export default withAuth(
   async function middleware(req: NextRequest) {
-    const { getUser, getRoles } = getKindeServerSession();
-    const user = await getUser();
-    const roles = await getRoles();
+    // Check environment for SEO blocking
+    const isProduction = process.env.NODE_ENV === 'production' && 
+                         process.env.NEXT_PUBLIC_SITE_URL === 'https://automica.ai';
 
-    // Check if user is accessing admin routes
+    // Get response to modify headers
+    const response = NextResponse.next();
+
+    // Block search engines for dev environment
+    if (!isProduction) {
+      response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, noimageindex');
+    }
+
+    // Handle admin route protection
     if (req.nextUrl.pathname.startsWith('/admin')) {
+      const { getUser, getRoles } = getKindeServerSession();
+      const user = await getUser();
+      const roles = await getRoles();
+
       // Check if user is authenticated
       if (!user) {
         return Response.redirect(new URL('/api/auth/login', req.url));
@@ -26,6 +39,8 @@ export default withAuth(
         return Response.redirect(new URL('/unauthorized', req.url));
       }
     }
+
+    return response;
   },
   {
     publicPaths: [
@@ -42,6 +57,7 @@ export default withAuth(
       "/privacy-policy", 
       "/terms-of-service", 
       "/sitemap.xml", 
+      "/robots.txt",
       "/security",
       "/unauthorized" // Add unauthorized page to public paths
     ],
