@@ -27,6 +27,37 @@ export default function ServicesSidebar({
   gradient
 }: ServicesSidebarProps) {
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const [isFixed, setIsFixed] = React.useState(true);
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleScroll = () => {
+      const footer = document.querySelector('footer');
+      const sidebar = sidebarRef.current;
+      
+      if (!footer || !sidebar) return;
+
+      const footerRect = footer.getBoundingClientRect();
+      const sidebarHeight = sidebar.offsetHeight;
+      const viewportHeight = window.innerHeight;
+      
+      // Calculate if footer is coming into view and if sidebar would overlap
+      const footerTopInView = footerRect.top <= viewportHeight;
+      const sidebarBottomPosition = 80 + sidebarHeight; // top-20 (80px) + sidebar height
+      const wouldOverlapFooter = footerTopInView && sidebarBottomPosition > footerRect.top;
+      
+      setIsFixed(!wouldOverlapFooter);
+    };
+
+    // Add scroll listener
+    window.addEventListener('scroll', handleScroll);
+    
+    // Check initial state
+    handleScroll();
+    
+    // Cleanup
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Early return if no services provided
   if (!services || services.length === 0) {
@@ -57,13 +88,13 @@ export default function ServicesSidebar({
         }
       `}</style>
       
-      <div className="fixed top-20 right-0 z-30 h-96 transition-all duration-300 ease-out">
+      <div className={`${isFixed ? 'fixed' : 'absolute'} top-20 left-0 z-30 h-96 transition-all duration-300 ease-out`} ref={sidebarRef}>
         <div className={`h-full transition-all duration-300 ${isExpanded ? 'w-64' : 'w-16'}`}>
           {/* Background */}
           <div className={`absolute inset-0 transition-all duration-300 ${
             isExpanded 
-              ? 'bg-gradient-to-l from-black/40 to-black/10 backdrop-blur-xl' 
-              : 'bg-gradient-to-l from-black/20 to-black/5 backdrop-blur-md'
+              ? 'bg-gradient-to-r from-black/40 to-black/10 backdrop-blur-xl' 
+              : 'bg-gradient-to-r from-black/20 to-black/5 backdrop-blur-md'
           }`} />
           
           {/* Content */}
@@ -78,7 +109,7 @@ export default function ServicesSidebar({
                     className="p-1 rounded-md hover:bg-white/10 transition-colors duration-200 text-gray-400 hover:text-white"
                     title="Collapse sidebar"
                   >
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronLeft className="w-4 h-4" />
                   </button>
                 </div>
                 
@@ -163,10 +194,10 @@ export default function ServicesSidebar({
                         </button>
                         
                         {/* Tooltip */}
-                        <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-10 delay-300">
+                        <div className="absolute left-full ml-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-10 delay-300">
                           <div className="bg-gray-900/95 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-lg border border-white/20">
                             {service.title}
-                            <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-gray-900/95 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                            <div className="absolute right-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-r-4 border-r-gray-900/95 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
                           </div>
                         </div>
                       </div>
@@ -180,7 +211,7 @@ export default function ServicesSidebar({
                     onClick={() => setIsExpanded(true)}
                     className="w-full flex items-center justify-center p-1 text-xs text-gray-500 hover:text-gray-300 transition-colors duration-200"
                   >
-                    <ChevronLeft className="w-3 h-3 animate-pulse" />
+                    <ChevronRight className="w-3 h-3 animate-pulse" />
                   </button>
                 </div>
               </div>
@@ -191,7 +222,7 @@ export default function ServicesSidebar({
         {/* Subtle glow effect for collapsed state */}
         {!isExpanded && (
           <div className="absolute inset-0 -z-10">
-            <div className={`absolute right-0 top-8 w-16 h-16 bg-gradient-to-l ${gradient} opacity-10 blur-xl rounded-full`} />
+            <div className={`absolute left-0 top-8 w-16 h-16 bg-gradient-to-r ${gradient} opacity-10 blur-xl rounded-full`} />
           </div>
         )}
       </div>

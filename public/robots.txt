@@ -1,21 +1,37 @@
-# robots.txt for Automica AI
+// app/robots.ts
+import { MetadataRoute } from 'next'
 
-User-agent: *
-Allow: /
+export default function robots(): MetadataRoute.Robots {
+  const isProduction = process.env.NODE_ENV === 'production' && 
+                       process.env.NEXT_PUBLIC_SITE_URL === 'https://automica.ai';
 
-# Disallow admin and private areas
-Disallow: /admin/
-Disallow: /api/
-Disallow: /dashboard/private/
-Disallow: /_next/
-Disallow: /auth/
-
-# Allow important pages
-Allow: /api/og
-Allow: /api/sitemap
-
-# Sitemap location
-Sitemap: https://automica.ai/sitemap.xml
-
-# Crawl delay (optional)
-Crawl-delay: 1
+  if (isProduction) {
+    // Production robots.txt - allow indexing
+    return {
+      rules: [
+        {
+          userAgent: '*',
+          allow: '/',
+          disallow: [
+            '/admin/',
+            '/api/',
+            '/dashboard/private/',
+            '/_next/',
+            '/auth/',
+          ],
+        },
+      ],
+      sitemap: 'https://automica.ai/sitemap.xml',
+    }
+  } else {
+    // Development robots.txt - block all crawlers
+    return {
+      rules: [
+        {
+          userAgent: '*',
+          disallow: '/',
+        },
+      ],
+    }
+  }
+}

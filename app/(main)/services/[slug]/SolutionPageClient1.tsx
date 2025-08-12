@@ -202,8 +202,8 @@ export default function SolutionPageClient({
         />
       </div>
 
-      {/* Main Content Area */}
-      <div className="pt-12 pl-4 sm:pt-16 md:pt-20 lg:pt-12 lg:pr-20 xl:pr-24">
+      {/* Main Content Area - Updated padding for left sidebar */}
+      <div className="pt-12 pr-4 sm:pt-16 md:pt-20 lg:pt-12 lg:pl-20 xl:pl-24">
         {renderActiveComponent()}
       </div>
     </div>
