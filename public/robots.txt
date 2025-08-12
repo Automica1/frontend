@@ -1,0 +1,17 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /unauthorized
+Disallow: /_next/
+Disallow: /404
+Disallow: /500
+
+# Host
+Host: https://automica.ai
+
+# Sitemaps
+Sitemap: https://automica.ai/sitemap.xml
+Sitemap: https://automica.ai/server-sitemap.xml

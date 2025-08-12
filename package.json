@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "next-sitemap",
+    "sitemap": "next-sitemap",
     "start": "next start",
     "lint": "next lint"
   },
@@ -26,6 +28,7 @@
     "lucide-react": "^0.511.0",
     "motion": "^12.18.1",
     "next": "15.3.3",
+    "next-sitemap": "^4.2.3",
     "nodemailer": "^7.0.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
