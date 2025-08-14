@@ -6,6 +6,9 @@ import Navbar from "./components/layout_components/Navbar"
 import Footer from "./components/layout_components/Footer";
 import CreditsProvider from "./components/layout_components/CreditsProvider";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import Script from 'next/script'
+
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-CG19BVRCRK';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -130,8 +133,23 @@ export default async function RootLayout({
      <CreditsProvider>
       <html lang="en">
        <head>
-         {/* ❌ REMOVED: Duplicate canonical tag - Next.js handles this automatically from metadata */}
-         {/* ❌ REMOVED: Duplicate robots meta tags - Next.js handles this from metadata */}
+         {/* Google Analytics - Only load in production */}
+         {process.env.NODE_ENV === 'production' && (
+           <>
+             <Script
+               src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+               strategy="afterInteractive"
+             />
+             <Script id="google-analytics" strategy="afterInteractive">
+               {`
+                 window.dataLayer = window.dataLayer || [];
+                 function gtag(){dataLayer.push(arguments);}
+                 gtag('js', new Date());
+                 gtag('config', '${GA_ID}');
+               `}
+             </Script>
+           </>
+         )}
          
          {/* Structured Data for Organization */}
          <script
