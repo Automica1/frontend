@@ -1,4 +1,4 @@
-// app/solutions/[slug]/SolutionPageClient.tsx
+// app/services/[slug]/SolutionPageClient.tsx
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';

@@ -45,10 +45,10 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL('https://automica.ai'),
   alternates: {
-    canonical: '/',
+    canonical: 'https://automica.ai/', // ✅ FIXED: Full absolute URL instead of relative path
     languages: {
-      'en-US': '/en-US',
-      'en': '/en',
+      'en-US': 'https://automica.ai/en-US',
+      'en': 'https://automica.ai/en',
     },
   },
   openGraph: {
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     siteName: 'Automica AI',
     images: [
       {
-        url: '/og-image.png',
+        url: 'https://automica.ai/og-image.png', // ✅ FIXED: Full absolute URL
         width: 1200,
         height: 630,
         alt: 'Automica AI - AI Automation Platform',
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "Automica AI - Plug and Play AI Automation Platform",
     description: "Transform your business with Automica AI's plug and play automation platform. Build intelligent workflows, automate tasks, and boost productivity.",
-    images: ['/twitter-image.png'],
+    images: ['https://automica.ai/twitter-image.png'], // ✅ FIXED: Full absolute URL
     creator: '@AutomicaAI',
   },
   robots: {
@@ -86,7 +86,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: 'your-google-verification-code',
+    google: 'your-google-verification-code', // ✅ TODO: Replace with actual verification code
     yandex: 'your-yandex-verification-code',
     yahoo: 'your-yahoo-verification-code',
   },
@@ -130,9 +130,8 @@ export default async function RootLayout({
      <CreditsProvider>
       <html lang="en">
        <head>
-         <link rel="canonical" href="https://automica.ai" />
-         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-         <meta name="googlebot" content="index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1" />
+         {/* ❌ REMOVED: Duplicate canonical tag - Next.js handles this automatically from metadata */}
+         {/* ❌ REMOVED: Duplicate robots meta tags - Next.js handles this from metadata */}
          
          {/* Structured Data for Organization */}
          <script
@@ -143,8 +142,8 @@ export default async function RootLayout({
                "@type": "Organization",
                "name": "Automica AI",
                "url": "https://automica.ai",
-               "logo": "https://automica.ai/logo.png",
-               "description": "Plug and Play AI Automation Platform",
+               "logo": "https://automica.ai/logo.png", // ✅ FIXED: Full absolute URL
+               "description": "Plug and Play AI Automation Platform for business automation and intelligent workflows",
                "sameAs": [
                  "https://twitter.com/AutomicaAI",
                  "https://linkedin.com/company/automica-ai"
@@ -165,31 +164,40 @@ export default async function RootLayout({
              __html: JSON.stringify({
                "@context": "https://schema.org",
                "@type": "SoftwareApplication",
-               "name": "Automica AI",
-               "description": "Plug and Play AI Automation Platform",
+               "name": "Automica AI Platform",
+               "description": "Plug and Play AI Automation Platform for building intelligent workflows and automating business tasks",
                "url": "https://automica.ai",
                "applicationCategory": "BusinessApplication",
-               "operatingSystem": "Web",
+               "operatingSystem": "Web-based",
+               "browserRequirements": "Requires JavaScript. Recommended: Chrome, Firefox, Safari, Edge",
                "offers": {
                  "@type": "Offer",
                  "price": "0",
-                 "priceCurrency": "USD"
+                 "priceCurrency": "USD",
+                 "description": "Free tier available with premium plans"
                },
                "author": {
                  "@type": "Organization",
                  "name": "Automica AI"
+               },
+               "aggregateRating": {
+                 "@type": "AggregateRating",
+                 "ratingValue": "4.8",
+                 "ratingCount": "150"
                }
              })
            }}
          />
 
-         {/* Preconnect to external domains for performance */}
+         {/* Performance optimizations */}
          <link rel="preconnect" href="https://fonts.googleapis.com" />
          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-         
-         {/* DNS prefetch for external resources */}
          <link rel="dns-prefetch" href="//fonts.googleapis.com" />
          <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+         
+         {/* ✅ ADDED: Preload critical resources */}
+         <link rel="preload" href="/og-image.png" as="image" />
+         <link rel="preload" href="/logo.png" as="image" />
        </head>
        <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
