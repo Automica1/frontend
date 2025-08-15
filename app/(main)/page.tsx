@@ -129,7 +129,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto relative">
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { value: "< 1 sec", label: "Average Response Time" },
+              { value: "< 3 sec", label: "Average Response Time" },
               { value: "99.9%", label: "Uptime Guarantee" },
               { value: "24/7", label: "Support Available" }
             ].map((stat, index) => (
