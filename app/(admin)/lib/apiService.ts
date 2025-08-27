@@ -103,6 +103,96 @@ interface UserCreditsResponse {
   lastUpdated: string;
 }
 
+// Usage tracking types
+interface DateRange {
+  start_date: string | null;
+  end_date: string | null;
+}
+
+interface ServiceUsageStat {
+  service_name: string;
+  total_calls: number;
+  success_calls: number;
+  failed_calls: number;
+  total_credits: number;
+}
+
+interface GlobalUsageStatsResponse {
+  date_range: DateRange;
+  stats: ServiceUsageStat[];
+  total_services: number;
+}
+
+interface UserUsageStat {
+  user_id: string;
+  email: string;
+  total_calls: number;
+  success_calls: number;
+  failed_calls: number;
+  total_credits: number;
+}
+
+interface UserUsageStatsResponse {
+  date_range: DateRange;
+  stats: UserUsageStat[];
+  total_users: number;
+}
+
+interface ServiceUserStat {
+  user_id: string;
+  email: string;
+  service_name: string;
+  total_calls: number;
+  success_calls: number;
+  failed_calls: number;
+  total_credits: number;
+  last_used: string;
+}
+
+interface ServiceUserStatsResponse {
+  date_range: DateRange;
+  service: string;
+  stats: ServiceUserStat[];
+  total_records: number;
+}
+
+interface UsageHistoryRecord {
+  id: string;
+  user_id: string;
+  email: string;
+  service_name: string;
+  endpoint: string;
+  method: string;
+  success: boolean;
+  credits_used: number;
+  ip_address: string;
+  user_agent: string;
+  auth_method: string;
+  process_time_ms: number;
+  created_at: string;
+}
+
+interface PaginationParams {
+  limit: number;
+  skip: number;
+}
+
+interface UsageHistoryResponse {
+  pagination: PaginationParams;
+  service_name: string;
+  total_records: number;
+  usage_history: UsageHistoryRecord[] | null;
+}
+
+// Query parameters interface for usage endpoints
+interface UsageQueryParams {
+  start_date?: string;
+  end_date?: string;
+  service?: string;
+  limit?: number;
+  skip?: number;
+}
+
 class ApiService {
   private baseUrl: string;
   private authToken: string | null = null;
@@ -144,6 +234,21 @@ class ApiService {
   private clearAuth() {
     this.authToken = null;
     this.tokenExpiry = null;
+  }
+
+  // Helper method to build query string
+  private buildQueryString(params: Record<string, any>): string {
+    const filteredParams = Object.entries(params).filter(([_, value]) => 
+      value !== undefined && value !== null && value !== ''
+    );
+    
+    if (filteredParams.length === 0) return '';
+    
+    const queryString = filteredParams
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      .join('&');
+    
+    return `?${queryString}`;
   }
 
   // Generic API request handler
@@ -275,6 +380,55 @@ class ApiService {
     return this.makeAuthenticatedRequest<UserCreditsResponse>(`/admin/users/${userId}/credits`);
   }
 
+  // Usage Tracking Methods (Admin Only)
+
+  /**
+   * Get global service usage statistics (Admin Only)
+   * @param params Query parameters for filtering by date range
+   */
+  async getGlobalUsageStats(params?: UsageQueryParams): Promise<GlobalUsageStatsResponse> {
+    const queryString = params ? this.buildQueryString(params) : '';
+    return this.makeAuthenticatedRequest<GlobalUsageStatsResponse>(`/admin/usage/global${queryString}`);
+  }
+
+  /**
+   * Get per-user usage statistics (Admin Only)
+   * @param params Query parameters for filtering by date range
+   */
+  async getUserUsageStats(params?: UsageQueryParams): Promise<UserUsageStatsResponse> {
+    const queryString = params ? this.buildQueryString(params) : '';
+    return this.makeAuthenticatedRequest<UserUsageStatsResponse>(`/admin/usage/users${queryString}`);
+  }
+
+  /**
+   * Get service-specific user statistics (Admin Only)
+   * @param params Query parameters for filtering by service and date range
+   */
+  async getServiceUserStats(params?: UsageQueryParams): Promise<ServiceUserStatsResponse> {
+    const queryString = params ? this.buildQueryString(params) : '';
+    return this.makeAuthenticatedRequest<ServiceUserStatsResponse>(`/admin/usage/services${queryString}`);
+  }
+
+  /**
+   * Get individual user's usage history (Admin Only)
+   * @param userId The ID of the user whose usage history to retrieve
+   * @param params Query parameters for pagination
+   */
+  async getUserUsageHistory(userId: string, params?: UsageQueryParams): Promise<UsageHistoryResponse> {
+    const queryString = params ? this.buildQueryString(params) : '';
+    return this.makeAuthenticatedRequest<UsageHistoryResponse>(`/admin/usage/user/${userId}/history${queryString}`);
+  }
+
+  /**
+   * Get service-specific usage history (Admin Only)
+   * @param serviceName The name of the service whose usage history to retrieve
+   * @param params Query parameters for pagination
+   */
+  async getServiceUsageHistory(serviceName: string, params?: UsageQueryParams): Promise<UsageHistoryResponse> {
+    const queryString = params ? this.buildQueryString(params) : '';
+    return this.makeAuthenticatedRequest<UsageHistoryResponse>(`/admin/usage/service/${serviceName}/history${queryString}`);
+  }
+
   // Utility methods for better UX
 
   /**
@@ -354,6 +508,55 @@ class ApiService {
   }
 
   /**
+   * Get comprehensive usage analytics (Admin Only)
+   */
+  async getUsageAnalytics(params?: UsageQueryParams): Promise<{
+    globalStats: GlobalUsageStatsResponse;
+    userStats: UserUsageStatsResponse;
+    serviceStats: ServiceUserStatsResponse;
+  }> {
+    try {
+      const [globalStats, userStats, serviceStats] = await Promise.all([
+        this.getGlobalUsageStats(params),
+        this.getUserUsageStats(params),
+        this.getServiceUserStats(params),
+      ]);
+
+      return {
+        globalStats,
+        userStats,
+        serviceStats,
+      };
+    } catch (error) {
+      throw new Error(`Failed to fetch usage analytics: ${error}`);
+    }
+  }
+
+  /**
+   * Get top services by usage (Admin Only)
+   */
+  async getTopServicesByUsage(params?: UsageQueryParams): Promise<ServiceUsageStat[]> {
+    try {
+      const globalStats = await this.getGlobalUsageStats(params);
+      return globalStats.stats.sort((a, b) => b.total_calls - a.total_calls);
+    } catch (error) {
+      throw new Error(`Failed to fetch top services: ${error}`);
+    }
+  }
+
+  /**
+   * Get top users by usage (Admin Only)
+   */
+  async getTopUsersByUsage(params?: UsageQueryParams): Promise<UserUsageStat[]> {
+    try {
+      const userStats = await this.getUserUsageStats(params);
+      return userStats.stats.sort((a, b) => b.total_calls - a.total_calls);
+    } catch (error) {
+      throw new Error(`Failed to fetch top users: ${error}`);
+    }
+  }
+
+  /**
    * Validate token format (client-side validation)
    */
   isValidTokenFormat(token: string): boolean {
@@ -414,6 +617,79 @@ class ApiService {
       minute: '2-digit'
     });
   }
+
+  /**
+   * Format date for API query parameters (YYYY-MM-DD)
+   */
+  formatDateForQuery(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
+
+  /**
+   * Calculate success rate percentage
+   */
+  calculateSuccessRate(successCalls: number, totalCalls: number): number {
+    if (totalCalls === 0) return 0;
+    return Math.round((successCalls / totalCalls) * 100 * 100) / 100; // Round to 2 decimal places
+  }
+
+  /**
+   * Format service name for display
+   */
+  formatServiceName(serviceName: string): string {
+    return serviceName
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  /**
+   * Get date range presets for quick filtering
+   */
+  getDateRangePresets(): Record<string, { start_date: string; end_date: string }> {
+    const now = new Date();
+    const today = this.formatDateForQuery(now);
+    
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    const last7Days = new Date(now);
+    last7Days.setDate(last7Days.getDate() - 7);
+    
+    const last30Days = new Date(now);
+    last30Days.setDate(last30Days.getDate() - 30);
+    
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    return {
+      today: {
+        start_date: today,
+        end_date: today
+      },
+      yesterday: {
+        start_date: this.formatDateForQuery(yesterday),
+        end_date: this.formatDateForQuery(yesterday)
+      },
+      last7Days: {
+        start_date: this.formatDateForQuery(last7Days),
+        end_date: today
+      },
+      last30Days: {
+        start_date: this.formatDateForQuery(last30Days),
+        end_date: today
+      },
+      thisMonth: {
+        start_date: this.formatDateForQuery(thisMonth),
+        end_date: today
+      },
+      lastMonth: {
+        start_date: this.formatDateForQuery(lastMonth),
+        end_date: this.formatDateForQuery(lastMonthEnd)
+      }
+    };
+  }
 }
 
 // Export singleton instance
@@ -433,5 +709,17 @@ export type {
   UserStatsResponse,
   UserActivity,
   UserActivityResponse,
-  UserCreditsResponse
+  UserCreditsResponse,
+  // Usage tracking types
+  DateRange,
+  ServiceUsageStat,
+  GlobalUsageStatsResponse,
+  UserUsageStat,
+  UserUsageStatsResponse,
+  ServiceUserStat,
+  ServiceUserStatsResponse,
+  UsageHistoryRecord,
+  PaginationParams,
+  UsageHistoryResponse,
+  UsageQueryParams
 };

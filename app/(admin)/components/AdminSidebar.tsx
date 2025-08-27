@@ -20,6 +20,16 @@ const navigationItems = [
     href: '/admin/credits',
     icon: <Coins className="mr-3 h-5 w-5" />,
   },
+  {
+    name: 'Services',
+    href: '/admin/services',
+    icon: <Coins className="mr-3 h-5 w-5" />,
+  },
+  // {
+  //   name: 'Pages',
+  //   href: '/admin/credits',
+  //   icon: <Coins className="mr-3 h-5 w-5" />,
+  // },
 ];
 
 export default function AdminSidebarClient() {

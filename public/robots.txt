@@ -14,3 +14,4 @@ Host: https://automica.ai
 
 # Sitemaps
 Sitemap: https://automica.ai/sitemap.xml
+Sitemap: https://automica.ai/server-sitemap.xml

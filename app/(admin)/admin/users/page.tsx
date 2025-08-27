@@ -9,9 +9,7 @@ import UserFilters from './components/UserFilters';
 
 interface UserFilters {
   search: string;
-  status: 'all' | 'active' | 'inactive';
-  role: 'all' | 'admin' | 'user';
-  sortBy: 'newest' | 'oldest' | 'name' | 'credits';
+  sortBy: 'newest' | 'oldest' | 'email' | 'credits' | 'userId';
 }
 
 export default function UsersPage() {
@@ -21,8 +19,6 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<UserFilters>({
     search: '',
-    status: 'all',
-    role: 'all',
     sortBy: 'newest'
   });
 
@@ -54,17 +50,16 @@ export default function UsersPage() {
   };
 
   const handleExport = () => {
-    // Implementation for exporting user data
     const csvContent = [
-      ['ID', 'Name', 'Email', 'Role', 'Credits', 'Status', 'Created At'].join(','),
+      ['ID', 'User ID', 'Email', 'Credits', 'Created At'].join(','),
       ...users.map(user => [
         user.id,
-        user.name || 'N/A', // Handle undefined name
+        user.userId,
         user.email,
-        user.role,
         user.credits,
-        user.isActive ? 'Active' : 'Inactive',
-        new Date(user.createdAt).toLocaleDateString()
+        user.createdAt && user.createdAt !== "0001-01-01T00:00:00Z" 
+          ? new Date(user.createdAt).toLocaleDateString() 
+          : 'N/A'
       ].join(','))
     ].join('\n');
 
@@ -77,28 +72,32 @@ export default function UsersPage() {
   };
 
   const filteredUsers = users.filter(user => {
-    // Add null checks for name and email
-    const userName = user.name || '';
     const userEmail = user.email || '';
+    const userId = user.userId || '';
     
-    const matchesSearch = userName.toLowerCase().includes(filters.search.toLowerCase()) ||
-                         userEmail.toLowerCase().includes(filters.search.toLowerCase());
-    const matchesStatus = filters.status === 'all' || 
-                         (filters.status === 'active' && user.isActive) ||
-                         (filters.status === 'inactive' && !user.isActive);
-    const matchesRole = filters.role === 'all' || user.role?.toLowerCase() === filters.role;
+    const matchesSearch = userEmail.toLowerCase().includes(filters.search.toLowerCase()) ||
+                         userId.toLowerCase().includes(filters.search.toLowerCase());
     
-    return matchesSearch && matchesStatus && matchesRole;
+    return matchesSearch;
   }).sort((a, b) => {
     switch (filters.sortBy) {
       case 'newest':
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        // Handle invalid dates by treating them as very old
+        const aDate = a.createdAt && a.createdAt !== "0001-01-01T00:00:00Z" ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b.createdAt && b.createdAt !== "0001-01-01T00:00:00Z" ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
       case 'oldest':
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      case 'name':
-        const aName = a.name || '';
-        const bName = b.name || '';
-        return aName.localeCompare(bName);
+        const aDateOld = a.createdAt && a.createdAt !== "0001-01-01T00:00:00Z" ? new Date(a.createdAt).getTime() : Number.MAX_SAFE_INTEGER;
+        const bDateOld = b.createdAt && b.createdAt !== "0001-01-01T00:00:00Z" ? new Date(b.createdAt).getTime() : Number.MAX_SAFE_INTEGER;
+        return aDateOld - bDateOld;
+      case 'email':
+        const aEmail = a.email || '';
+        const bEmail = b.email || '';
+        return aEmail.localeCompare(bEmail);
+      case 'userId':
+        const aUserId = a.userId || '';
+        const bUserId = b.userId || '';
+        return aUserId.localeCompare(bUserId);
       case 'credits':
         return b.credits - a.credits;
       default:

@@ -5,9 +5,7 @@ import React from 'react';
 
 interface UserFilters {
   search: string;
-  status: 'all' | 'active' | 'inactive';
-  role: 'all' | 'admin' | 'user';
-  sortBy: 'newest' | 'oldest' | 'name' | 'credits';
+  sortBy: 'newest' | 'oldest' | 'email' | 'credits' | 'userId';
 }
 
 interface UserFiltersProps {
@@ -35,35 +33,13 @@ export default function UserFilters({ filters, onFiltersChange, userCount }: Use
             </svg>
             <input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search users by email or user ID..."
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full"
               value={filters.search}
               onChange={(e) => updateFilter('search', e.target.value)}
             />
           </div>
         </div>
-
-        {/* Status Filter */}
-        <select
-          className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          value={filters.status}
-          onChange={(e) => updateFilter('status', e.target.value)}
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-
-        {/* Role Filter */}
-        <select
-          className="px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          value={filters.role}
-          onChange={(e) => updateFilter('role', e.target.value)}
-        >
-          <option value="all">All Roles</option>
-          <option value="admin">Admin</option>
-          <option value="user">User</option>
-        </select>
 
         {/* Sort */}
         <select
@@ -73,7 +49,8 @@ export default function UserFilters({ filters, onFiltersChange, userCount }: Use
         >
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
-          <option value="name">Name A-Z</option>
+          <option value="email">Email A-Z</option>
+          <option value="userId">User ID A-Z</option>
           <option value="credits">Credits High-Low</option>
         </select>
 

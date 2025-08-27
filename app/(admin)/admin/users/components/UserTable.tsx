@@ -19,35 +19,19 @@ export default function UserTable({ users, onRefresh }: UserTableProps) {
     setShowDetailsModal(true);
   };
 
-  const getStatusBadge = (isActive: boolean = true) => {
-    return isActive ? (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-        Active
-      </span>
-    ) : (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-        Inactive
-      </span>
-    );
-  };
-
-  const getRoleBadge = (role?: string) => {
-    // Handle undefined role with fallback
-    const userRole = role || 'user';
-    const isAdmin = userRole.toLowerCase() === 'admin';
-    
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        isAdmin ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
-      }`}>
-        {isAdmin ? '👑 Admin' : '👤 User'}
-      </span>
-    );
+  const formatDate = (dateString: string): string => {
+    if (!dateString || dateString === "0001-01-01T00:00:00Z") {
+      return 'N/A';
+    }
+    try {
+      return new Date(dateString).toLocaleDateString();
+    } catch {
+      return 'Invalid Date';
+    }
   };
 
   // Helper function to generate a safe key for each user row
   const getUserKey = (user: UserInfo, index: number): string => {
-    // Use userId first (actual unique identifier), then id, then email, then index
     return user.userId || user.id || user.email || `user-${index}`;
   };
 
@@ -74,22 +58,16 @@ export default function UserTable({ users, onRefresh }: UserTableProps) {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
+                  Email
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                  User ID
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Credits
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Login
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -100,37 +78,26 @@ export default function UserTable({ users, onRefresh }: UserTableProps) {
               {validUsers.map((user, index) => (
                 <tr key={getUserKey(user, index)} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {user.name || 'Unknown User'}
-                      </div>
-                      <div className="text-sm text-gray-500">{user.email || 'No email'}</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {user.email || 'No email'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {getRoleBadge(user.role)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(user.isActive)}
+                    <div className="text-sm text-gray-900">
+                      {user.userId || 'Unknown User ID'}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {user.credits ? user.credits.toLocaleString() : '0'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.createdAt && user.createdAt !== "0001-01-01T00:00:00Z" 
-                      ? apiService.formatDate(user.createdAt) 
-                      : 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {user.lastLoginAt && user.lastLoginAt !== "0001-01-01T00:00:00Z" 
-                      ? apiService.formatDate(user.lastLoginAt) 
-                      : 'Never'}
+                    {formatDate(user.createdAt)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
                       onClick={() => handleViewUser(user)}
                       className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
-                      disabled={!user.userId && !user.id} // Disable if no userId or ID available
+                      disabled={!user.userId && !user.id}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
