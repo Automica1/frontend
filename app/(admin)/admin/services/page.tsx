@@ -31,7 +31,8 @@ import {
   XCircle,
   CreditCard,
   Key,
-  Globe
+  Globe,
+  AlertCircle
 } from 'lucide-react';
 
 // Import the API service and types
@@ -142,7 +143,7 @@ const UsageAnalyticsPage = () => {
   };
 
   const handleExportData = () => {
-    if (!analytics) return;
+    if (!analytics || !analytics.globalStats.stats) return;
     
     // Create CSV data
     const csvData = analytics.globalStats.stats.map(stat => ({
@@ -254,7 +255,13 @@ const UsageAnalyticsPage = () => {
     );
   }
 
-  const totalStats = analytics.globalStats.stats.reduce(
+  // Safe data extraction with null checks
+  const globalStats = analytics.globalStats?.stats || [];
+  const userStats = analytics.userStats?.stats || [];
+  const totalServices = analytics.globalStats?.total_services || 0;
+  const totalUsers = analytics.userStats?.total_users || 0;
+
+  const totalStats = globalStats.reduce(
     (acc, stat) => ({
       totalCalls: acc.totalCalls + stat.total_calls,
       successCalls: acc.successCalls + stat.success_calls,
@@ -266,7 +273,7 @@ const UsageAnalyticsPage = () => {
 
   const successRate = apiService.calculateSuccessRate(totalStats.successCalls, totalStats.totalCalls);
 
-  const chartData = analytics.globalStats.stats.map(stat => ({
+  const chartData = globalStats.map(stat => ({
     name: apiService.formatServiceName(stat.service_name),
     calls: stat.total_calls,
     success: stat.success_calls,
@@ -275,7 +282,7 @@ const UsageAnalyticsPage = () => {
     successRate: apiService.calculateSuccessRate(stat.success_calls, stat.total_calls)
   }));
 
-  const pieData = analytics.globalStats.stats.map((stat, index) => ({
+  const pieData = globalStats.map((stat, index) => ({
     name: apiService.formatServiceName(stat.service_name),
     value: stat.total_calls,
     color: CHART_COLORS[index % CHART_COLORS.length]
@@ -291,13 +298,15 @@ const UsageAnalyticsPage = () => {
 
   const formatDateRange = () => {
     if (dateRange === 'allTime') return 'All Time';
-    if (analytics.globalStats.date_range.start_date && analytics.globalStats.date_range.end_date) {
+    if (analytics.globalStats?.date_range?.start_date && analytics.globalStats?.date_range?.end_date) {
       const start = apiService.formatDate(analytics.globalStats.date_range.start_date);
       const end = apiService.formatDate(analytics.globalStats.date_range.end_date);
       return `${start} - ${end}`;
     }
     return dateRange.charAt(0).toUpperCase() + dateRange.slice(1);
   };
+
+  const hasNoData = globalStats.length === 0;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -326,7 +335,8 @@ const UsageAnalyticsPage = () => {
               </select>
               <button
                 onClick={handleExportData}
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 flex items-center text-sm"
+                disabled={hasNoData}
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-sm"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
@@ -350,6 +360,29 @@ const UsageAnalyticsPage = () => {
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
                   Warning: {error}. Showing cached data.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* No Data Banner */}
+        {hasNoData && (
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+            <div className="flex">
+              <AlertCircle className="h-5 w-5 text-blue-400 mr-3 mt-0.5 flex-shrink-0" />
+              <div>
+                <h3 className="text-sm font-medium text-blue-800">No Data Available</h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  No usage data found for the selected period. This might be because:
+                </p>
+                <ul className="text-sm text-blue-700 mt-2 list-disc list-inside">
+                  <li>The API tracking was implemented recently and doesn't have historical data</li>
+                  <li>No API calls were made during this time period</li>
+                  <li>The selected date range is before data collection began</li>
+                </ul>
+                <p className="text-sm text-blue-700 mt-2">
+                  Try selecting "All Time" or a more recent date range to see available data.
                 </p>
               </div>
             </div>
@@ -401,9 +434,9 @@ const UsageAnalyticsPage = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Active Services</p>
-                <p className="text-2xl font-bold text-orange-600">{analytics.globalStats.total_services}</p>
+                <p className="text-2xl font-bold text-orange-600">{totalServices}</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {analytics.userStats.total_users} active users
+                  {totalUsers} active users
                 </p>
               </div>
               <Server className="h-8 w-8 text-orange-600" />
@@ -462,7 +495,11 @@ const UsageAnalyticsPage = () => {
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-64">
-                  <p className="text-gray-500">No usage data available for the selected period</p>
+                  <div className="text-center">
+                    <Activity className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-500">No usage data available for the selected period</p>
+                    <p className="text-gray-400 text-sm mt-1">Try selecting a different date range</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -492,7 +529,11 @@ const UsageAnalyticsPage = () => {
                 </ResponsiveContainer>
               ) : (
                 <div className="flex items-center justify-center h-64">
-                  <p className="text-gray-500">No usage data available for the selected period</p>
+                  <div className="text-center">
+                    <Activity className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-500">No usage data available for the selected period</p>
+                    <p className="text-gray-400 text-sm mt-1">Try selecting a different date range</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -504,60 +545,68 @@ const UsageAnalyticsPage = () => {
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">Service Performance</h3>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Calls</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Success Rate</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credits Used</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {analytics.globalStats.stats.map((service, index) => {
-                    const serviceSuccessRate = apiService.calculateSuccessRate(service.success_calls, service.total_calls);
-                    return (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium text-gray-900">
-                            {apiService.formatServiceName(service.service_name)}
-                          </div>
-                          <div className="text-sm text-gray-500">{service.service_name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {service.total_calls.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            serviceSuccessRate === 100
-                              ? 'bg-green-100 text-green-800'
-                              : serviceSuccessRate >= 95
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {serviceSuccessRate}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {service.total_credits.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => handleServiceSelect(service.service_name)}
-                            className="text-blue-600 hover:text-blue-900 flex items-center transition-colors"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View History
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            {globalStats.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Calls</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Success Rate</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credits Used</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {globalStats.map((service, index) => {
+                      const serviceSuccessRate = apiService.calculateSuccessRate(service.success_calls, service.total_calls);
+                      return (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="font-medium text-gray-900">
+                              {apiService.formatServiceName(service.service_name)}
+                            </div>
+                            <div className="text-sm text-gray-500">{service.service_name}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {service.total_calls.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              serviceSuccessRate === 100
+                                ? 'bg-green-100 text-green-800'
+                                : serviceSuccessRate >= 95
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {serviceSuccessRate}%
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {service.total_credits.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => handleServiceSelect(service.service_name)}
+                              className="text-blue-600 hover:text-blue-900 flex items-center transition-colors"
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View History
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Server className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No service data available for the selected period</p>
+                <p className="text-gray-400 text-sm mt-2">Try selecting a different date range or check back later</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -566,42 +615,50 @@ const UsageAnalyticsPage = () => {
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">User Activity</h3>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Calls</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Success Rate</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credits Used</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {analytics.userStats.stats.map((user, index) => {
-                    const userSuccessRate = apiService.calculateSuccessRate(user.success_calls, user.total_calls);
-                    return (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="font-medium text-gray-900">{user.email}</div>
-                          <div className="text-sm text-gray-500">{user.user_id}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {user.total_calls.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            {userSuccessRate}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {user.total_credits.toLocaleString()}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            {userStats.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Calls</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Success Rate</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credits Used</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {userStats.map((user, index) => {
+                      const userSuccessRate = apiService.calculateSuccessRate(user.success_calls, user.total_calls);
+                      return (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="font-medium text-gray-900">{user.email}</div>
+                            <div className="text-sm text-gray-500">{user.user_id}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {user.total_calls.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {userSuccessRate}%
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {user.total_credits.toLocaleString()}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No user activity data available for the selected period</p>
+                <p className="text-gray-400 text-sm mt-2">Try selecting a different date range or check back later</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -629,7 +686,7 @@ const UsageAnalyticsPage = () => {
                     className="border border-gray-300 rounded-md px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select Service</option>
-                    {analytics.globalStats.stats.map((service) => (
+                    {globalStats.map((service) => (
                       <option key={service.service_name} value={service.service_name}>
                         {apiService.formatServiceName(service.service_name)}
                       </option>
@@ -708,6 +765,11 @@ const UsageAnalyticsPage = () => {
                           <p className="text-gray-500">
                             {searchTerm ? 'No records match your search criteria' : 'No usage history available for this service'}
                           </p>
+                          {!searchTerm && selectedService && (
+                            <p className="text-gray-400 text-sm mt-1">
+                              This might be because the service hasn't been used in the selected time period
+                            </p>
+                          )}
                         </td>
                       </tr>
                     )}
@@ -756,10 +818,19 @@ const UsageAnalyticsPage = () => {
             ) : (
               <div className="text-center py-12">
                 <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Select a service to view its usage history</p>
-                {analytics.globalStats.stats.length === 0 && (
-                  <p className="text-gray-400 text-sm mt-2">No services available for the selected period</p>
-                )}
+                <div>
+                  <p className="text-gray-500">
+                    {globalStats.length === 0 
+                      ? 'No services available for the selected period'
+                      : 'Select a service to view its usage history'
+                    }
+                  </p>
+                  {globalStats.length === 0 && (
+                    <p className="text-gray-400 text-sm mt-2">
+                      Try selecting "All Time" or a different date range to see available services
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>
