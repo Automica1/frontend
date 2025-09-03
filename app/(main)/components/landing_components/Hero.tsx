@@ -6,6 +6,7 @@ import { ArrowRight } from 'lucide-react';
 import * as THREE from 'three';
 import { useKindeAuth } from "@kinde-oss/kinde-auth-nextjs";
 import { useRouter } from "next/navigation";
+import AtomicSkeletonLoader from './AtomicHeroSkeleton';
 
 // Enhanced shader material with better initialization
 const createAtomShader = () => {
@@ -644,6 +645,11 @@ export default function ThemedAtomicHero() {
     };
   }, []);
 
+  // Show loader while loading
+  if (loading) {
+    return <AtomicSkeletonLoader />;
+  }
+  
   return (
     <div className="bg-[#0b0b0d] text-white relative overflow-hidden">
       {/* Background gradients */}
@@ -656,11 +662,11 @@ export default function ThemedAtomicHero() {
       }}></div>
       
       {/* Loading indicator */}
-      {loading && (
+      {/* {loading && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/0 z-50">
           <div className="text-purple-400 text-lg"></div>
         </div>
-      )}
+      )} */}
       
       {/* Dynamic background effect */}
       <div 

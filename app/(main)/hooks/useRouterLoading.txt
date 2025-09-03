@@ -1,0 +1,318 @@
+// App Router compatible version using usePathname and navigation events
+// Automatically calls Zustand store functions
+// Handles route change start/complete/error
+// useRouterLoading.ts
+'use client';
+
+import { useEffect, useRef } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { useLoadingActions } from '../stores/useLoadingStore';
+
+interface RouterLoadingConfig {
+  delay?: number; // Delay before showing loading (prevents flash for fast loads)
+  timeout?: number; // Auto-complete after timeout
+  excludePaths?: string[]; // Paths to exclude from loading
+  progressSpeed?: number; // How fast progress increases
+}
+
+const defaultConfig: RouterLoadingConfig = {
+  delay: 100,
+  timeout: 10000, // 10 seconds
+  excludePaths: [],
+  progressSpeed: 100, // ms between progress updates
+};
+
+export const useRouterLoading = (config: RouterLoadingConfig = {}) => {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { startLoading, setProgress, completeLoading, resetLoading } = useLoadingActions();
+  
+  const finalConfig = { ...defaultConfig, ...config };
+  const timersRef = useRef<{
+    loadingTimer: NodeJS.Timeout | null;
+    progressTimer: NodeJS.Timeout | null;
+    timeoutTimer: NodeJS.Timeout | null;
+    currentProgress: number;
+  }>({
+    loadingTimer: null,
+    progressTimer: null,
+    timeoutTimer: null,
+    currentProgress: 0,
+  });
+
+  const clearAllTimers = () => {
+    const timers = timersRef.current;
+    if (timers.loadingTimer) {
+      clearTimeout(timers.loadingTimer);
+      timers.loadingTimer = null;
+    }
+    if (timers.progressTimer) {
+      clearInterval(timers.progressTimer);
+      timers.progressTimer = null;
+    }
+    if (timers.timeoutTimer) {
+      clearTimeout(timers.timeoutTimer);
+      timers.timeoutTimer = null;
+    }
+  };
+
+  const shouldExcludePath = (url: string) => {
+    return finalConfig.excludePaths?.some(path => url.startsWith(path)) || false;
+  };
+
+  const simulateProgress = () => {
+    const timers = timersRef.current;
+    timers.currentProgress = 0;
+    
+    timers.progressTimer = setInterval(() => {
+      if (timers.currentProgress < 90) {
+        // Slower progress as it gets higher (more realistic)
+        const increment = timers.currentProgress < 30 ? 
+          Math.random() * 15 : 
+          timers.currentProgress < 60 ? 
+          Math.random() * 8 : 
+          Math.random() * 3;
+        
+        timers.currentProgress = Math.min(90, timers.currentProgress + increment);
+        setProgress(timers.currentProgress);
+      }
+    }, finalConfig.progressSpeed);
+  };
+
+  // Track previous pathname to detect changes
+  const prevPathnameRef = useRef(pathname);
+  const prevSearchParamsRef = useRef(searchParams?.toString());
+  const loadingIdRef = useRef<string>('router-navigation');
+
+  useEffect(() => {
+    const currentPath = pathname;
+    const currentSearch = searchParams?.toString();
+    const prevPath = prevPathnameRef.current;
+    const prevSearch = prevSearchParamsRef.current;
+
+    // Check if route actually changed
+    const routeChanged = currentPath !== prevPath || currentSearch !== prevSearch;
+
+    if (routeChanged && prevPath !== null) {
+      // Route change detected
+      if (!shouldExcludePath(currentPath)) {
+        clearAllTimers();
+
+        // Start loading after delay
+        if (finalConfig.delay && finalConfig.delay > 0) {
+          timersRef.current.loadingTimer = setTimeout(() => {
+            startLoading('Loading page...', loadingIdRef.current);
+            simulateProgress();
+          }, finalConfig.delay);
+        } else {
+          startLoading('Loading page...', loadingIdRef.current);
+          simulateProgress();
+        }
+
+        // Set timeout to auto-complete loading
+        if (finalConfig.timeout && finalConfig.timeout > 0) {
+          timersRef.current.timeoutTimer = setTimeout(() => {
+            completeLoading(loadingIdRef.current);
+            clearAllTimers();
+          }, finalConfig.timeout);
+        }
+
+        // Complete loading after a short delay (simulating load completion)
+        setTimeout(() => {
+          clearAllTimers();
+          setProgress(100);
+          setTimeout(() => {
+            completeLoading(loadingIdRef.current);
+          }, 100);
+        }, Math.random() * 300 + 200); // 200-500ms random delay
+      }
+    }
+
+    // Update refs
+    prevPathnameRef.current = currentPath;
+    prevSearchParamsRef.current = currentSearch;
+  }, [pathname, searchParams, startLoading, setProgress, completeLoading, finalConfig]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      clearAllTimers();
+      resetLoading();
+    };
+  }, [resetLoading]);
+
+  // Return loading actions for manual control
+  return {
+    startLoading: (text?: string) => startLoading(text, 'manual'),
+    setProgress,
+    completeLoading: () => completeLoading('manual'),
+    resetLoading,
+  };
+};
+
+// Alternative hook for pages that need manual loading control
+export const useManualLoading = () => {
+  const { startLoading, setProgress, completeLoading, resetLoading } = useLoadingActions();
+  
+  return {
+    startLoading: (text?: string) => startLoading(text, 'manual'),
+    setProgress,
+    completeLoading: () => completeLoading('manual'),
+    resetLoading,
+  };
+};
+
+// Utility function for API calls or other async operations
+export const withLoading = async <T>(
+  asyncFn: () => Promise<T>,
+  loadingText: string = 'Loading...',
+  showProgress: boolean = true
+): Promise<T> => {
+  const { startLoading, setProgress, completeLoading } = useLoadingActions();
+  
+  try {
+    startLoading(loadingText, 'async-operation');
+    
+    if (showProgress) {
+      // Simulate some progress
+      setTimeout(() => setProgress(30), 100);
+      setTimeout(() => setProgress(60), 300);
+    }
+    
+    const result = await asyncFn();
+    
+    if (showProgress) {
+      setProgress(100);
+    }
+    
+    setTimeout(() => {
+      completeLoading('async-operation');
+    }, 100);
+    
+    return result;
+  } catch (error) {
+    completeLoading('async-operation');
+    throw error;
+  }
+};
+
+// For Pages Router (legacy) - keep this if you still need it
+export const useRouterLoadingPagesRouter = (config: RouterLoadingConfig = {}) => {
+  const { startLoading, setProgress, completeLoading, resetLoading } = useLoadingActions();
+  
+  const finalConfig = { ...defaultConfig, ...config };
+  
+  useEffect(() => {
+    // Only import and use if we're in a Pages Router environment
+    let router: any;
+    
+    try {
+      // Dynamic import to avoid issues in App Router
+      const { useRouter } = require('next/router');
+      router = useRouter();
+    } catch (error) {
+      console.warn('Pages Router not available, skipping router loading setup');
+      return;
+    }
+
+    if (!router) return;
+
+    let loadingTimer: NodeJS.Timeout | null = null;
+    let progressTimer: NodeJS.Timeout | null = null;
+    let timeoutTimer: NodeJS.Timeout | null = null;
+    let currentProgress = 0;
+    const loadingId = 'router-navigation';
+
+    const clearAllTimers = () => {
+      if (loadingTimer) {
+        clearTimeout(loadingTimer);
+        loadingTimer = null;
+      }
+      if (progressTimer) {
+        clearInterval(progressTimer);
+        progressTimer = null;
+      }
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+        timeoutTimer = null;
+      }
+    };
+
+    const shouldExcludePath = (url: string) => {
+      return finalConfig.excludePaths?.some(path => url.startsWith(path)) || false;
+    };
+
+    const simulateProgress = () => {
+      currentProgress = 0;
+      
+      progressTimer = setInterval(() => {
+        if (currentProgress < 90) {
+          const increment = currentProgress < 30 ? 
+            Math.random() * 15 : 
+            currentProgress < 60 ? 
+            Math.random() * 8 : 
+            Math.random() * 3;
+          
+          currentProgress = Math.min(90, currentProgress + increment);
+          setProgress(currentProgress);
+        }
+      }, finalConfig.progressSpeed);
+    };
+
+    const handleRouteChangeStart = (url: string) => {
+      if (shouldExcludePath(url)) return;
+
+      clearAllTimers();
+
+      if (finalConfig.delay && finalConfig.delay > 0) {
+        loadingTimer = setTimeout(() => {
+          startLoading('Loading page...', loadingId);
+          simulateProgress();
+        }, finalConfig.delay);
+      } else {
+        startLoading('Loading page...', loadingId);
+        simulateProgress();
+      }
+
+      if (finalConfig.timeout && finalConfig.timeout > 0) {
+        timeoutTimer = setTimeout(() => {
+          completeLoading(loadingId);
+          clearAllTimers();
+        }, finalConfig.timeout);
+      }
+    };
+
+    const handleRouteChangeComplete = () => {
+      clearAllTimers();
+      setProgress(100);
+      setTimeout(() => {
+        completeLoading(loadingId);
+      }, 100);
+    };
+
+    const handleRouteChangeError = (err: Error) => {
+      console.warn('Route change error:', err);
+      clearAllTimers();
+      completeLoading(loadingId);
+    };
+
+    router.events.on('routeChangeStart', handleRouteChangeStart);
+    router.events.on('routeChangeComplete', handleRouteChangeComplete);
+    router.events.on('routeChangeError', handleRouteChangeError);
+
+    return () => {
+      clearAllTimers();
+      router.events.off('routeChangeStart', handleRouteChangeStart);
+      router.events.off('routeChangeComplete', handleRouteChangeComplete);
+      router.events.off('routeChangeError', handleRouteChangeError);
+      resetLoading();
+    };
+  }, [finalConfig, startLoading, setProgress, completeLoading, resetLoading]);
+
+  return {
+    startLoading: (text?: string) => startLoading(text, 'manual'),
+    setProgress,
+    completeLoading: () => completeLoading('manual'),
+    resetLoading,
+  };
+};

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./components/layout_components/AuthProvider";
-import Navbar from "./components/layout_components/Navbar"
+import NavbarClient from "./components/layout_components/NavbarClient"
 import Footer from "./components/layout_components/Footer";
 import CreditsProvider from "./components/layout_components/CreditsProvider";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
@@ -220,7 +220,7 @@ export default async function RootLayout({
        <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-        <Navbar isAdmin={isAdmin} />
+        <NavbarClient isAdmin={isAdmin} />
         {children}
         <Footer/>
        </body>
