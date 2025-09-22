@@ -131,6 +131,7 @@ export const rawSolutions: Record<SolutionKey, Solution> = {
   'id-crop': {
     title: "ID Crop",
     slug: "id-crop",
+    popular: true,
     tagline: "Instant ID Cropping for Flawless Verification.",
     available: true,
     soon: false,

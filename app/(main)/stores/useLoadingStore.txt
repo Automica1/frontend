@@ -1,0 +1,158 @@
+'use client';
+
+import React from 'react';
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+import { subscribeWithSelector } from 'zustand/middleware';
+
+interface LoadingState {
+  isLoading: boolean;
+  progress: number;
+  loadingText: string;
+  loadingId: string | null;
+}
+
+interface LoadingActions {
+  startLoading: (text?: string, id?: string) => void;
+  setProgress: (progress: number) => void;
+  setLoadingText: (text: string) => void;
+  completeLoading: (id?: string) => void;
+  resetLoading: () => void;
+}
+
+type LoadingStore = LoadingState & LoadingActions;
+
+export const useLoadingStore = create<LoadingStore>()(
+  subscribeWithSelector(
+    devtools(
+      (set, get) => ({
+        // Initial state
+        isLoading: false,
+        progress: 0,
+        loadingText: 'Loading...',
+        loadingId: null,
+
+        // Actions
+        startLoading: (text = 'Loading...', id = null) => {
+          set({
+            isLoading: true,
+            progress: 0,
+            loadingText: text,
+            loadingId: id,
+          });
+        },
+
+        setProgress: (progress: number) => {
+          const clampedProgress = Math.max(0, Math.min(100, progress));
+          set({ progress: clampedProgress });
+          
+          // Auto complete if progress reaches 100
+          if (clampedProgress >= 100) {
+            setTimeout(() => {
+              get().completeLoading();
+            }, 200);
+          }
+        },
+
+        setLoadingText: (text: string) => {
+          set({ loadingText: text });
+        },
+
+        completeLoading: (id = null) => {
+          const state = get();
+          
+          // Only complete if no ID provided or IDs match
+          if (!id || state.loadingId === id) {
+            set({ progress: 100 });
+            
+            setTimeout(() => {
+              set({
+                isLoading: false,
+                progress: 0,
+                loadingId: null,
+              });
+            }, 200);
+          }
+        },
+
+        resetLoading: () => {
+          set({
+            isLoading: false,
+            progress: 0,
+            loadingText: 'Loading...',
+            loadingId: null,
+          });
+        },
+      }),
+      {
+        name: 'loading-store',
+        // Only include in dev tools during development
+        enabled: process.env.NODE_ENV === 'development',
+      }
+    )
+  )
+);
+
+// Utility functions that can be called outside React components
+export const loadingActions = {
+  start: (text?: string, id?: string) => useLoadingStore.getState().startLoading(text, id),
+  setProgress: (progress: number) => useLoadingStore.getState().setProgress(progress),
+  setText: (text: string) => useLoadingStore.getState().setLoadingText(text),
+  complete: (id?: string) => useLoadingStore.getState().completeLoading(id),
+  reset: () => useLoadingStore.getState().resetLoading(),
+};
+
+// Hook for easy access to loading actions only (no re-renders)
+export const useLoadingActions = () => {
+  const startLoading = useLoadingStore(state => state.startLoading);
+  const setProgress = useLoadingStore(state => state.setProgress);
+  const setLoadingText = useLoadingStore(state => state.setLoadingText);
+  const completeLoading = useLoadingStore(state => state.completeLoading);
+  const resetLoading = useLoadingStore(state => state.resetLoading);
+
+  return React.useMemo(() => ({
+    startLoading,
+    setProgress,
+    setLoadingText,
+    completeLoading,
+    resetLoading,
+  }), [startLoading, setProgress, setLoadingText, completeLoading, resetLoading]);
+};
+
+// SSR-safe hook for loading state with proper caching
+export const useLoadingState = () => {
+  // Use individual subscriptions to prevent object recreation
+  const isLoading = useLoadingStore((state) => state.isLoading);
+  const progress = useLoadingStore((state) => state.progress);
+  const loadingText = useLoadingStore((state) => state.loadingText);
+  const loadingId = useLoadingStore((state) => state.loadingId);
+
+  // Memoize the returned object to prevent unnecessary re-renders
+  return React.useMemo(() => ({
+    isLoading,
+    progress,
+    loadingText,
+    loadingId,
+  }), [isLoading, progress, loadingText, loadingId]);
+};
+
+// Alternative: Individual hooks for even more granular subscriptions
+export const useIsLoading = () => useLoadingStore((state) => state.isLoading);
+export const useLoadingProgress = () => useLoadingStore((state) => state.progress);
+export const useLoadingText = () => useLoadingStore((state) => state.loadingText);
+export const useLoadingId = () => useLoadingStore((state) => state.loadingId);
+
+// SSR-safe wrapper component for loading state
+export const LoadingStateProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return React.createElement(React.Fragment, null, children);
+  }
+
+  return React.createElement(React.Fragment, null, children);
+};

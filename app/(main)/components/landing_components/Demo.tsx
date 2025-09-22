@@ -6,7 +6,6 @@ import { getPopularSolutions, type Solution } from "../../lib/solutions";
 import { useKindeAuth } from "@kinde-oss/kinde-auth-nextjs";
 import { useRouter } from "next/navigation";
 
-
 export function CanvasRevealEffectDemo() {
   const popularSolutions: Solution[] = getPopularSolutions();
 
@@ -34,7 +33,6 @@ const SolutionCard = ({
   solution: Solution;
   index: number;
 }) => {
-
   const [hovered, setHovered] = React.useState(false);
   const { isAuthenticated, user } = useKindeAuth();
   const router = useRouter();
@@ -60,21 +58,21 @@ const SolutionCard = ({
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="border border-white/[0.2] group/canvas-card flex flex-col items-center justify-between max-w-sm w-full mx-auto p-8 relative h-[36rem] overflow-hidden rounded-xl bg-black/50 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/10"
+      className="border border-gray-700/50 group/canvas-card flex flex-col max-w-sm w-full mx-auto relative h-[30rem] overflow-hidden rounded-2xl transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/20 hover:border-purple-500/30"
     >
-      {/* Corner Icons */}
-      <Icon className="absolute h-6 w-6 -top-3 -left-3 text-white opacity-60" />
-      <Icon className="absolute h-6 w-6 -bottom-3 -left-3 text-white opacity-60" />
-      <Icon className="absolute h-6 w-6 -top-3 -right-3 text-white opacity-60" />
-      <Icon className="absolute h-6 w-6 -bottom-3 -right-3 text-white opacity-60" />
-
-      {/* Corner Ribbon Badge */}
+      {/* Popular Badge */}
       <div className="z-50 absolute top-0 left-0 overflow-hidden w-28 h-28 pointer-events-none">
         <div className="absolute top-3 -left-7 w-36 h-7 bg-gradient-to-r from-orange-500 via-yellow-500 to-orange-600 transform -rotate-45 flex items-center justify-center shadow-lg">
           <span className="text-white text-xs font-semibold uppercase tracking-wider">
             Popular
           </span>
         </div>
+      </div>
+
+      {/* Status Badge */}
+      <div className="absolute top-4 right-4 z-30 flex items-center space-x-2 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5 border border-gray-600/40">
+        <div className="w-2 h-2 bg-green-400 rounded-full" />
+        <span className="text-white text-xs font-medium">Ready</span>
       </div>
 
       {/* Hover Animation */}
@@ -96,52 +94,66 @@ const SolutionCard = ({
         )}
       </AnimatePresence>
 
-      {/* Card Content */}
-      <div className="relative z-20 flex flex-col items-center justify-between h-full w-full">
-        {/* Image Section - Always visible */}
-        <div className="text-center w-full mx-auto flex items-center justify-center pt-0">
-          <div className="relative w-full rounded-lg overflow-hidden shadow-lg transition-transform duration-300 hover:scale-[1.05]">
+      {/* Card Content - Fixed Layout */}
+      <div className="relative z-20 flex flex-col h-full">
+        
+        {/* Image Section */}
+        <div className="flex items-center justify-center p-8 pt-12 pb-4">
+          <div className="relative w-full max-w-[180px]">
             <img 
-              src={solution.imageSrc}
+              src={solution.imageSrc || solution.heroImage}
               alt={solution.title}
-              className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+              className="w-full h-auto object-contain transition-transform duration-300 hover:scale-105"
             />
           </div>
         </div>
 
-        {/* Always visible content */}
-        <div className="flex flex-col items-center justify-center flex-1 px-4 mt-8">
-          <h3 className="text-white text-1xl lg:text-2xl font-bold mb-3 text-center relative">
-            {solution.title}
-            {/* Highlight underline */}
-            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3/4 h-0.5 bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 rounded-full"></div>
-          </h3>
-          <p className="text-white/80 text-sm lg:text-base text-center mb-4 leading-relaxed max-w-xs">
-            {solution.tagline}
-          </p>
+        {/* Content Section */}
+        <div className="flex flex-col justify-between flex-1 p-6 pt-2">
           
-          {/* Try Now Button - Always visible */}
-          <div className="mt-auto">
-            <button 
-              onClick={handleClick}
-              className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-purple-500/90 to-purple-800/90 text-white font-medium text-lg rounded-lg transition-all duration-300 hover:from-purple-600/90 hover:to-purple-800/90 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black cursor-pointer"
-            >
-              <span className="mr-2">Try Now</span>
-              <svg 
-                className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M9 5l7 7-7 7" 
-                />
-              </svg>
-            </button>
+          {/* Title with Icon */}
+          <div className="mb-4">
+            <div className="flex items-center mb-3">
+              <IconComponent className="w-5 h-5 text-purple-400 mr-2 flex-shrink-0" />
+              <h3 className="text-white text-xl font-bold">
+                {solution.title}
+              </h3>
+            </div>
+
+            {/* Description */}
+            <p className="text-gray-300 text-base mb-3 leading-relaxed">
+              {solution.tagline}
+            </p>
+
+            {/* Features */}
+            <p className="text-gray-400 text-sm leading-relaxed">
+              {solution.features && solution.features.length > 0 
+                ? solution.features.slice(0, 2).join(' • ')
+                : 'Advanced features for enhanced productivity'
+              }
+            </p>
           </div>
+
+          {/* CTA Button */}
+          <button 
+            onClick={handleClick}
+            className="w-full bg-gradient-to-r from-purple-500/90 to-purple-800/90 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 hover:from-purple-600/90 hover:to-purple-800/90 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-black cursor-pointer flex items-center justify-center group"
+          >
+            <span className="mr-2">Try Now</span>
+            <svg 
+              className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M9 5l7 7-7 7" 
+              />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
@@ -163,4 +175,3 @@ export const Icon = ({ className, ...rest }: any) => {
     </svg>
   );
 };
-

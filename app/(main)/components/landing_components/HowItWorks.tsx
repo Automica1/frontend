@@ -163,9 +163,9 @@ export default function HowItWorks() {
   ];
 
   return (
-    <section className=" bg-[#0b0b0d] text-white py-20 relative overflow-hidden">
+    <section className=" bg-black text-white py-20 relative overflow-hidden">
       {/* Background Effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/10 via-black to-black"></div>
+      
       
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 opacity-3" style={{
