@@ -85,7 +85,7 @@ interface ContactFormProps {
 
 const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
   const { isAuthenticated, user } = useKindeAuth();
-  
+
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -102,8 +102,8 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
     if (isAuthenticated && user) {
       setFormData(prev => ({
         ...prev,
-        name: user.given_name && user.family_name 
-          ? `${user.given_name} ${user.family_name}` 
+        name: user.given_name && user.family_name
+          ? `${user.given_name} ${user.family_name}`
           : user.given_name || user.family_name || '',
         email: user.email || ''
       }));
@@ -153,9 +153,9 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
         setIsSubmitted(true);
         // Reset form but keep user data for next submission
         setFormData(prev => ({
-          name: isAuthenticated && user ? 
-            (user.given_name && user.family_name 
-              ? `${user.given_name} ${user.family_name}` 
+          name: isAuthenticated && user ?
+            (user.given_name && user.family_name
+              ? `${user.given_name} ${user.family_name}`
               : user.given_name || user.family_name || '') : '',
           email: isAuthenticated && user?.email ? user.email : '',
           company: '',
@@ -174,37 +174,45 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
   };
 
   return (
-    <div className={`bg-[#3f3f3f] p-6 rounded-2xl border border-[#161616] backdrop-blur-sm font-light ${className}`}>
-      <h2 className="text-2xl font-light mb-6 text-white">Send us a Message</h2>
-      
+    <div className={`relative overflow-hidden bg-white/[0.02] p-8 rounded-3xl border border-white/10 backdrop-blur-xl shadow-2xl ${className}`}>
+      {/* Background Gradients */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -z-10 pointer-events-none"></div>
+
+      <div className="mb-8">
+        <h2 className="text-3xl font-light text-white mb-2">Send us a Message</h2>
+        <p className="text-gray-400 font-light text-sm">Fill out the form below and we'll get back to you shortly.</p>
+      </div>
+
       {isSubmitted ? (
-        <div className="text-center py-8">
-          <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-green-400" />
+        <div className="text-center py-16">
+          <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/20 shadow-[0_0_30px_rgba(34,197,94,0.2)]">
+            <CheckCircle className="w-10 h-10 text-green-400" />
           </div>
-          <h3 className="text-xl font-light mb-2 text-white">Message Sent Successfully!</h3>
-          <p className="text-gray-300 mb-4 font-light">
-            Thank you for reaching out. We'll get back to you within 2-4 hours.
+          <h3 className="text-2xl font-light mb-3 text-white">Message Sent!</h3>
+          <p className="text-gray-400 mb-8 font-light max-w-xs mx-auto">
+            Thank you for reaching out. We'll be in touch within 2-4 hours.
           </p>
-          <button 
+          <button
             onClick={() => setIsSubmitted(false)}
-            className="inline-flex items-center space-x-2 text-purple-400 hover:text-purple-300 transition-colors font-light"
+            className="inline-flex items-center space-x-2 px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all duration-300"
           >
             <ArrowRight className="w-4 h-4" />
             <span>Send Another Message</span>
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center space-x-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
               <p className="text-red-400 text-sm font-light">{error}</p>
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-light text-gray-300 mb-2">
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-sm font-medium text-gray-300 ml-1">
                 Full Name *
               </label>
               <input
@@ -214,12 +222,12 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
                 value={formData.name}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2.5 bg-[#161616] border border-gray-600 rounded-lg focus:border-purple-400 focus:outline-none text-white placeholder-gray-400 transition-all duration-200 font-light"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-purple-500/50 focus:bg-white/10 focus:outline-none text-white placeholder-gray-500 transition-all duration-300 font-light"
                 placeholder="John Doe"
               />
             </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-light text-gray-300 mb-2">
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium text-gray-300 ml-1">
                 Email Address *
               </label>
               <input
@@ -229,14 +237,14 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2.5 bg-[#161616] border border-gray-600 rounded-lg focus:border-purple-400 focus:outline-none text-white placeholder-gray-400 transition-all duration-200 font-light"
+                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-purple-500/50 focus:bg-white/10 focus:outline-none text-white placeholder-gray-500 transition-all duration-300 font-light"
                 placeholder="john@company.com"
               />
             </div>
           </div>
 
-          <div>
-            <label htmlFor="company" className="block text-sm font-light text-gray-300 mb-2">
+          <div className="space-y-2">
+            <label htmlFor="company" className="text-sm font-medium text-gray-300 ml-1">
               Company
             </label>
             <input
@@ -245,66 +253,62 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
               name="company"
               value={formData.company}
               onChange={handleInputChange}
-              className="w-full px-3 py-2.5 bg-[#161616] border border-gray-600 rounded-lg focus:border-purple-400 focus:outline-none text-white placeholder-gray-400 transition-all duration-200 font-light"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-purple-500/50 focus:bg-white/10 focus:outline-none text-white placeholder-gray-500 transition-all duration-300 font-light"
               placeholder="Your Company Name"
             />
           </div>
 
           {/* Services Selection - Now Optional */}
-          <div>
-            <label className="block text-sm font-light text-gray-300 mb-3">
-              Select AI Services You're Interested In (Optional)
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-gray-300 ml-1">
+              Select AI Services (Optional)
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               {Object.entries(servicesData).map(([key, service]) => {
                 const Icon = service.icon;
                 const isSelected = formData.inquiryType.includes(key);
-                
+
                 return (
                   <div
                     key={key}
                     onClick={() => handleCheckboxChange(key)}
                     className={`
-                      relative p-3 rounded-lg border cursor-pointer transition-all duration-200
-                      ${isSelected 
-                        ? `${service.borderColor} ${service.bgColor}` 
-                        : 'border-gray-600 bg-[#161616] hover:border-gray-500'
+                      relative p-3 rounded-xl border cursor-pointer transition-all duration-300 group
+                      ${isSelected
+                        ? `${service.borderColor} ${service.bgColor}`
+                        : 'border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10'
                       }
                     `}
                   >
                     <div className="flex items-center space-x-3">
                       <div className={`
-                        w-8 h-8 rounded-lg flex items-center justify-center
-                        ${isSelected ? service.bgColor : 'bg-gray-700'}
+                        w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300
+                        ${isSelected ? service.bgColor : 'bg-white/5 group-hover:bg-white/10'}
                       `}>
-                        <Icon className={`w-4 h-4 ${isSelected ? service.color : 'text-gray-400'}`} />
+                        <Icon className={`w-4 h-4 transition-colors duration-300 ${isSelected ? service.color : 'text-gray-400 group-hover:text-gray-300'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                          <h3 className={`font-light text-sm ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                          <h3 className={`font-light text-sm transition-colors duration-300 ${isSelected ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>
                             {service.title}
                           </h3>
-                          {isSelected && (
-                            <CheckCircle className={`w-3 h-3 ${service.color}`} />
-                          )}
                         </div>
                       </div>
+                      {isSelected && (
+                        <div className={`w-4 h-4 rounded-full ${service.bgColor} flex items-center justify-center`}>
+                          <CheckCircle className={`w-3 h-3 ${service.color}`} />
+                        </div>
+                      )}
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => handleCheckboxChange(key)}
-                      className="absolute top-2 right-2 w-3 h-3 opacity-0"
-                    />
                   </div>
                 );
               })}
             </div>
           </div>
 
-          <div>
-            <label htmlFor="message" className="block text-sm font-light text-gray-300 mb-2">
-              Tell us about your project *
+          <div className="space-y-2">
+            <label htmlFor="message" className="text-sm font-medium text-gray-300 ml-1">
+              Project Details *
             </label>
             <textarea
               id="message"
@@ -313,32 +317,32 @@ const ContactForm: React.FC<ContactFormProps> = ({ className = '' }) => {
               onChange={handleInputChange}
               required
               rows={4}
-              className="w-full px-3 py-2.5 bg-[#161616] border border-gray-600 rounded-lg focus:border-purple-400 focus:outline-none text-white placeholder-gray-400 resize-none transition-all duration-200 font-light"
-              placeholder="Describe your requirements, expected volume, timeline, and any specific questions..."
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-purple-500/50 focus:bg-white/10 focus:outline-none text-white placeholder-gray-500 resize-none transition-all duration-300 font-light"
+              placeholder="Tell us about your requirements, volume, and timeline..."
             />
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="group relative inline-flex items-center justify-center w-full px-8 py-4 bg-gradient-to-r from-purple-500/90 to-purple-800/90 rounded-lg text-white font-medium text-lg hover:from-purple-600/90 hover:to-purple-900/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:scale-100"
+            className="group relative inline-flex items-center justify-center w-full px-8 py-4 bg-gradient-to-r from-purple-500/90 to-purple-800/90 rounded-xl text-white font-medium text-lg hover:from-purple-600/90 hover:to-purple-900/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
             {isSubmitting ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                 <span>Sending Message...</span>
               </>
             ) : (
               <>
-                <Send className="w-4 h-4 mr-2" />
-                <span>Send Message</span>
+                <span className="mr-2">Send Message</span>
+                <Send className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
               </>
             )}
           </button>
-          
+
           {formData.inquiryType.length > 0 && (
-            <p className="text-center text-xs text-gray-400 font-light">
-              Selected {formData.inquiryType.length} service{formData.inquiryType.length > 1 ? 's' : ''}
+            <p className="text-center text-xs text-gray-500 font-light">
+              We'll include details for {formData.inquiryType.length} selected service{formData.inquiryType.length > 1 ? 's' : ''}
             </p>
           )}
         </form>
