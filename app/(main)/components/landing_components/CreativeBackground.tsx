@@ -2,19 +2,22 @@
 import React from 'react';
 
 const CreativeBackground = () => {
-  // Generate random stars
-  const generateStars = (count: number) => {
-    return Array.from({ length: count }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      size: Math.random() * 2 + 1,
-      opacity: Math.random() * 0.8 + 0.2,
-      animationDelay: Math.random() * 4
-    }));
-  };
+  const [stars, setStars] = React.useState<Array<{ id: number, left: number, top: number, size: number, opacity: number, animationDelay: number }>>([]);
 
-  const stars = generateStars(200);
+  React.useEffect(() => {
+    const generateStars = (count: number) => {
+      return Array.from({ length: count }, (_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        size: Math.random() * 2 + 1,
+        opacity: Math.random() * 0.8 + 0.2,
+        animationDelay: Math.random() * 4
+      }));
+    };
+
+    setStars(generateStars(200));
+  }, []);
 
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -39,7 +42,7 @@ const CreativeBackground = () => {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-float-slow"></div>
       <div className="absolute top-3/4 right-1/4 w-80 h-80 bg-blue-500/8 rounded-full blur-3xl animate-float-reverse"></div>
       <div className="absolute bottom-1/4 left-1/2 w-64 h-64 bg-purple-400/8 rounded-full blur-3xl animate-float-delayed"></div>
-      
+
       <style jsx>{`
         @keyframes float-slow {
           0%, 100% { 

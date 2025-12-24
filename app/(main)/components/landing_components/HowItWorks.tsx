@@ -44,24 +44,24 @@ const EvervaultCard: React.FC<EvervaultCardProps> = ({ className, imageSrc, imag
           randomString={randomString}
         />
         <div className="relative z-10 flex items-center justify-center">
-  <div className="relative h-44 w-44 rounded-full flex items-center justify-center text-white font-bold text-4xl">
-    <div className="absolute w-full h-full bg-black/[0.8] blur-sm rounded-full" />
-    <div className="relative z-20 w-full h-full flex items-center justify-center">
-      <Image 
-        src={imageSrc} 
-        alt={imageAlt} 
-        fill 
-        className="object-cover rounded-full"
-        style={{
-          maskImage: 'radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 80%)',
-          WebkitMaskImage: 'radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 80%)',
-          maskSize: '100% 100%',
-          WebkitMaskSize: '100% 100%'
-        }}
-      />
-    </div>
-  </div>
-</div>
+          <div className="relative h-44 w-44 rounded-full flex items-center justify-center text-white font-bold text-4xl">
+            <div className="absolute w-full h-full bg-black/[0.8] blur-sm rounded-full" />
+            <div className="relative z-20 w-full h-full flex items-center justify-center">
+              <Image
+                src={imageSrc}
+                alt={imageAlt}
+                fill
+                className="object-cover rounded-full"
+                style={{
+                  maskImage: 'radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 80%)',
+                  WebkitMaskImage: 'radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 80%)',
+                  maskSize: '100% 100%',
+                  WebkitMaskSize: '100% 100%'
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -162,11 +162,33 @@ export default function HowItWorks() {
     }
   ];
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 30, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.6,
+        ease: "easeOut",
+      },
+    },
+  } as const;
+
   return (
     <section className=" bg-black text-white py-20 relative overflow-hidden">
       {/* Background Effects */}
-      
-      
+
+
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 opacity-3" style={{
         backgroundImage: `radial-gradient(circle at 1px 1px, rgba(255,255,255,0.2) 1px, transparent 0)`,
@@ -175,21 +197,34 @@ export default function HowItWorks() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-6">
         {/* Header */}
-        <div className="text-center mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
           <h2 className="text-4xl lg:text-6xl font-light text-white tracking-tighter leading-tight mb-6">
             How It Works
           </h2>
           <p className="text-xl text-gray-400 max-w-3xl mx-auto font-light opacity-80">
             Three simple steps to transform how you handle documents using AI.
-From compliance checks to data extraction, the process is fast, secure, and fully automated.
+            From compliance checks to data extraction, the process is fast, secure, and fully automated.
           </p>
-        </div>
+        </motion.div>
 
         {/* Steps Grid */}
-        <div className="grid lg:grid-cols-3 gap-8 lg:gap-12">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid lg:grid-cols-3 gap-8 lg:gap-12"
+        >
           {steps.map((step, index) => (
-            <div 
+            <motion.div
               key={step.id}
+              variants={itemVariants}
               className="group relative"
             >
               {/* Step Number Badge */}
@@ -201,16 +236,16 @@ From compliance checks to data extraction, the process is fast, secure, and full
 
               {/* Card with Evervault Effect */}
               <div className="border border-white/[0.2] flex flex-col items-start mx-auto p-6 relative h-[35rem] rounded-2xl bg-gradient-to-br from-gray-900/50 to-black/50 backdrop-blur-sm transition-all duration-500 group-hover:border-purple-500/30 group-hover:shadow-2xl group-hover:shadow-purple-500/10">
-                
+
                 {/* Corner Icons */}
                 <Icon className="absolute h-6 w-6 -top-3 -left-3 text-purple-400" />
                 <Icon className="absolute h-6 w-6 -bottom-3 -left-3 text-purple-400" />
                 <Icon className="absolute h-6 w-6 -top-3 -right-3 text-purple-400" />
                 {/* <Icon className="absolute h-6 w-6 -bottom-3 -right-3 text-purple-400" /> */}
-                
+
                 {/* Evervault Card */}
                 <div className="w-full h-64 mb-6">
-                  <EvervaultCard 
+                  <EvervaultCard
                     imageSrc={step.imageSrc}
                     imageAlt={step.imageAlt}
                     className="w-full h-full"
@@ -226,10 +261,10 @@ From compliance checks to data extraction, the process is fast, secure, and full
                       {step.description}
                     </p>
                   </div>
-                  
+
                   {/* Hover indicator */}
                   <p className="text-sm border font-light border-white/[0.2] rounded-full text-gray-300 px-3 py-1.5 self-start opacity-70 group-hover:opacity-100 group-hover:border-purple-400/50 transition-all duration-300">
-                    Step {index+1}
+                    Step {index + 1}
                   </p>
                 </div>
 
@@ -238,17 +273,23 @@ From compliance checks to data extraction, the process is fast, secure, and full
               </div>
 
               {/* Connection Line */}
-              {index < steps.length -1  && (
+              {index < steps.length - 1 && (
                 <div className="hidden lg:block absolute top-1/2 -right-6 w-10 h-0.5 bg-gradient-to-r from-purple-500/30 to-transparent transform -translate-y-1/2 z-0">
                   <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-purple-500/60 rounded-full"></div>
                 </div>
               )}
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* CTA Section */}
-        <div className="text-center mt-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+          className="text-center mt-16"
+        >
           <button onClick={handleClick} className="group relative inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500/90 to-purple-800/90 rounded-lg text-white font-medium text-lg hover:from-purple-600/90 hover:to-purple-900/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer">
             <p className="mr-3">Get Started Now</p>
             <div className="w-5 h-5 group-hover:translate-x-1 transition-transform">
@@ -257,7 +298,7 @@ From compliance checks to data extraction, the process is fast, secure, and full
               </svg>
             </div>
           </button>
-        </div>
+        </motion.div>
       </div>
     </section>
   );

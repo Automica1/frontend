@@ -1,22 +1,37 @@
 "use client";
 import React from "react";
 import { Spotlight } from "../ui/spotlight-new";
-import {CanvasRevealEffectDemo} from "./Demo"
+import { CanvasRevealEffectDemo } from "./Demo"
+import { motion } from "framer-motion";
 
 export function SpotlightNewDemo() {
   return (
     <div className=" w-full pb-20 rounded-md flex md:items-center md:justify-center bg-black/[0.96] antialiased bg-grid-white/[0.02] relative overflow-hidden">
       <Spotlight />
-      
+
       <div className=" p-4 max-w-7xl  mx-auto relative z-10  w-full pt-20 md:pt-0">
-        <h1 className="lg:pt-20 md:pt-10 text-5xl lg:text-7xl font-light md:text-7xl text-center bg-clip-text  bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50 text-white tracking-tighter leading-tight">
-          Our Most Popular AI Solutions
-        </h1>
-        <p className="text-xl lg:text-2xl text-gray-300 mb-12 max-w-3xl font-light leading-relaxed opacity-90 mt-5 text-center mx-auto">
-          Explore our most trusted AI tools driving automation and security for businesses worldwide.
-        </p>
-        
-            <CanvasRevealEffectDemo/>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <h1 className="lg:pt-20 md:pt-10 text-5xl lg:text-7xl font-light md:text-7xl text-center bg-clip-text  bg-gradient-to-b from-neutral-50 to-neutral-400 bg-opacity-50 text-white tracking-tighter leading-tight">
+            Our Most Popular AI Solutions
+          </h1>
+          <p className="text-xl lg:text-2xl text-gray-300 mb-12 max-w-3xl font-light leading-relaxed opacity-90 mt-5 text-center mx-auto">
+            Explore our most trusted AI tools driving automation and security for businesses worldwide.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+        >
+          <CanvasRevealEffectDemo />
+        </motion.div>
       </div>
     </div>
   );

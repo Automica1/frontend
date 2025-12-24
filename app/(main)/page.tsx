@@ -11,22 +11,22 @@ import CreativeBackground from "./components/landing_components/CreativeBackgrou
 export default function Home() {
   return (
     <>
-    <div className="pb-18 bg-[#0b0b0d]">
-    </div>
-    <Hero />
-    {/* <LogoMarque /> */}
-    <HowItWorks/>
-    <SpotlightNewDemo />
-     {/* <div className="relative min-h-screen overflow-hidden"> */}
-      {/* <CreativeBackground /> */}
-      {/* <div className="relative z-10"> */}
-        <ValuesSection />
-        <WhyChooseUs />
-        <StatsSection />
-      {/* </div> */}
-    {/* // </div> */}
-    
-    {/* <FeaturesSectionDemo/> */}
+      <div className="pb-18 bg-[#0b0b0d]">
+      </div>
+      <Hero />
+      {/* <LogoMarque /> */}
+      <HowItWorks />
+      <SpotlightNewDemo />
+      <div className="relative min-h-screen">
+        <CreativeBackground />
+        <div className="relative z-10">
+          <ValuesSection />
+          <WhyChooseUs />
+          <StatsSection />
+        </div>
+      </div>
+
+      {/* <FeaturesSectionDemo/> */}
     </>
   );
 }

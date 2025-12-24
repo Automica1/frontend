@@ -178,7 +178,7 @@ export default function About() {
               </div>
 
               {/* Node 3: Server/Database */}
-              <div className="absolute bottom-[15%] left-1/2 -translate-x-1/2 z-20 group animate-float-delayed-3">
+              <div className="absolute bottom-[10%] left-1/2 -translate-x-1/2 z-20 group animate-float-delayed-3">
                 <div className="relative w-20 h-20 bg-gray-900/80 backdrop-blur-md rounded-2xl border border-gray-700/50 flex flex-col items-center justify-center shadow-xl group-hover:border-green-500/50 group-hover:shadow-[0_0_30px_rgba(34,197,94,0.3)] transition-all duration-500">
                   <Cpu className="w-8 h-8 text-green-400 mb-2 group-hover:scale-110 transition-transform" />
                   <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">System</span>
