@@ -8,6 +8,8 @@ import TokenDetailsModal from './components/TokenDetailsModal';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorAlert from './components/ErrorAlert';
 import { apiService, type TokenInfo } from '../../lib/apiService';
+import { RefreshCw, User, Coins, Plus, Download } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface Token {
   id: string;
@@ -89,7 +91,6 @@ export default function TokenManagementPage() {
     try {
       setLoading(true);
       setError(null);
-    
 
       // Load all tokens (admin only)
       const response = await apiService.getAllTokens();
@@ -99,7 +100,7 @@ export default function TokenManagementPage() {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load tokens. Please try again.';
       setError(errorMessage);
       console.error('Error loading tokens:', err);
-      
+
       // If authentication error, clear tokens
       if (errorMessage.includes('Authentication') || errorMessage.includes('log in')) {
         setTokens([]);
@@ -134,7 +135,7 @@ export default function TokenManagementPage() {
       setError(null);
 
       const response = await apiService.generateToken(credits, description);
-      
+
       // Create new token object from response
       const newToken: Token = {
         id: `token-${Date.now()}`, // Temporary ID until we reload
@@ -146,11 +147,11 @@ export default function TokenManagementPage() {
         isUsed: false,
         description: response.description
       };
-      
+
       // Add to current list and reload to get accurate data
       setTokens(prev => [newToken, ...prev]);
       setShowGenerateModal(false);
-      
+
       // Reload tokens to get accurate server data
       setTimeout(loadTokens, 500);
     } catch (err) {
@@ -182,7 +183,7 @@ export default function TokenManagementPage() {
           return `"${token.token}",${token.credits},"${status}","${token.createdBy}","${formatDate(token.createdAt)}","${formatDate(token.expiresAt)}","${token.usedBy || ''}","${token.usedAt ? formatDate(token.usedAt) : ''}","${token.description}"`;
         })
       ].join('\n');
-      
+
       const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -218,7 +219,7 @@ export default function TokenManagementPage() {
   const filteredAndSortedTokens = useMemo(() => {
     let filtered = tokens.filter(token => {
       // Search filter
-      const searchMatch = searchTerm === '' || 
+      const searchMatch = searchTerm === '' ||
         token.token.toLowerCase().includes(searchTerm.toLowerCase()) ||
         token.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         token.createdBy.toLowerCase().includes(searchTerm.toLowerCase());
@@ -267,7 +268,7 @@ export default function TokenManagementPage() {
   const stats: TokenStats = useMemo(() => {
     const used = tokens.filter(t => t.isUsed);
     const unused = tokens.filter(t => !t.isUsed && !isTokenExpired(t.expiresAt));
-    
+
     return {
       total: tokens.length,
       used: used.length,
@@ -297,57 +298,72 @@ export default function TokenManagementPage() {
   const hasFilters = searchTerm !== '' || filterStatus !== 'all';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Token Management</h1>
-              <p className="mt-2 text-gray-600">
-                Manage and monitor your API tokens
-              </p>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={loadTokens}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                disabled={loading}
-              >
-                {loading ? 'Loading...' : 'Refresh All'}
-              </button>
-              <button
-                onClick={loadMyTokens}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-                disabled={loading}
-              >
-                My Tokens
-              </button>
-            </div>
-          </div>
-          
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-8 pb-12"
+    >
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-admin-text-main flex items-center gap-3">
+            Credit Management
+          </h1>
+          <p className="text-admin-text-muted mt-1 font-medium">Generate and monitor API credit tokens</p>
         </div>
+        <div className="flex gap-3">
+          <button
+            onClick={loadTokens}
+            className="px-4 py-2.5 bg-white border border-admin-border rounded-xl text-sm font-bold text-admin-text-main hover:bg-slate-50 hover:border-admin-primary/30 active:scale-95 transition-all flex items-center gap-2"
+            disabled={loading}
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Sync Tokens
+          </button>
+          <button
+            onClick={loadMyTokens}
+            className="px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200 active:scale-95 transition-all flex items-center gap-2"
+            disabled={loading}
+          >
+            <User className="w-4 h-4" />
+            My Tokens
+          </button>
+          <button
+            onClick={() => setShowGenerateModal(true)}
+            className="px-4 py-2.5 bg-admin-primary text-white rounded-xl text-sm font-bold shadow-md shadow-admin-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            New Token
+          </button>
+        </div>
+      </div>
 
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-6">
-            <ErrorAlert
-              message={error}
-              onDismiss={() => setError(null)}
-              onRetry={error.includes('Authentication') ? handleAuthRefresh : loadTokens}
-              retryText={error.includes('Authentication') ? "Login Again" : "Reload Tokens"}
-            />
+      {/* Error Alert */}
+      {error && (
+        <ErrorAlert
+          message={error}
+          onDismiss={() => setError(null)}
+          onRetry={error.includes('Authentication') ? handleAuthRefresh : loadTokens}
+          retryText={error.includes('Authentication') ? "Login Again" : "Reload Tokens"}
+        />
+      )}
+
+      {/* Loading State */}
+      {loading ? (
+        <div className="space-y-8 animate-pulse">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white p-6 rounded-2xl border border-admin-border h-32 shadow-sm"></div>
+            ))}
           </div>
-        )}
+          <div className="bg-white rounded-2xl border border-admin-border h-96 shadow-sm"></div>
+        </div>
+      ) : (
+        <>
+          {/* Statistics Grid */}
+          <StatsGrid stats={stats} />
 
-        {/* Loading State */}
-        {loading ? (
-          <LoadingSpinner message="Loading tokens..." fullPage />
-        ) : (
-          <>
-            {/* Statistics Grid */}
-            <StatsGrid stats={stats} />
-
+          <div className="bg-white rounded-3xl border border-admin-border shadow-sm overflow-hidden mt-8">
             {/* Actions Bar */}
             <ActionsBar
               searchTerm={searchTerm}
@@ -373,25 +389,25 @@ export default function TokenManagementPage() {
               isTokenExpired={isTokenExpired}
               hasFilters={hasFilters}
             />
+          </div>
 
-            {/* Generate Token Modal */}
-            <GenerateTokenModal
-              isOpen={showGenerateModal}
-              onClose={() => setShowGenerateModal(false)}
-              onGenerate={handleGenerateToken}
-              isGenerating={isGenerating}
-            />
+          {/* Generate Token Modal */}
+          <GenerateTokenModal
+            isOpen={showGenerateModal}
+            onClose={() => setShowGenerateModal(false)}
+            onGenerate={handleGenerateToken}
+            isGenerating={isGenerating}
+          />
 
-            {/* Token Details Modal */}
-            <TokenDetailsModal
-              isOpen={showDetailsModal}
-              onClose={() => setShowDetailsModal(false)}
-              token={selectedToken}
-              onCopyToken={handleCopyToken}
-            />
-          </>
-        )}
-      </div>
-    </div>
+          {/* Token Details Modal */}
+          <TokenDetailsModal
+            isOpen={showDetailsModal}
+            onClose={() => setShowDetailsModal(false)}
+            token={selectedToken}
+            onCopyToken={handleCopyToken}
+          />
+        </>
+      )}
+    </motion.div>
   );
 }
