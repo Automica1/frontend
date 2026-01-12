@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { UserInfo, apiService } from '../../../lib/apiService';
 import UserDetailsModal from './UserDetailsModal';
+import { Eye, User, Calendar, Database, Mail } from 'lucide-react';
 
 interface UserTableProps {
   users: UserInfo[];
@@ -30,90 +31,100 @@ export default function UserTable({ users, onRefresh }: UserTableProps) {
     }
   };
 
-  // Helper function to generate a safe key for each user row
   const getUserKey = (user: UserInfo, index: number): string => {
     return user.userId || user.id || user.email || `user-${index}`;
   };
 
-  // Filter out any invalid user objects
   const validUsers = users.filter(user => user && (user.userId || user.id || user.email));
 
   if (validUsers.length === 0) {
     return (
-      <div className="bg-white rounded-lg border">
-        <div className="p-8 text-center">
-          <div className="text-gray-400 text-4xl mb-4">👥</div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-          <p className="text-gray-600">Try adjusting your search filters</p>
+      <div className="p-12 text-center">
+        <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <User className="w-8 h-8 text-slate-300" />
         </div>
+        <h3 className="text-lg font-bold text-admin-text-main mb-2">No results found</h3>
+        <p className="text-admin-text-muted text-sm font-medium">Try adjusting your filters or search query.</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="bg-white rounded-lg border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Credits
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {validUsers.map((user, index) => (
-                <tr key={getUserKey(user, index)} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {user.email || 'No email'}
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-admin-border">
+          <thead>
+            <tr className="bg-slate-50/50">
+              <th className="px-6 py-4 text-left text-[10px] font-bold text-admin-text-muted uppercase tracking-widest">
+                User / Account
+              </th>
+              <th className="px-6 py-4 text-left text-[10px] font-bold text-admin-text-muted uppercase tracking-widest hidden lg:table-cell">
+                Identifier
+              </th>
+              <th className="px-6 py-4 text-left text-[10px] font-bold text-admin-text-muted uppercase tracking-widest">
+                Credits Balance
+              </th>
+              <th className="px-6 py-4 text-left text-[10px] font-bold text-admin-text-muted uppercase tracking-widest hidden md:table-cell">
+                Registered On
+              </th>
+              <th className="px-6 py-4 text-right text-[10px] font-bold text-admin-text-muted uppercase tracking-widest">
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-admin-border bg-white">
+            {validUsers.map((user, index) => (
+              <tr key={getUserKey(user, index)} className="group hover:bg-slate-50/30 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-admin-primary/5 rounded-xl flex items-center justify-center border border-admin-primary/10">
+                      <Mail className="w-4 h-4 text-admin-primary" />
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {user.userId || 'Unknown User ID'}
+                    <div>
+                      <div className="text-sm font-bold text-admin-text-main group-hover:text-admin-primary transition-colors">
+                        {user.email || 'No email'}
+                      </div>
+                      <div className="text-[10px] font-bold text-admin-text-muted uppercase tracking-tighter sm:hidden">
+                        {user.userId}
+                      </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.credits ? user.credits.toLocaleString() : '0'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
+                  <div className="flex items-center gap-2 text-xs font-mono bg-slate-50 border border-slate-100 px-2 py-1 rounded-md text-admin-text-muted w-fit">
+                    {user.userId || 'Unknown'}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1 px-2 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-100 flex items-center gap-1.5 shadow-sm">
+                      <Database className="w-3 h-3" />
+                      {user.credits ? user.credits.toLocaleString() : '0'}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell text-xs font-bold text-admin-text-muted">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
                     {formatDate(user.createdAt)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleViewUser(user)}
-                      className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
-                      disabled={!user.userId && !user.id}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <button
+                    onClick={() => handleViewUser(user)}
+                    className="p-2 text-admin-text-muted hover:text-admin-primary hover:bg-admin-primary/5 rounded-xl transition-all"
+                    title="View Details"
+                    disabled={!user.userId && !user.id}
+                  >
+                    <Eye className="w-5 h-5" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* User Details Modal */}
       {showDetailsModal && selectedUser && (selectedUser.userId || selectedUser.id) && (
         <UserDetailsModal
           user={selectedUser}

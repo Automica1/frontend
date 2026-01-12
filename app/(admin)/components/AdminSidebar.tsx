@@ -2,85 +2,97 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Coins } from "lucide-react"; // Import Lucide icons
+import {
+  LayoutDashboard,
+  Users,
+  Coins,
+  Settings,
+  ArrowLeft,
+  ChevronRight,
+  Database,
+  LucideIcon,
+} from "lucide-react";
 
-const navigationItems = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+}
+
+const navigationItems: NavItem[] = [
   {
     name: 'Dashboard',
     href: '/admin',
-    icon: <LayoutDashboard className="mr-3 h-5 w-5" />,
+    icon: LayoutDashboard,
   },
   {
     name: 'Users',
     href: '/admin/users',
-    icon: <Users className="mr-3 h-5 w-5" />,
+    icon: Users,
   },
   {
     name: 'Credits',
     href: '/admin/credits',
-    icon: <Coins className="mr-3 h-5 w-5" />,
+    icon: Coins,
   },
   {
     name: 'Services',
     href: '/admin/services',
-    icon: <Coins className="mr-3 h-5 w-5" />,
+    icon: Database,
   },
-  // {
-  //   name: 'Pages',
-  //   href: '/admin/credits',
-  //   icon: <Coins className="mr-3 h-5 w-5" />,
-  // },
 ];
 
-export default function AdminSidebarClient() {
+export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-white shadow-sm min-h-screen">
-      <nav className="mt-8">
-        <div className="px-4 space-y-2">
-          {navigationItems.map((item) => (
-            <NavItem 
-              key={item.name} 
-              {...item} 
-              isActive={pathname === item.href}
-            />
-          ))}
-          
-          <Link 
-            href="/"
-            className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 transition-colors"
-          >
-            <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Site
-          </Link>
+    <aside className="hidden lg:flex w-72 flex-col bg-white border-r border-admin-border transition-all duration-300">
+      <div className="p-6">
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-10 h-10 bg-admin-primary rounded-xl flex items-center justify-center shadow-lg shadow-admin-primary/20">
+            <Settings className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold tracking-tight">Automica</h2>
+            <p className="text-xs text-admin-text-muted font-medium">Admin Console</p>
+          </div>
         </div>
+      </div>
+
+      <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto pt-4">
+        <p className="px-4 text-[10px] font-bold text-admin-text-muted uppercase tracking-wider mb-2">Main Menu</p>
+        {navigationItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`
+                group flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
+                ${isActive
+                  ? 'bg-admin-primary text-white shadow-md shadow-admin-primary/25'
+                  : 'text-admin-text-muted hover:bg-slate-50 hover:text-admin-text-main'}
+              `}
+            >
+              <div className="flex items-center">
+                <item.icon className={`mr-3 h-5 w-5 transition-colors ${isActive ? 'text-white' : 'text-admin-text-muted group-hover:text-admin-primary'}`} />
+                {item.name}
+              </div>
+              {isActive && <ChevronRight className="h-4 w-4 opacity-70" />}
+            </Link>
+          );
+        })}
       </nav>
+
+      <div className="p-4 mt-auto border-t border-admin-border">
+        <Link
+          href="/"
+          className="flex items-center px-4 py-3 text-sm font-medium text-admin-text-muted rounded-xl hover:bg-slate-50 hover:text-admin-text-main transition-all duration-200"
+        >
+          <ArrowLeft className="mr-3 h-5 w-5" />
+          Back to Site
+        </Link>
+      </div>
     </aside>
-  );
-}
-
-interface NavItemProps {
-  name: string;
-  href: string;
-  icon: React.ReactNode;
-  isActive: boolean;
-}
-
-function NavItem({ name, href, icon, isActive }: NavItemProps) {
-  return (
-    <Link 
-      href={href}
-      className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-        isActive
-          ? 'text-blue-700 bg-blue-100 hover:bg-blue-200'
-          : 'text-gray-700 hover:bg-gray-100'
-      }`}
-    >
-      {icon}
-      {name}
-    </Link>
   );
 }
