@@ -6,9 +6,9 @@
     ]
   },
   "node_modules\\.pnpm\\@kinde-oss+kinde-auth-nextj_cc08055bbef90cfc3ec813b954c8d899\\node_modules\\@kinde-oss\\kinde-auth-nextjs\\dist\\frontend\\KindeBrowserClient.es.js -> ../session/refreshTokensServerAction.es.js": {
-    "id": 84142,
+    "id": 41600,
     "files": [
-      "static/chunks/4142.1295c2386c417ed8.js"
+      "static/chunks/1600.5eea0e95978d2b15.js"
     ]
   },
   "node_modules\\.pnpm\\@react-three+drei@10.2.0_@r_0b2dc8d0f11e12f1d26379d835392f4a\\node_modules\\@react-three\\drei\\core\\VideoTexture.js -> hls.js": {
