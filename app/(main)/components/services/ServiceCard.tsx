@@ -16,12 +16,13 @@ type Service = {
 type ServiceCardProps = {
   service: Service;
   isComingSoon?: boolean;
+  isLive?: boolean;
   index: number;
   hoveredCard: number | null;
   setHoveredCard: (index: number | null) => void;
 };
 
-const ServiceCard: React.FC<ServiceCardProps> = ({ service, isComingSoon = false, index, hoveredCard, setHoveredCard }) => {
+const ServiceCard: React.FC<ServiceCardProps> = ({ service, isComingSoon = false, isLive = false, index, hoveredCard, setHoveredCard }) => {
   const Icon = service.icon;
   const router = useRouter();
 
@@ -54,6 +55,13 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, isComingSoon = false
       {isComingSoon && (
         <div className="absolute top-4 right-4 bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-xs font-medium">
           Coming Soon
+        </div>
+      )}
+      
+      {/* Live Badge */}
+      {isLive && (
+        <div className="absolute top-4 right-4 bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-xs font-medium">
+          Live
         </div>
       )}
       

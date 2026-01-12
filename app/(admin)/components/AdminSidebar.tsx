@@ -10,12 +10,13 @@ import {
   ArrowLeft,
   ChevronRight,
   Database,
+  LucideIcon,
 } from "lucide-react";
 
 interface NavItem {
   name: string;
   href: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
 }
 
 const navigationItems: NavItem[] = [

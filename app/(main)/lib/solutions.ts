@@ -1,5 +1,5 @@
 // lib/solutions.ts
-import { Table, QrCode, User, Scissors, Code, Zap, Shield, Globe, FileCheck, Cpu } from 'lucide-react';
+import { Table, QrCode, User, Scissors, Code, Zap, Shield, Globe, FileCheck, Cpu, Mic, Volume2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export type SolutionKey =
@@ -9,7 +9,8 @@ export type SolutionKey =
   | 'qr-masking'
   | 'face-verify'
   | 'face-cropping'
-  | 'ocr-engine';
+  | 'speech-to-text'
+  | 'text-to-speech';
 
 export interface UseCase {
   title: string;
@@ -276,44 +277,81 @@ export const rawSolutions: Record<SolutionKey, Solution> = {
     apiEndpoint: "https://api.yourcompany.com/v1/face-cropping",
     documentation: "/docs/face-cropping"
   },
-  'ocr-engine': {
-    title: "OCR Engine",
-    slug: "ocr-engine",
-    tagline: "OCR That Handles PDFs, Scans, and Screenshots.",
-    description: "Intelligent face detection and cropping with automatic optimization for profile pictures, ID photos, and document processing applications.",
-    icon: Cpu,
+  'speech-to-text': {
+    title: "Speech to Text",
+    slug: "speech-to-text",
     available: true,
-    soon: true,
-    gradient: "from-yellow-600 to-orange-600",
+    soon: false,
+    tagline: "Convert Speech to Text with High Accuracy.",
+    description: "Transform spoken words into accurate text using advanced AI-powered speech recognition. Support for multiple languages, accents, and audio formats with real-time processing capabilities.",
+    icon: Mic,
+    gradient: "from-blue-600 to-purple-600",
     heroImage: "/api/placeholder/800/400",
     features: [
-      "Auto-alignment for perfect portraits",
-      "Quality enhancement algorithms",
-      "Batch processing capabilities",
-      "Multiple face detection",
-      "Aspect ratio optimization",
-      "Background removal options"
+      "High accuracy speech recognition",
+      "Multi-language support",
+      "Real-time processing",
+      "Noise reduction technology",
+      "Multiple audio formats"
     ],
     useCases: [
       {
-        title: "Profile Pictures",
-        description: "Optimize photos for social media and professional use",
+        title: "Meeting Transcription",
+        description: "Automatically transcribe meetings and conversations",
         icon: Globe
       },
       {
-        title: "Employee Photos",
-        description: "Process employee photos for company directories",
+        title: "Voice Commands",
+        description: "Enable voice control in applications",
         icon: Code
       },
       {
-        title: "ID Processing",
-        description: "Extract and optimize face photos from ID documents",
-        icon: Shield
+        title: "Content Creation",
+        description: "Convert audio content to written format",
+        icon: Zap
       }
     ],
 
-    apiEndpoint: "https://api.yourcompany.com/v1/face-cropping",
-    documentation: "/docs/face-cropping"
+    apiEndpoint: "https://api.yourcompany.com/v1/speech-to-text",
+    documentation: "/docs/speech-to-text"
+  },
+  'text-to-speech': {
+    title: "Text to Speech",
+    slug: "text-to-speech",
+    available: true,
+    soon: false,
+    tagline: "Natural Voice Synthesis from Text.",
+    description: "Convert written text into natural-sounding speech using advanced AI voice synthesis. Multiple voice options, languages, and customizable speaking styles for engaging audio content.",
+    icon: Volume2,
+    gradient: "from-purple-600 to-pink-600",
+    heroImage: "/api/placeholder/800/400",
+    features: [
+      "Natural voice quality",
+      "Multiple voice options",
+      "Language support",
+      "Customizable speaking styles",
+      "Fast audio generation"
+    ],
+    useCases: [
+      {
+        title: "Audiobooks",
+        description: "Convert written content to audio format",
+        icon: Globe
+      },
+      {
+        title: "Accessibility",
+        description: "Provide audio versions of text content",
+        icon: Shield
+      },
+      {
+        title: "Voice Assistants",
+        description: "Generate speech for AI assistants",
+        icon: Code
+      }
+    ],
+
+    apiEndpoint: "https://api.yourcompany.com/v1/text-to-speech",
+    documentation: "/docs/text-to-speech"
   }
 };
 
@@ -374,6 +412,8 @@ export const getAvailableSolutions = (): Solution[] => {
   return Object.values(solutions).filter(sol => {
     if (sol.soon === true) return false
     if (sol.available === false) return false
+    // Exclude speech-to-text and text-to-speech from available solutions
+    if (sol.slug === 'speech-to-text' || sol.slug === 'text-to-speech') return false
     return sol.available === true || sol.popular === true
   })
 };
@@ -387,4 +427,13 @@ export const getSoonSolutions = (): Solution[] => {
   console.debug('[getSoonSolutions] filtered soon:', soon)
 
   return soon
+};
+
+export const getLiveSolutions = (): Solution[] => {
+  const all = Object.values(solutions)
+  
+  // Filter by available === true and soon === false (live services)
+  const live = all.filter(sol => sol.available === true && sol.soon === false)
+  
+  return live
 };
