@@ -14,11 +14,8 @@
 /coverage
 
 # next.js
-# Ignore heavy cache but allow production build
-.next/cache/
-# /.next/ 
-
-/out/
+.next/
+out/
 
 # production
 /build
