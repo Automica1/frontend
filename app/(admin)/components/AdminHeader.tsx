@@ -44,12 +44,12 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
               </div>
 
               <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-admin-border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right scale-95 group-hover:scale-100 py-1 overflow-hidden">
-                <LogoutLink postLogoutRedirectURL="/" className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                <LogoutLink className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                   <User className="h-4 w-4" />
                   My Profile
                 </LogoutLink>
                 <div className="h-px bg-admin-border my-1"></div>
-                <LogoutLink postLogoutRedirectURL="/" className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
+                <LogoutLink className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
                   <LogOut className="h-4 w-4" />
                   Sign Out
                 </LogoutLink>

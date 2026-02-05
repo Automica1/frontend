@@ -8,17 +8,17 @@ import { useCredits } from '../../hooks/useCredits';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
+export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  
+
   // Get current pathname for active link highlighting
   const pathname = usePathname();
-  
+
   // Get user authentication state
   const { user, isAuthenticated, isLoading } = useKindeBrowserClient();
-  
+
   // Use the new Zustand-based credits hook
   const { credits, loading: creditsLoading, error: creditsError, refreshCredits } = useCredits();
 
@@ -41,31 +41,29 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
   // Function to get link classes based on active state
   const getLinkClasses = (href: string, isMobile: boolean = false) => {
     const isActive = isActiveLink(href);
-    
+
     if (isMobile) {
-      return `block text-xl font-medium transition-all duration-300 py-2 border-b border-gray-800/50 ${
-        isActive 
-          ? 'text-purple-400 bg-purple-500/10 px-3 rounded-lg border-purple-500/30' 
-          : 'text-white hover:text-purple-400'
-      }`;
+      return `block text-xl font-medium transition-all duration-300 py-2 border-b border-gray-800/50 ${isActive
+        ? 'text-purple-400 bg-purple-500/10 px-3 rounded-lg border-purple-500/30'
+        : 'text-white hover:text-purple-400'
+        }`;
     }
-    
-    return `relative transition-all duration-300 hover:scale-105 ${
-      isActive 
-        ? 'text-purple-400 font-semibold' 
-        : 'text-gray-300 hover:text-purple-400'
-    }`;
+
+    return `relative transition-all duration-300 hover:scale-105 ${isActive
+      ? 'text-purple-400 font-semibold'
+      : 'text-gray-300 hover:text-purple-400'
+      }`;
   };
 
   // Helper function to determine if user picture should use default avatar
   const shouldUseDefaultAvatar = (userPicture: string | string[]) => {
     if (!userPicture) return true;
-    
+
     // Check if the picture URL contains gravatar with 'd=blank' parameter
     if (userPicture.includes('gravatar.com') && userPicture.includes('d=blank')) {
       return true;
     }
-    
+
     return false;
   };
 
@@ -87,7 +85,7 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -95,11 +93,11 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
-      
+
       if (showUserDropdown && !target.closest('.user-dropdown')) {
         setShowUserDropdown(false);
       }
-      
+
       if (showMobileMenu && !target.closest('.mobile-menu') && !target.closest('.mobile-menu-button')) {
         setShowMobileMenu(false);
       }
@@ -116,7 +114,7 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -130,22 +128,21 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
     <nav className="fixed top-0 left-0 right-0 z-50">
       {/* Glassmorphism background */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-xl border-b border-white/10"></div>
-      
+
       {/* Scroll progress bar */}
-      <div 
+      <div
         className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-purple-500 to-purple-700 transition-all duration-300"
         style={{ width: `${scrollProgress}%` }}
       ></div>
-      
+
       <div className="relative flex items-center justify-between px-4 sm:px-6 py-4 max-w-7xl mx-auto">
         {/* Logo */}
         <div className="flex items-center animate-[slideInLeft_0.8s_ease-out] z-50">
           <Link href="/">
-            <span className={`flex items-center space-x-2 ${
-              isActiveLink('/') 
-                ? 'text-purple-400 scale-105' 
-                : 'text-white hover:text-purple-400'
-            } transition-all duration-300 hover:scale-105`}>
+            <span className={`flex items-center space-x-2 ${isActiveLink('/')
+              ? 'text-purple-400 scale-105'
+              : 'text-white hover:text-purple-400'
+              } transition-all duration-300 hover:scale-105`}>
               <Image
                 src="/logo.svg"
                 alt="Automica.ai Logo"
@@ -158,31 +155,31 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
             </span>
           </Link>
         </div>
-        
+
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8 animate-[slideInDown_0.8s_ease-out_0.2s_both]">
           {navLinks.map((link) => (
-            <Link 
-              key={link.href} 
-              href={link.href} 
+            <Link
+              key={link.href}
+              href={link.href}
               className={getLinkClasses(link.href)}
             >
               <span className="relative">
                 {link.label}
                 {/* Active indicator dot */}
-                
+
               </span>
             </Link>
           ))}
         </div>
-        
+
         {/* Desktop Auth Section */}
         <div className="hidden md:flex items-center space-x-4 animate-[slideInRight_0.8s_ease-out_0.4s_both]">
           {/* Credits and Add Credits section - only show if user is authenticated */}
           {!isLoading && isAuthenticated && (
             <div className="flex items-center space-x-3">
               {/* Credits Display */}
-              <button 
+              <button
                 onClick={refreshCredits}
                 className="flex items-center space-x-2 text-gray-300 hover:text-purple-400 transition-all duration-300 hover:scale-105 cursor-pointer"
                 title="Click to refresh credits"
@@ -198,7 +195,7 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
                   )}
                 </span>
               </button>
-              
+
               {/* Add Credits Button */}
               {/* <Link 
                 href="/credits"
@@ -210,12 +207,12 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
               </Link> */}
             </div>
           )}
-          
+
           {/* Show loading state */}
           {isLoading && (
             <div className="px-4 py-2 text-gray-300">Loading...</div>
           )}
-          
+
           {/* Show auth buttons when not authenticated */}
           {!isLoading && !isAuthenticated && (
             <>
@@ -227,11 +224,11 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
               </RegisterLink>
             </>
           )}
-          
+
           {/* Show user info when authenticated */}
           {!isLoading && isAuthenticated && user && (
             <div className="relative user-dropdown">
-              <button 
+              <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
                 className="flex items-center space-x-3 px-3 py-2 bg-gradient-to-r from-purple-500/20 to-purple-700/20 backdrop-blur-sm border border-purple-500/30 rounded-lg text-white hover:from-purple-500/30 hover:to-purple-700/30 transition-all duration-300 hover:scale-105"
               >
@@ -253,7 +250,7 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
                 </span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} />
               </button>
-              
+
               {/* Desktop User Dropdown Menu */}
               {showUserDropdown && (
                 <div className="absolute right-0 mt-2 w-64 bg-black/90 backdrop-blur-xl border border-white/10 rounded-lg shadow-xl py-2 animate-[fadeIn_0.2s_ease-out]">
@@ -275,8 +272,8 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="text-white font-medium truncate">
-                          {user.given_name && user.family_name 
-                            ? `${user.given_name} ${user.family_name}` 
+                          {user.given_name && user.family_name
+                            ? `${user.given_name} ${user.family_name}`
                             : user.given_name || 'User'}
                         </div>
                         <div className="text-gray-400 text-sm truncate">{user.email}</div>
@@ -300,7 +297,7 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
                         {creditsLoading ? (
                           <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                         ) : creditsError ? (
-                          <button 
+                          <button
                             onClick={refreshCredits}
                             className="text-red-400 hover:text-red-300 text-xs transition-colors"
                           >
@@ -317,7 +314,7 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
                       <div className="text-red-400 text-xs mb-2">{creditsError}</div>
                     )}
                     {/* Add Credits link in dropdown */}
-                    <Link 
+                    <Link
                       href="/credits"
                       onClick={() => setShowUserDropdown(false)}
                       className="flex items-center justify-center space-x-2 w-full px-3 py-2 bg-gradient-to-r from-green-500/20 to-green-600/20 border border-green-500/30 rounded-md text-green-300 hover:text-green-200 hover:from-green-500/30 hover:to-green-600/30 transition-all duration-200"
@@ -326,17 +323,16 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
                       <span className="text-xs font-medium">Add Credits</span>
                     </Link>
                   </div>
-                  
+
                   {/* Admin Dashboard Link */}
                   {isAdmin && (
                     <div className="py-1">
-                      <Link 
-                        href="/admin" 
-                        className={`flex items-center px-4 py-2 transition-colors duration-200 ${
-                          isActiveLink('/admin')
-                            ? 'text-purple-400 bg-purple-500/20 font-semibold'
-                            : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
-                        }`}
+                      <Link
+                        href="/admin"
+                        className={`flex items-center px-4 py-2 transition-colors duration-200 ${isActiveLink('/admin')
+                          ? 'text-purple-400 bg-purple-500/20 font-semibold'
+                          : 'text-gray-300 hover:text-white hover:bg-purple-500/20'
+                          }`}
                         onClick={() => setShowUserDropdown(false)}
                       >
                         <Settings className="w-4 h-4 mr-3" />
@@ -347,9 +343,9 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
                       </Link>
                     </div>
                   )}
-                  
+
                   <div className={`${isAdmin ? 'border-t border-white/10 pt-1' : ''}`}>
-                    <LogoutLink postLogoutRedirectURL="/" className="flex items-center w-full px-4 py-2 text-gray-300 hover:text-white hover:bg-red-500/20 transition-colors duration-200">
+                    <LogoutLink className="flex items-center w-full px-4 py-2 text-gray-300 hover:text-white hover:bg-red-500/20 transition-colors duration-200">
                       <LogOut className="w-4 h-4 mr-3" />
                       Sign Out
                     </LogoutLink>
@@ -364,7 +360,7 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
         <div className="md:hidden flex items-center space-x-2">
           {/* Mobile Credits Display (only when authenticated) */}
           {!isLoading && isAuthenticated && (
-            <button 
+            <button
               onClick={refreshCredits}
               className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-purple-500/20 to-purple-700/20 backdrop-blur-sm border border-purple-500/30 rounded-md transition-all duration-300 hover:scale-105"
               title="Click to refresh credits"
@@ -381,7 +377,7 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
               </span>
             </button>
           )}
-          
+
           <button
             onClick={() => setShowMobileMenu(!showMobileMenu)}
             className="mobile-menu-button p-2 text-white hover:text-purple-400 transition-colors duration-200"
@@ -399,9 +395,9 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
             {/* Navigation Links */}
             <div className="flex-1 px-4 py-4 space-y-3 bg-black/60 backdrop-blur-md mx-3 mt-3 rounded-2xl border border-white/10" style={{ backdropFilter: 'blur(16px)' }}>
               {navLinks.map((link) => (
-                <Link 
+                <Link
                   key={link.href}
-                  href={link.href} 
+                  href={link.href}
                   onClick={closeMobileMenu}
                   className={getLinkClasses(link.href, true)}
                 >
@@ -416,14 +412,13 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
 
               {/* Add Credits Link for Mobile */}
               {!isLoading && isAuthenticated && (
-                <Link 
-                  href="/credits" 
+                <Link
+                  href="/credits"
                   onClick={closeMobileMenu}
-                  className={`block text-xl font-medium transition-all duration-300 py-2 border-b border-gray-800/50 ${
-                    isActiveLink('/credits')
-                      ? 'text-green-400 bg-green-500/10 px-3 rounded-lg border-green-500/30'
-                      : 'text-green-300 hover:text-green-400'
-                  }`}
+                  className={`block text-xl font-medium transition-all duration-300 py-2 border-b border-gray-800/50 ${isActiveLink('/credits')
+                    ? 'text-green-400 bg-green-500/10 px-3 rounded-lg border-green-500/30'
+                    : 'text-green-300 hover:text-green-400'
+                    }`}
                 >
                   <span className="flex items-center justify-between">
                     <span className="flex items-center space-x-2">
@@ -439,14 +434,13 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
 
               {/* Admin Dashboard Link for Mobile */}
               {!isLoading && isAuthenticated && isAdmin && (
-                <Link 
-                  href="/admin" 
+                <Link
+                  href="/admin"
                   onClick={closeMobileMenu}
-                  className={`block text-xl font-medium transition-all duration-300 py-2 border-b border-gray-800/50 ${
-                    isActiveLink('/admin')
-                      ? 'text-purple-400 bg-purple-500/10 px-3 rounded-lg border-purple-500/30'
-                      : 'text-purple-300 hover:text-purple-400'
-                  }`}
+                  className={`block text-xl font-medium transition-all duration-300 py-2 border-b border-gray-800/50 ${isActiveLink('/admin')
+                    ? 'text-purple-400 bg-purple-500/10 px-3 rounded-lg border-purple-500/30'
+                    : 'text-purple-300 hover:text-purple-400'
+                    }`}
                 >
                   <span className="flex items-center justify-between">
                     Admin Dashboard
@@ -476,8 +470,8 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="text-white font-semibold text-base truncate">
-                        {user.given_name && user.family_name 
-                          ? `${user.given_name} ${user.family_name}` 
+                        {user.given_name && user.family_name
+                          ? `${user.given_name} ${user.family_name}`
                           : user.given_name || 'User'}
                       </div>
                       <div className="text-gray-300 text-sm truncate">{user.email}</div>
@@ -493,7 +487,7 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
                           {creditsLoading ? (
                             <div className="w-3 h-3 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                           ) : creditsError ? (
-                            <button 
+                            <button
                               onClick={refreshCredits}
                               className="text-red-400 hover:text-red-300 text-xs"
                             >
@@ -514,15 +508,15 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
             <div className="px-4 py-3 bg-black/60 backdrop-blur-md border-t border-white/20 space-y-3 mx-3 mb-3 rounded-2xl flex-shrink-0" style={{ backdropFilter: 'blur(16px)' }}>
               {!isLoading && !isAuthenticated && (
                 <>
-                  <LoginLink 
-                    postLoginRedirectURL="/" 
+                  <LoginLink
+                    postLoginRedirectURL="/"
                     onClick={closeMobileMenu}
                     className="block w-full px-4 py-3 border-2 border-white/30 backdrop-blur-sm rounded-xl text-center text-white font-medium hover:text-purple-400 hover:border-purple-500 transition-all duration-300" style={{ backdropFilter: 'blur(8px)' }}
                   >
                     SIGN IN
                   </LoginLink>
-                  <RegisterLink 
-                    postLoginRedirectURL="/" 
+                  <RegisterLink
+                    postLoginRedirectURL="/"
                     onClick={closeMobileMenu}
                     className="block w-full px-4 py-3 bg-gradient-to-r from-purple-500/90 to-purple-700/90 backdrop-blur-sm text-white rounded-xl font-semibold text-center hover:from-purple-600 hover:to-purple-800 transition-all duration-300 shadow-lg border border-purple-400/50" style={{ backdropFilter: 'blur(8px)' }}
                   >
@@ -530,10 +524,9 @@ export default function Navbar({isAdmin}: {isAdmin?: boolean}) {
                   </RegisterLink>
                 </>
               )}
-              
+
               {!isLoading && isAuthenticated && (
-                <LogoutLink 
-                  postLogoutRedirectURL="/"
+                <LogoutLink
                   onClick={closeMobileMenu}
                   className="flex items-center justify-center space-x-2 w-full px-4 py-3 text-white font-medium hover:text-red-400 hover:bg-red-500/20 backdrop-blur-sm transition-colors duration-200 rounded-xl border-2 border-red-500/50" style={{ backdropFilter: 'blur(8px)' }}
                 >
