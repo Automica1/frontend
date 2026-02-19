@@ -59,7 +59,7 @@ const getResponseExample = (slug: string): string => {
   }
 }`
   };
-  
+
   return responses[slug] || `{
   "req_id": "generated-request-id",
   "success": true,
@@ -79,17 +79,17 @@ export const ApiReference: React.FC<ApiReferenceProps> = ({ solution, apiConfig,
     </div>
 
     <div className="bg-gray-800 rounded-lg p-4 sm:p-6">
-      <h4 className="text-base sm:text-lg font-semibold mb-4">POST {apiConfig.endpoint.replace('https://dev.automica.ai/go', '')}</h4>
+      <h4 className="text-base sm:text-lg font-semibold mb-4">POST {apiConfig.endpoint.replace('https://automica.ai/go', '')}</h4>
       <p className="text-gray-300 mb-4 text-sm sm:text-base">
         {apiConfig.description}
       </p>
-      
+
       <div className="space-y-4">
         <div>
           <h5 className="font-semibold mb-2 text-sm sm:text-base">Request Headers</h5>
           <div className="bg-black rounded-lg p-3 sm:p-4">
             <pre className="text-xs sm:text-sm text-gray-300 font-mono overflow-x-auto">
-{`Authorization: Bearer ${createdApiKey || 'YOUR_API_KEY'}
+              {`Authorization: Bearer ${createdApiKey || 'YOUR_API_KEY'}
 Content-Type: application/json`}
             </pre>
           </div>
@@ -99,7 +99,7 @@ Content-Type: application/json`}
           <h5 className="font-semibold mb-2 text-sm sm:text-base">Request Body</h5>
           <div className="bg-black rounded-lg p-3 sm:p-4">
             <pre className="text-xs sm:text-sm text-gray-300 font-mono overflow-x-auto">
-{JSON.stringify(apiConfig.requestBody, null, 2)}
+              {JSON.stringify(apiConfig.requestBody, null, 2)}
             </pre>
           </div>
         </div>
@@ -113,7 +113,7 @@ Content-Type: application/json`}
                 <span className="text-gray-500 mx-2">string</span>
                 <span className="text-gray-300">Unique request identifier for tracking (will be returned in response)</span>
               </div>
-              
+
               {apiConfig.requestBody.doc_base64 && !Array.isArray(apiConfig.requestBody.doc_base64) && (
                 <div>
                   <span className="text-blue-400 font-mono">doc_base64</span>
@@ -121,7 +121,7 @@ Content-Type: application/json`}
                   <span className="text-gray-300">Base64 encoded image data</span>
                 </div>
               )}
-              
+
               {apiConfig.requestBody.base64_str && (
                 <div>
                   <span className="text-blue-400 font-mono">base64_str</span>
@@ -129,7 +129,7 @@ Content-Type: application/json`}
                   <span className="text-gray-300">Base64 encoded image data (for QR masking)</span>
                 </div>
               )}
-              
+
               {apiConfig.requestBody.doc_base64_1 && (
                 <>
                   <div>
@@ -149,7 +149,7 @@ Content-Type: application/json`}
                   </div>
                 </>
               )}
-              
+
               {Array.isArray(apiConfig.requestBody.doc_base64) && (
                 <div>
                   <span className="text-blue-400 font-mono">doc_base64</span>
@@ -165,7 +165,7 @@ Content-Type: application/json`}
           <h5 className="font-semibold mb-2 text-sm sm:text-base">Response</h5>
           <div className="bg-black rounded-lg p-3 sm:p-4">
             <pre className="text-xs sm:text-sm text-gray-300 font-mono overflow-x-auto">
-{getResponseExample(solution.slug)}
+              {getResponseExample(solution.slug)}
             </pre>
           </div>
         </div>
