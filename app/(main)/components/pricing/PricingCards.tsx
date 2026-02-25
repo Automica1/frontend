@@ -152,14 +152,14 @@ const PricingCards = () => {
                   </ul>
 
                   {/* CTA Button */}
-                  <Link href="/contact" className="block mt-8">
+                  <Link href={plan.name === "Professional" ? "/subscription" : "/contact"} className="block mt-8">
                     <button
                       className={`group relative w-full inline-flex items-center justify-center px-8 py-4 rounded-lg text-white font-medium text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 cursor-pointer ${plan.popular
                         ? 'bg-gradient-to-r from-purple-500 to-purple-800 hover:from-purple-600 hover:to-purple-900'
                         : 'bg-white/5 border border-white/10 hover:bg-gradient-to-r hover:from-purple-500 hover:to-purple-800 hover:border-transparent'
                         }`}
                     >
-                      <span className="mr-3">{plan.popular ? 'Start Free Trial' : 'Get Started'}</span>
+                      <span className="mr-3">{plan.popular ? 'Start Subscription' : 'Get Started'}</span>
                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </button>
                   </Link>

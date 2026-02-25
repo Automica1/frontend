@@ -1,4 +1,4 @@
-// src/stores/creditsStore.ts
+// src/stores/creditsStore.tsx
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 

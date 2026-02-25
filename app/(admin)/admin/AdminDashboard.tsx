@@ -42,8 +42,10 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({ initialUser, initialRoles }: AdminDashboardProps) {
   const [totalUsers, setTotalUsers] = useState<number>(0);
+  const [activeSubscriptions, setActiveSubscriptions] = useState<number>(0);
   const [mostUsedService, setMostUsedService] = useState<{ name: string, calls: number }>({ name: '--', calls: 0 });
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubsLoading, setIsSubsLoading] = useState(true);
   const [isStatsLoading, setIsStatsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -91,8 +93,21 @@ export default function AdminDashboard({ initialUser, initialRoles }: AdminDashb
       }
     }
 
+    async function fetchActiveSubscriptions() {
+      try {
+        setIsSubsLoading(true);
+        const data = await apiService.getActiveSubscriptionCount();
+        setActiveSubscriptions(data.count);
+      } catch (error) {
+        console.error("Failed to load active subscriptions", error);
+      } finally {
+        setIsSubsLoading(false);
+      }
+    }
+
     fetchUserCount();
     fetchGlobalUsageStats();
+    fetchActiveSubscriptions();
   }, []);
 
   const containerVariants = {
@@ -154,19 +169,19 @@ export default function AdminDashboard({ initialUser, initialRoles }: AdminDashb
           error={statsError !== null}
         />
         <StatCard
+          title="Active Subscriptions"
+          value={isSubsLoading ? '--' : activeSubscriptions.toString()}
+          icon={TrendingUp}
+          color="green"
+          loading={isSubsLoading}
+          subValue="Paid monthly plans"
+        />
+        <StatCard
           title="System Health"
           value="Healthy"
           icon={Shield}
-          color="green"
+          color="blue"
           subValue="99.9% uptime"
-        />
-        <StatCard
-          title="Pending Alerts"
-          value="02"
-          icon={AlertCircle}
-          color="amber"
-          subValue="Requires attention"
-          isWarning
         />
       </div>
 

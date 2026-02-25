@@ -27,7 +27,8 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
     { href: '/services', label: 'Services' },
     { href: '/contact', label: 'Contact Us' },
     { href: '/about', label: 'About Us' },
-    { href: '/pricing', label: 'Pricing' }
+    { href: '/pricing', label: 'Pricing' },
+    // { href: '/subscription', label: 'Subscription' }
   ];
 
   // Function to check if a link is active
@@ -315,7 +316,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                     )}
                     {/* Add Credits link in dropdown */}
                     <Link
-                      href="/credits"
+                      href="/subscription"
                       onClick={() => setShowUserDropdown(false)}
                       className="flex items-center justify-center space-x-2 w-full px-3 py-2 bg-gradient-to-r from-green-500/20 to-green-600/20 border border-green-500/30 rounded-md text-green-300 hover:text-green-200 hover:from-green-500/30 hover:to-green-600/30 transition-all duration-200"
                     >

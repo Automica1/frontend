@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   keywords: [
     "AI automation",
     "artificial intelligence",
-    "workflow automation", 
+    "workflow automation",
     "business automation",
     "AI platform",
     "machine learning",
@@ -124,108 +124,108 @@ export default async function RootLayout({
   const { getUser, getRoles } = getKindeServerSession();
   const roles = await getRoles();
 
-  const isAdmin = roles?.some(role => 
-        role.key === 'admin'
-      );
+  const isAdmin = roles?.some(role =>
+    role.key === 'admin'
+  );
 
   return (
-    <AuthProvider>
-     <CreditsProvider>
-      <html lang="en">
-       <head>
-         {/* Google Analytics - Only load in production */}
-         {process.env.NODE_ENV === 'production' && (
-           <>
-             <Script
-               src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-               strategy="afterInteractive"
-             />
-             <Script id="google-analytics" strategy="afterInteractive">
-               {`
+    <html lang="en">
+      <head>
+        {/* Google Analytics - Only load in production */}
+        {process.env.NODE_ENV === 'production' && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
                  window.dataLayer = window.dataLayer || [];
                  function gtag(){dataLayer.push(arguments);}
                  gtag('js', new Date());
                  gtag('config', '${GA_ID}');
                `}
-             </Script>
-           </>
-         )}
-         
-         {/* Structured Data for Organization */}
-         <script
-           type="application/ld+json"
-           dangerouslySetInnerHTML={{
-             __html: JSON.stringify({
-               "@context": "https://schema.org",
-               "@type": "Organization",
-               "name": "Automica AI",
-               "url": "https://automica.ai",
-               "logo": "https://automica.ai/logo.png", // ✅ FIXED: Full absolute URL
-               "description": "Plug and Play AI Automation Platform for business automation and intelligent workflows",
-               "sameAs": [
-                 "https://twitter.com/AutomicaAI",
-                 "https://linkedin.com/company/automica-ai"
-               ],
-               "contactPoint": {
-                 "@type": "ContactPoint",
-                 "contactType": "customer service",
-                 "email": "support@automica.ai"
-               }
-             })
-           }}
-         />
+            </Script>
+          </>
+        )}
 
-         {/* Structured Data for Software Application */}
-         <script
-           type="application/ld+json"
-           dangerouslySetInnerHTML={{
-             __html: JSON.stringify({
-               "@context": "https://schema.org",
-               "@type": "SoftwareApplication",
-               "name": "Automica AI Platform",
-               "description": "Plug and Play AI Automation Platform for building intelligent workflows and automating business tasks",
-               "url": "https://automica.ai",
-               "applicationCategory": "BusinessApplication",
-               "operatingSystem": "Web-based",
-               "browserRequirements": "Requires JavaScript. Recommended: Chrome, Firefox, Safari, Edge",
-               "offers": {
-                 "@type": "Offer",
-                 "price": "0",
-                 "priceCurrency": "USD",
-                 "description": "Free tier available with premium plans"
-               },
-               "author": {
-                 "@type": "Organization",
-                 "name": "Automica AI"
-               },
-               "aggregateRating": {
-                 "@type": "AggregateRating",
-                 "ratingValue": "4.8",
-                 "ratingCount": "150"
-               }
-             })
-           }}
-         />
+        {/* Structured Data for Organization */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "Automica AI",
+              "url": "https://automica.ai",
+              "logo": "https://automica.ai/logo.png",
+              "description": "Plug and Play AI Automation Platform for business automation and intelligent workflows",
+              "sameAs": [
+                "https://twitter.com/AutomicaAI",
+                "https://linkedin.com/company/automica-ai"
+              ],
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "contactType": "customer service",
+                "email": "support@automica.ai"
+              }
+            })
+          }}
+        />
 
-         {/* Performance optimizations */}
-         <link rel="preconnect" href="https://fonts.googleapis.com" />
-         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-         <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-         
-         {/* ✅ ADDED: Preload critical resources */}
-         <link rel="preload" href="/og-image.png" as="image" />
-         <link rel="preload" href="/logo.png" as="image" />
-       </head>
-       <body
+        {/* Structured Data for Software Application */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "Automica AI Platform",
+              "description": "Plug and Play AI Automation Platform for building intelligent workflows and automating business tasks",
+              "url": "https://automica.ai",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web-based",
+              "browserRequirements": "Requires JavaScript. Recommended: Chrome, Firefox, Safari, Edge",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD",
+                "description": "Free tier available with premium plans"
+              },
+              "author": {
+                "@type": "Organization",
+                "name": "Automica AI"
+              },
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.8",
+                "ratingCount": "150"
+              }
+            })
+          }}
+        />
+
+        {/* Performance optimizations */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="//fonts.gstatic.com" />
+
+        {/* ✅ ADDED: Preload critical resources */}
+        <link rel="preload" href="/og-image.png" as="image" />
+        <link rel="preload" href="/logo.png" as="image" />
+      </head>
+      <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        >
-        <NavbarClient isAdmin={isAdmin} />
-        {children}
-        <Footer/>
-       </body>
-     </html>
-     </CreditsProvider>
-    </AuthProvider>
+      >
+        <AuthProvider>
+          <CreditsProvider>
+            <NavbarClient isAdmin={isAdmin} />
+            {children}
+            <Footer />
+          </CreditsProvider>
+        </AuthProvider>
+      </body>
+    </html>
   );
 }

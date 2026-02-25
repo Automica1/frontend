@@ -184,6 +184,36 @@ interface UsageHistoryResponse {
   usage_history: UsageHistoryRecord[] | null;
 }
 
+// Plan types
+interface Plan {
+  id: string;
+  planId: string;
+  name: string;
+  description: string;
+  price: number;
+  credits: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CreatePlanRequest {
+  planId: string;
+  name: string;
+  description: string;
+  price: number;
+  credits: number;
+  isActive: boolean;
+}
+
+interface UpdatePlanRequest {
+  name?: string;
+  description?: string;
+  price?: number;
+  credits?: number;
+  isActive?: boolean;
+}
+
 // Query parameters interface for usage endpoints
 interface UsageQueryParams {
   start_date?: string;
@@ -213,17 +243,17 @@ class ApiService {
       const response = await fetch('/api/auth', {
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         throw new Error(`Auth failed: ${response.status}`);
       }
-      
+
       const { accessToken, expiresIn }: AuthResponse = await response.json();
-      
+
       // Cache the token
       this.authToken = accessToken;
       this.tokenExpiry = Date.now() + (expiresIn * 1000);
-      
+
       return accessToken;
     } catch (error) {
       this.clearAuth();
@@ -238,26 +268,26 @@ class ApiService {
 
   // Helper method to build query string
   private buildQueryString(params: Record<string, any>): string {
-    const filteredParams = Object.entries(params).filter(([_, value]) => 
+    const filteredParams = Object.entries(params).filter(([_, value]) =>
       value !== undefined && value !== null && value !== ''
     );
-    
+
     if (filteredParams.length === 0) return '';
-    
+
     const queryString = filteredParams
       .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
       .join('&');
-    
+
     return `?${queryString}`;
   }
 
   // Generic API request handler
   private async makeAuthenticatedRequest<T>(
-    endpoint: string, 
+    endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
     const authToken = await this.getAuthToken();
-    
+
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
       headers: {
@@ -272,7 +302,7 @@ class ApiService {
         this.clearAuth();
         throw new Error('Authentication expired. Please log in again.');
       }
-      
+
       const errorText = await response.text();
       throw new Error(`API Error (${response.status}): ${errorText}`);
     }
@@ -289,7 +319,7 @@ class ApiService {
    */
   async generateToken(credits: number, description: string): Promise<TokenGenerateResponse> {
     const payload: TokenGenerateRequest = { credits, description };
-    
+
     return this.makeAuthenticatedRequest<TokenGenerateResponse>(
       '/tokens/generate',
       {
@@ -427,6 +457,59 @@ class ApiService {
   async getServiceUsageHistory(serviceName: string, params?: UsageQueryParams): Promise<UsageHistoryResponse> {
     const queryString = params ? this.buildQueryString(params) : '';
     return this.makeAuthenticatedRequest<UsageHistoryResponse>(`/admin/usage/service/${serviceName}/history${queryString}`);
+  }
+
+  // Plan Management Methods
+
+  /**
+   * Get all active plans (Public)
+   */
+  async getActivePlans(): Promise<Plan[]> {
+    const response = await fetch(`${this.baseUrl}/plans`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch plans: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  /**
+   * Get all plans including inactive ones (Admin Only)
+   */
+  async getAllPlans(): Promise<Plan[]> {
+    return this.makeAuthenticatedRequest<Plan[]>('/admin/plans');
+  }
+
+  /**
+   * Create a new plan (Admin Only)
+   */
+  async createPlan(req: CreatePlanRequest): Promise<Plan> {
+    return this.makeAuthenticatedRequest<Plan>('/admin/plans', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  }
+
+  /**
+   * Update an existing plan (Admin Only)
+   */
+  async updatePlan(planId: string, req: UpdatePlanRequest): Promise<{ message: string }> {
+    return this.makeAuthenticatedRequest<{ message: string }>(`/admin/plans/${planId}`, {
+      method: 'PUT',
+      body: JSON.stringify(req),
+    });
+  }
+
+  /**
+   * Deactivate a plan (Admin Only)
+   */
+  async deletePlan(planId: string): Promise<{ message: string }> {
+    return this.makeAuthenticatedRequest<{ message: string }>(`/admin/plans/${planId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getActiveSubscriptionCount(): Promise<{ count: number }> {
+    return this.makeAuthenticatedRequest<{ count: number }>('/admin/subscriptions/active-count');
   }
 
   // Utility methods for better UX
@@ -649,16 +732,16 @@ class ApiService {
   getDateRangePresets(): Record<string, { start_date: string; end_date: string }> {
     const now = new Date();
     const today = this.formatDateForQuery(now);
-    
+
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     const last7Days = new Date(now);
     last7Days.setDate(last7Days.getDate() - 7);
-    
+
     const last30Days = new Date(now);
     last30Days.setDate(last30Days.getDate() - 30);
-    
+
     const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
@@ -697,11 +780,11 @@ export const apiService = new ApiService();
 export default apiService;
 
 // Export types for use in components
-export type { 
-  TokenGenerateRequest, 
-  TokenGenerateResponse, 
+export type {
+  TokenGenerateRequest,
+  TokenGenerateResponse,
   TokenDeleteResponse,
-  TokenInfo, 
+  TokenInfo,
   TokenListResponse,
   UserInfo,
   UserListResponse,
@@ -721,5 +804,9 @@ export type {
   UsageHistoryRecord,
   PaginationParams,
   UsageHistoryResponse,
-  UsageQueryParams
+  UsageQueryParams,
+  // Plan types
+  Plan,
+  CreatePlanRequest,
+  UpdatePlanRequest
 };

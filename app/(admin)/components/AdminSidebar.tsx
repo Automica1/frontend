@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   ChevronRight,
   Database,
+  Package,
   LucideIcon,
 } from "lucide-react";
 
@@ -39,6 +40,11 @@ const navigationItems: NavItem[] = [
     name: 'Services',
     href: '/admin/services',
     icon: Database,
+  },
+  {
+    name: 'Plans',
+    href: '/admin/plans',
+    icon: Package,
   },
 ];
 

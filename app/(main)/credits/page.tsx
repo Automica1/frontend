@@ -175,8 +175,8 @@ export default function CreditsPage() {
               onClick={handleSubmit}
               disabled={isSubmitting || !token.trim()}
               className={`group relative w-full py-4 px-6 rounded-xl font-medium text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] flex items-center justify-center ${isSubmitting || !token.trim()
-                  ? 'bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-purple-500 to-purple-800 text-white hover:from-purple-600 hover:to-purple-900 shadow-purple-500/20'
+                ? 'bg-white/5 text-gray-500 border border-white/5 cursor-not-allowed'
+                : 'bg-gradient-to-r from-purple-500 to-purple-800 text-white hover:from-purple-600 hover:to-purple-900 shadow-purple-500/20'
                 }`}
             >
               {isSubmitting ? (
@@ -201,10 +201,10 @@ export default function CreditsPage() {
           {/* Status Message */}
           {status !== 'idle' && (
             <div className={`mt-6 p-4 rounded-xl border backdrop-blur-sm transition-all duration-300 overflow-hidden ${status === 'success'
-                ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                : status === 'error'
-                  ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                  : 'bg-blue-500/10 border-blue-500/20 text-blue-400'
+              ? 'bg-green-500/10 border-green-500/20 text-green-400'
+              : status === 'error'
+                ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                : 'bg-blue-500/10 border-blue-500/20 text-blue-400'
               }`}>
               <div className="flex items-start">
                 <div className="flex-shrink-0 mt-0.5 mr-3">
@@ -223,7 +223,13 @@ export default function CreditsPage() {
         </div>
 
         {/* Additional Info */}
-        <div className="mt-8 text-center">
+        <div className="mt-8 text-center space-y-4">
+          <p className="text-sm text-gray-400 font-light">
+            Want to subscribe for monthly credits?
+            <a href="/subscription" className="text-purple-400 hover:text-purple-300 ml-1 hover:underline transition-colors font-medium">
+              Manage Subscription
+            </a>
+          </p>
           <p className="text-sm text-gray-500 font-light">
             Need more credits?
             <a href="/contact" className="text-purple-400 hover:text-purple-300 ml-1 hover:underline transition-colors">

@@ -1,9 +1,9 @@
-// src/hooks/useCredits.ts
+// src/hooks/useCredits.tsx
 import { useEffect, useCallback } from 'react';
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { apiService } from '../lib/apiService';
-import { 
-  useCreditsStore, 
+import {
+  useCreditsStore,
   useCredits as useCreditsValue,
   useSetCredits,
   useSetCreditsLoading,
@@ -21,11 +21,11 @@ interface UseCreditsReturn {
 
 export const useCredits = (): UseCreditsReturn => {
   const { isAuthenticated, isLoading: authLoading } = useKindeBrowserClient();
-  
+
   // Get values from Zustand store
   const credits = useCreditsValue();
   const { loading, error } = useCreditsStore();
-  
+
   // Get individual actions
   const setCredits = useSetCredits();
   const setLoading = useSetCreditsLoading();
@@ -34,10 +34,10 @@ export const useCredits = (): UseCreditsReturn => {
 
   const fetchCredits = useCallback(async () => {
     if (!isAuthenticated || authLoading) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const creditsData = await apiService.getCreditsBalance();
       setCredits(creditsData.credits, creditsData.userId);
