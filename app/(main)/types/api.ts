@@ -55,12 +55,8 @@ export interface IdCropResponse {
 
 export interface FaceVerificationResponse extends ApiResponse {
   data?: {
-    similarity_score: number;
-    is_match: boolean;
-    confidence: number;
-    processing_time: string;
-    file_names: string[];
-    file_sizes: string[];
+    similarity_percentage: number;
+    classification: string;
   };
 }
 

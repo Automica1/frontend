@@ -42,10 +42,10 @@ const getResponseExample = (slug: string): string => {
   "req_id": "face-verify-1754379362460-eikvsi9lt",
   "success": true,
   "status": "completed",
-  "message": "Face verification completed successfully",
+  "message": "Completed",
   "data": {
-    "confidence": 0.999995,
-    "verified": true
+    "similarity_percentage": 95.5,
+    "classification": "Not-Detected"
   }
 }`,
     'signature-verification': `{
@@ -151,11 +151,23 @@ Content-Type: application/json`}
               )}
 
               {Array.isArray(apiConfig.requestBody.doc_base64) && (
-                <div>
-                  <span className="text-blue-400 font-mono">doc_base64</span>
-                  <span className="text-gray-500 mx-2">array</span>
-                  <span className="text-gray-300">Array of exactly 2 base64 encoded signature images for comparison</span>
-                </div>
+                <>
+                  <div>
+                    <span className="text-blue-400 font-mono">doc_base64</span>
+                    <span className="text-gray-500 mx-2">array</span>
+                    <span className="text-gray-300">Array of base64 encoded images for processing</span>
+                  </div>
+                  {solution.slug === 'face-verify' && (
+                    <div className="text-gray-400 text-xs mt-1">
+                      For face verification: Array of exactly 2 face images for comparison
+                    </div>
+                  )}
+                  {solution.slug === 'signature-verification' && (
+                    <div className="text-gray-400 text-xs mt-1">
+                      For signature verification: Array of exactly 2 signature images for comparison
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -194,6 +206,44 @@ Content-Type: application/json`}
                 <span className="text-gray-500 mx-2">string</span>
                 <span className="text-gray-300">Human-readable description of the result</span>
               </div>
+              
+              {/* Face verification specific fields */}
+              {solution.slug === 'face-verify' && (
+                <>
+                  <div className="border-t border-gray-700 pt-3 mt-3">
+                    <div className="text-gray-400 text-xs mb-2">Face Verification Data Fields:</div>
+                    <div>
+                      <span className="text-green-400 font-mono">similarity_percentage</span>
+                      <span className="text-gray-500 mx-2">number</span>
+                      <span className="text-gray-300">Similarity score between face images (0-100)</span>
+                    </div>
+                    <div>
+                      <span className="text-green-400 font-mono">classification</span>
+                      <span className="text-gray-500 mx-2">string</span>
+                      <span className="text-gray-300">Classification result (e.g., "Not-Detected", "Detected")</span>
+                    </div>
+                  </div>
+                </>
+              )}
+              
+              {/* Signature verification specific fields */}
+              {solution.slug === 'signature-verification' && (
+                <>
+                  <div className="border-t border-gray-700 pt-3 mt-3">
+                    <div className="text-gray-400 text-xs mb-2">Signature Verification Data Fields:</div>
+                    <div>
+                      <span className="text-green-400 font-mono">similarity_percentage</span>
+                      <span className="text-gray-500 mx-2">number</span>
+                      <span className="text-gray-300">Similarity score between signatures (0-100)</span>
+                    </div>
+                    <div>
+                      <span className="text-green-400 font-mono">classification</span>
+                      <span className="text-gray-500 mx-2">string</span>
+                      <span className="text-gray-300">Classification result (e.g., "Genuine", "Forged")</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
