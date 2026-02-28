@@ -42,9 +42,7 @@ export const configs: Record<string, ApiConfig> = {
     endpoint: 'https://automica.ai/go/api/v1/face-verification',
     requestBody: {
       req_id: "req_001",
-      doc_base64_1: "/9j/4AAQSkZJRgABAQAAAQABAAD...",
-      doc_base64_2: "/9j/4AAQSkZJRgABAQAAAQABAAD...",
-      doc_type: "face"
+      doc_base64: ["/9j/4AAQSkZJRgABAQAAAQABAAD...", "/9j/4AAQSkZJRgABAQAAAQABAAD..."]
     },
     description: "Verify and match faces between two images"
   },

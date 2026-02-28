@@ -471,9 +471,7 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({
         req_id: reqId,
-        doc_base64_1: cleanBase64_1,
-        doc_base64_2: cleanBase64_2,
-        doc_type: "face",
+        doc_base64: [cleanBase64_1, cleanBase64_2],
       }),
     });
   }
