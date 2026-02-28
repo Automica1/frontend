@@ -20,7 +20,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
   const { user, isAuthenticated, isLoading } = useKindeBrowserClient();
 
   // Use the new Zustand-based credits hook
-  const { credits, loading: creditsLoading, error: creditsError, refreshCredits } = useCredits();
+  const { credits, subscription, loading: creditsLoading, error: creditsError, refreshCredits } = useCredits();
 
   // Navigation links configuration
   const navLinks = [
@@ -179,6 +179,17 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
           {/* Credits and Add Credits section - only show if user is authenticated */}
           {!isLoading && isAuthenticated && (
             <div className="flex items-center space-x-3">
+              {/* Subscription Status Badge */}
+              {subscription && (subscription.status === 'active' || subscription.status === 'cancelled') && (
+                <div
+                  className="flex items-center px-2.5 py-1 bg-gradient-to-r from-purple-500/10 to-purple-700/20 backdrop-blur-sm border border-purple-500/40 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.15)] transition-all duration-300 hover:scale-105 cursor-default"
+                  title={subscription.status === 'active' ? "Active Pro Subscription" : "Pro Subscription (Cancelling)"}
+                >
+                  <Star className="w-3.5 h-3.5 text-purple-400 mr-1.5 fill-purple-400/40" />
+                  <span className="text-purple-300 text-xs font-bold uppercase tracking-wider">Pro</span>
+                </div>
+              )}
+
               {/* Credits Display */}
               <button
                 onClick={refreshCredits}
@@ -287,8 +298,17 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                     </div>
                   </div>
 
-                  {/* Credits Section */}
+                  {/* Credits & Subscription Section */}
                   <div className="px-4 py-3 border-b border-white/10">
+                    {subscription && subscription.status === 'active' && (
+                      <div className="flex items-center justify-between mb-3 bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20 rounded-lg p-2">
+                        <div className="flex items-center space-x-2">
+                          <Star className="w-4 h-4 text-purple-400 fill-purple-400/40" />
+                          <span className="text-purple-300 text-sm font-medium">Pro Plan</span>
+                        </div>
+                        <span className="text-xs text-green-400 font-medium px-2 py-0.5 bg-green-500/10 rounded-full border border-green-500/20">Active</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-2">
                         <Coins className="w-4 h-4 text-yellow-500" />
@@ -361,22 +381,32 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
         <div className="md:hidden flex items-center space-x-2">
           {/* Mobile Credits Display (only when authenticated) */}
           {!isLoading && isAuthenticated && (
-            <button
-              onClick={refreshCredits}
-              className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-purple-500/20 to-purple-700/20 backdrop-blur-sm border border-purple-500/30 rounded-md transition-all duration-300 hover:scale-105"
-              title="Click to refresh credits"
-            >
-              <Coins className="w-3 h-3 text-yellow-500" />
-              <span className="text-white text-xs font-medium">
-                {creditsLoading ? (
-                  <div className="w-3 h-3 border border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                ) : creditsError ? (
-                  'Error'
-                ) : (
-                  credits !== null ? credits.toLocaleString() : '—'
-                )}
-              </span>
-            </button>
+            <div className="flex items-center space-x-2">
+              {subscription && (subscription.status === 'active' || subscription.status === 'cancelled') && (
+                <div
+                  className="flex items-center px-2 py-1 bg-gradient-to-r from-purple-500/10 to-purple-700/20 backdrop-blur-sm border border-purple-500/40 rounded-full transition-all duration-300"
+                  title="Pro Subscription Active"
+                >
+                  <Star className="w-3.5 h-3.5 text-purple-400 fill-purple-400/40" />
+                </div>
+              )}
+              <button
+                onClick={refreshCredits}
+                className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-purple-500/20 to-purple-700/20 backdrop-blur-sm border border-purple-500/30 rounded-md transition-all duration-300 hover:scale-105"
+                title="Click to refresh credits"
+              >
+                <Coins className="w-3 h-3 text-yellow-500" />
+                <span className="text-white text-xs font-medium">
+                  {creditsLoading ? (
+                    <div className="w-3 h-3 border border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                  ) : creditsError ? (
+                    'Error'
+                  ) : (
+                    credits !== null ? credits.toLocaleString() : '—'
+                  )}
+                </span>
+              </button>
+            </div>
           )}
 
           <button
@@ -479,6 +509,11 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                       {isAdmin && (
                         <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 mt-1">
                           Admin
+                        </div>
+                      )}
+                      {subscription && (subscription.status === 'active' || subscription.status === 'cancelled') && (
+                        <div className="inline-flex items-center ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500/20 to-purple-700/20 text-purple-300 border border-purple-500/40 mt-1">
+                          <Star className="w-3 h-3 mr-1 fill-purple-400/40" /> Pro
                         </div>
                       )}
                       {/* Mobile Credits in User Section */}

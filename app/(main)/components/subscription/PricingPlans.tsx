@@ -8,7 +8,10 @@ import { Check, Loader2, Sparkles } from 'lucide-react';
 
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
-export default function PricingPlans({ onPaymentSuccess }: { onPaymentSuccess: () => void }) {
+export default function PricingPlans({ onPaymentSuccess, currentSubscription }: {
+    onPaymentSuccess: () => void,
+    currentSubscription?: any
+}) {
     const [loading, setLoading] = useState(false);
     const [plans, setPlans] = useState<Plan[]>([]);
     const [fetchingPlans, setFetchingPlans] = useState(true);
@@ -48,14 +51,22 @@ export default function PricingPlans({ onPaymentSuccess }: { onPaymentSuccess: (
         }
 
         try {
-            const order = await apiService.createOrder(plan.planId);
+            // Check if it's an upgrade
+            const isUpgrade = currentSubscription && currentSubscription.status === 'active' && plan.price > currentSubscription.amount;
+
+            let order;
+            if (isUpgrade) {
+                order = await apiService.createUpgradeOrder(plan.planId);
+            } else {
+                order = await apiService.createOrder(plan.planId);
+            }
 
             const options = {
                 key: RAZORPAY_KEY_ID,
                 amount: order.amount,
                 currency: order.currency,
                 name: 'Automica',
-                description: `${plan.name} - ${plan.credits.toLocaleString()} Credits`,
+                description: `${isUpgrade ? 'Upgrade to' : ''} ${plan.name} - ${plan.credits.toLocaleString()} Credits`,
                 order_id: order.orderId,
                 handler: async function (response: any) {
                     try {
@@ -83,8 +94,26 @@ export default function PricingPlans({ onPaymentSuccess }: { onPaymentSuccess: (
             const paymentObject = new (window as any).Razorpay(options);
             paymentObject.open();
         } catch (err) {
-            console.error('Failed to create order', err);
+            console.error('Failed to process subscription', err);
             alert('Failed to initiate payment. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDowngrade = async (plan: Plan) => {
+        if (!confirm(`Are you sure you want to downgrade to ${plan.name}? The change will take effect at the end of your current billing cycle.`)) {
+            return;
+        }
+
+        setLoading(true);
+        try {
+            await apiService.downgradeSubscription(plan.planId);
+            alert(`Your downgrade to ${plan.name} has been scheduled.`);
+            onPaymentSuccess();
+        } catch (err) {
+            console.error('Failed to downgrade', err);
+            alert('Failed to schedule downgrade. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -146,14 +175,38 @@ export default function PricingPlans({ onPaymentSuccess }: { onPaymentSuccess: (
                     </ul>
 
                     <button
-                        onClick={() => handleSubscribe(plan)}
-                        disabled={loading}
+                        onClick={() => {
+                            const isCurrent = currentSubscription && currentSubscription.status === 'active' && currentSubscription.planId === plan.planId;
+                            const isUpgrade = currentSubscription && currentSubscription.status === 'active' && plan.price > currentSubscription.amount;
+                            const isDowngrade = currentSubscription && currentSubscription.status === 'active' && plan.price < currentSubscription.amount;
+
+                            if (isCurrent) return;
+                            if (isDowngrade) {
+                                handleDowngrade(plan);
+                            } else {
+                                handleSubscribe(plan);
+                            }
+                        }}
+                        disabled={loading || (currentSubscription?.status === 'active' && currentSubscription?.planId === plan.planId)}
                         className={`w-full py-4 rounded-xl font-medium text-lg transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${index === 1
                             ? 'bg-gradient-to-r from-purple-500 to-purple-800 text-white shadow-lg shadow-purple-500/20'
                             : 'bg-white/10 text-white hover:bg-white/20'
                             }`}
                     >
-                        {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'Choose Plan'}
+                        {loading ? (
+                            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                        ) : (
+                            (() => {
+                                const isCurrent = currentSubscription && currentSubscription.status === 'active' && currentSubscription.planId === plan.planId;
+                                const isUpgrade = currentSubscription && currentSubscription.status === 'active' && plan.price > currentSubscription.amount;
+                                const isDowngrade = currentSubscription && currentSubscription.status === 'active' && plan.price < currentSubscription.amount;
+
+                                if (isCurrent) return 'Current Plan';
+                                if (isUpgrade) return 'Upgrade Plan';
+                                if (isDowngrade) return 'Downgrade Plan';
+                                return 'Choose Plan';
+                            })()
+                        )}
                     </button>
 
                     <p className="mt-4 text-center text-[10px] text-gray-600 uppercase tracking-widest">

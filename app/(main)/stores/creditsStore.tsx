@@ -7,6 +7,7 @@ interface CreditsState {
   loading: boolean;
   error: string | null;
   userId: string | null;
+  subscription: any | null;
 }
 
 interface CreditsActions {
@@ -14,6 +15,7 @@ interface CreditsActions {
   updateCredits: (newCredits: number) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setSubscription: (subscription: any) => void;
   reset: () => void;
 }
 
@@ -24,6 +26,7 @@ const initialState: CreditsState = {
   loading: false,
   error: null,
   userId: null,
+  subscription: null,
 };
 
 export const useCreditsStore = create<CreditsStore>()(
@@ -79,6 +82,17 @@ export const useCreditsStore = create<CreditsStore>()(
         );
       },
 
+      setSubscription: (subscription: any) => {
+        set(
+          (state) => ({
+            ...state,
+            subscription,
+          }),
+          false,
+          'setSubscription'
+        );
+      },
+
       reset: () => {
         set(initialState, false, 'reset');
       },
@@ -100,3 +114,5 @@ export const useUpdateCredits = () => useCreditsStore((state) => state.updateCre
 export const useSetCreditsLoading = () => useCreditsStore((state) => state.setLoading);
 export const useSetCreditsError = () => useCreditsStore((state) => state.setError);
 export const useResetCredits = () => useCreditsStore((state) => state.reset);
+export const useSubscription = () => useCreditsStore((state) => state.subscription);
+export const useSetSubscription = () => useCreditsStore((state) => state.setSubscription);

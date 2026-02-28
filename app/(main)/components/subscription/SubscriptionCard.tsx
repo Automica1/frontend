@@ -9,6 +9,8 @@ interface Subscription {
     amount: number;
     planId: string;
     subscriptionId?: string;
+    pendingPlanId?: string;
+    planChangeDate?: any;
 }
 
 interface Props {
@@ -78,6 +80,14 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                         <span className="text-gray-400">Price</span>
                         <span className="text-white font-medium">${(subscription.amount / 100).toFixed(2)} / month</span>
                     </div>
+                    {subscription.pendingPlanId && (
+                        <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                            <p className="text-xs text-blue-400 font-medium uppercase tracking-wider mb-1">Scheduled Change</p>
+                            <p className="text-sm text-gray-300">
+                                Switching to <span className="text-white font-medium uppercase">{subscription.pendingPlanId.replace(/-/g, ' ')}</span> on {new Date(subscription.planChangeDate).toLocaleDateString()}
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Error message */}

@@ -8,36 +8,19 @@ import SubscriptionCard from '../components/subscription/SubscriptionCard';
 import PricingPlans from '../components/subscription/PricingPlans';
 
 export default function SubscriptionPage() {
-    const [subscription, setSubscription] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const { credits, refreshCredits } = useCredits();
-
-    const loadStatus = async () => {
-        try {
-            setLoading(true);
-            const data = await subscriptionApi.getStatus();
-            setSubscription(data);
-        } catch (err) {
-            console.error('Failed to fetch subscription status', err);
-            setSubscription(null);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { credits, subscription, loading, refreshCredits } = useCredits();
 
     useEffect(() => {
-        loadStatus();
-        // Always refresh credits when visiting this page
+        // Always refresh credits and subscription when visiting this page
         refreshCredits();
-    }, []);
+    }, [refreshCredits]);
 
     const handlePaymentSuccess = () => {
-        loadStatus();
         refreshCredits();
     };
 
     const handleCancelled = () => {
-        loadStatus();
+        refreshCredits();
     };
 
     return (
@@ -95,16 +78,20 @@ export default function SubscriptionPage() {
                     )}
                 </div>
 
-                {/* Pricing Section - Only show if not active */}
-                {(!subscription || subscription.status !== 'active') && (
-                    <div className="mt-12">
-                        <div className="text-center mb-8">
-                            <h2 className="text-2xl font-light text-white">Upgrade to Premium</h2>
-                            <p className="text-gray-400 mt-2">Get 1,000 credits instantly upon subscription</p>
-                        </div>
-                        <PricingPlans onPaymentSuccess={handlePaymentSuccess} />
+                {/* Pricing Section - Always show for management */}
+                <div className="mt-12">
+                    <div className="text-center mb-8">
+                        <h2 className="text-2xl font-light text-white">
+                            {subscription?.status === 'active' ? 'Manage Your Plan' : 'Upgrade to Premium'}
+                        </h2>
+                        <p className="text-gray-400 mt-2">
+                            {subscription?.status === 'active'
+                                ? 'Upgrade for more credits or downgrade for next cycle'
+                                : 'Get 1,000 credits instantly upon subscription'}
+                        </p>
                     </div>
-                )}
+                    <PricingPlans onPaymentSuccess={handlePaymentSuccess} currentSubscription={subscription} />
+                </div>
             </div>
         </div>
     );

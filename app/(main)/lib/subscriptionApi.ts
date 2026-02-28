@@ -21,4 +21,16 @@ export const subscriptionApi = {
     async cancelSubscription() {
         return apiService.post('/subscription/cancel', {});
     },
+
+    async calculateUpgradePrice(planId: string) {
+        return apiService.calculateUpgradePrice(planId);
+    },
+
+    async createUpgradeOrder(planId: string) {
+        return apiService.createUpgradeOrder(planId);
+    },
+
+    async downgradeSubscription(planId: string) {
+        return apiService.downgradeSubscription(planId);
+    },
 };

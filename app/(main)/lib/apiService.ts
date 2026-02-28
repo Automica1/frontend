@@ -43,6 +43,23 @@ interface CreateApiKeyResponse {
   createdAt: string;
 }
 
+export interface Subscription {
+  subscriptionId: string;
+  userId: string;
+  email: string;
+  status: string;
+  planId: string;
+  amount: number;
+  currency: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  gracePeriodEnd?: string;
+  pendingPlanId?: string;
+  planChangeDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Plan {
   id: string;
   planId: string;
@@ -261,6 +278,24 @@ class ApiService {
   async cancelSubscription(): Promise<{ message: string }> {
     return this.makeRequest('/subscription/cancel', {
       method: 'POST',
+    });
+  }
+
+  async calculateUpgradePrice(planId: string): Promise<{ price: number }> {
+    return this.makeRequest(`/subscription/upgrade/calculate?planId=${planId}`);
+  }
+
+  async createUpgradeOrder(planId: string): Promise<{ orderId: string; amount: number; currency: string }> {
+    return this.makeRequest('/subscription/upgrade/create', {
+      method: 'POST',
+      body: JSON.stringify({ planId }),
+    });
+  }
+
+  async downgradeSubscription(planId: string): Promise<{ message: string }> {
+    return this.makeRequest('/subscription/downgrade', {
+      method: 'POST',
+      body: JSON.stringify({ planId }),
     });
   }
 

@@ -2,17 +2,21 @@
 import { useEffect, useCallback } from 'react';
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { apiService } from '../lib/apiService';
+import { subscriptionApi } from '../lib/subscriptionApi';
 import {
   useCreditsStore,
   useCredits as useCreditsValue,
   useSetCredits,
   useSetCreditsLoading,
   useSetCreditsError,
-  useUpdateCredits
+  useUpdateCredits,
+  useSubscription as useSubscriptionValue,
+  useSetSubscription
 } from '../stores/creditsStore';
 
 interface UseCreditsReturn {
   credits: number | null;
+  subscription: any | null;
   loading: boolean;
   error: string | null;
   refreshCredits: () => Promise<void>;
@@ -24,10 +28,12 @@ export const useCredits = (): UseCreditsReturn => {
 
   // Get values from Zustand store
   const credits = useCreditsValue();
+  const subscription = useSubscriptionValue();
   const { loading, error } = useCreditsStore();
 
   // Get individual actions
   const setCredits = useSetCredits();
+  const setSubscription = useSetSubscription();
   const setLoading = useSetCreditsLoading();
   const setError = useSetCreditsError();
   const updateCredits = useUpdateCredits();
@@ -39,15 +45,20 @@ export const useCredits = (): UseCreditsReturn => {
     setError(null);
 
     try {
-      const creditsData = await apiService.getCreditsBalance();
+      const [creditsData, subData] = await Promise.all([
+        apiService.getCreditsBalance(),
+        subscriptionApi.getStatus().catch(() => null)
+      ]);
+
       setCredits(creditsData.credits, creditsData.userId);
+      setSubscription(subData);
     } catch (err) {
-      console.error('Failed to fetch credits:', err);
+      console.error('Failed to fetch credits or subscription:', err);
       setError('Failed to load credits');
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, authLoading, setCredits, setLoading, setError]);
+  }, [isAuthenticated, authLoading, setCredits, setSubscription, setLoading, setError]);
 
   const refreshCredits = useCallback(async () => {
     await fetchCredits();
@@ -60,6 +71,7 @@ export const useCredits = (): UseCreditsReturn => {
 
   return {
     credits,
+    subscription,
     loading,
     error,
     refreshCredits,
