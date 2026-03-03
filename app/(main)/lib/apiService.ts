@@ -253,7 +253,7 @@ class ApiService {
     return response.json();
   }
 
-  async createOrder(planId: string): Promise<{ orderId: string; keyId: string; amount: number; currency: string }> {
+  async createOrder(planId: string): Promise<{ subscriptionId: string; orderId?: string; keyId: string; amount: number; currency: string }> {
     return this.makeRequest('/subscription/create-order', {
       method: 'POST',
       body: JSON.stringify({ planId }),
@@ -262,7 +262,8 @@ class ApiService {
 
   async verifyPayment(paymentData: {
     razorpay_payment_id: string;
-    razorpay_order_id: string;
+    razorpay_order_id?: string;
+    razorpay_subscription_id?: string;
     razorpay_signature: string;
   }): Promise<{ success: boolean; message: string; creditsAdded: number; remainingCredits: number }> {
     return this.makeRequest('/subscription/verify-payment', {

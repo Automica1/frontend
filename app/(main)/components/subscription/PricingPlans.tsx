@@ -51,7 +51,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
         }
 
         try {
-            // Check if it's an upgrade
+            // Check if it's an upgrade (still uses order-based flow)
             const isUpgrade = currentSubscription && currentSubscription.status === 'active' && plan.price > currentSubscription.amount;
 
             let order;
@@ -61,35 +61,48 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
                 order = await apiService.createOrder(plan.planId);
             }
 
-            const options = {
+            // Determine if this is a Subscription (has subscriptionId) or a one-off Order
+            const orderData = order as any;
+            const isSubscription = !isUpgrade && !!orderData.subscriptionId;
+
+            const options: Record<string, any> = {
                 key: RAZORPAY_KEY_ID,
-                amount: order.amount,
-                currency: order.currency,
                 name: 'Automica',
-                description: `${isUpgrade ? 'Upgrade to' : ''} ${plan.name} - ${plan.credits.toLocaleString()} Credits`,
-                order_id: order.orderId,
+                description: `${isUpgrade ? 'Upgrade to' : ''} ${plan.name} — ${plan.credits.toLocaleString()} Credits/mo`,
+                theme: { color: '#8b5cf6' },
+                prefill: { name: '', email: '', contact: '' },
                 handler: async function (response: any) {
                     try {
-                        await apiService.verifyPayment({
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_order_id: response.razorpay_order_id,
-                            razorpay_signature: response.razorpay_signature,
-                        });
+                        if (isSubscription) {
+                            await apiService.verifyPayment({
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_subscription_id: response.razorpay_subscription_id,
+                                razorpay_signature: response.razorpay_signature,
+                            });
+                        } else {
+                            await apiService.verifyPayment({
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_signature: response.razorpay_signature,
+                            });
+                        }
                         onPaymentSuccess();
                     } catch (err) {
                         console.error('Payment verification failed', err);
                         alert('Payment verification failed. Please contact support.');
                     }
                 },
-                prefill: {
-                    name: '',
-                    email: '',
-                    contact: '',
-                },
-                theme: {
-                    color: '#8b5cf6', // purple-500
-                },
             };
+
+            if (isSubscription) {
+                // Razorpay Subscriptions API: use subscription_id instead of order_id
+                options.subscription_id = orderData.subscriptionId;
+            } else {
+                // Legacy order / upgrade flow
+                options.order_id = orderData.orderId;
+                options.amount = order.amount;
+                options.currency = order.currency;
+            }
 
             const paymentObject = new (window as any).Razorpay(options);
             paymentObject.open();
