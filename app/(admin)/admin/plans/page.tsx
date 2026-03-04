@@ -28,6 +28,7 @@ export default function AdminPlansPage() {
     // Form state
     const [formData, setFormData] = useState({
         planId: "",
+        razorpayPlanId: "",
         name: "",
         description: "",
         price: 0,
@@ -56,6 +57,7 @@ export default function AdminPlansPage() {
             setEditingPlan(plan);
             setFormData({
                 planId: plan.planId,
+                razorpayPlanId: plan.razorpayPlanId || "",
                 name: plan.name,
                 description: plan.description,
                 price: plan.price / 100, // convert cents to dollars
@@ -66,6 +68,7 @@ export default function AdminPlansPage() {
             setEditingPlan(null);
             setFormData({
                 planId: "",
+                razorpayPlanId: "",
                 name: "",
                 description: "",
                 price: 0,
@@ -257,6 +260,18 @@ export default function AdminPlansPage() {
                                         className="w-full px-4 py-2 bg-slate-50 border border-admin-border rounded-xl focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all font-medium"
                                         placeholder="Basic Plan"
                                         title="Display name for the plan"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-admin-text-muted uppercase tracking-wider">Razorpay Plan ID</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.razorpayPlanId}
+                                        onChange={(e) => setFormData({ ...formData, razorpayPlanId: e.target.value })}
+                                        className="w-full px-4 py-2 bg-slate-50 border border-admin-border rounded-xl focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all font-medium"
+                                        placeholder="plan_L7v... (from Razorpay)"
+                                        title="The official Plan ID from your Razorpay Dashboard"
                                     />
                                 </div>
                             </div>

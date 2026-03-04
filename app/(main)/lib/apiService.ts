@@ -63,6 +63,7 @@ export interface Subscription {
 export interface Plan {
   id: string;
   planId: string;
+  razorpayPlanId?: string;
   name: string;
   description: string;
   price: number;

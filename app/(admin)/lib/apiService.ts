@@ -188,6 +188,7 @@ interface UsageHistoryResponse {
 interface Plan {
   id: string;
   planId: string;
+  razorpayPlanId: string;
   name: string;
   description: string;
   price: number;
@@ -199,6 +200,7 @@ interface Plan {
 
 interface CreatePlanRequest {
   planId: string;
+  razorpayPlanId: string;
   name: string;
   description: string;
   price: number;
@@ -207,6 +209,7 @@ interface CreatePlanRequest {
 }
 
 interface UpdatePlanRequest {
+  razorpayPlanId?: string;
   name?: string;
   description?: string;
   price?: number;
