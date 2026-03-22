@@ -59,26 +59,39 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
     };
 
     return (
-        <div className="relative overflow-hidden bg-white/[0.02] border border-white/10 backdrop-blur-xl rounded-2xl p-6 shadow-2xl group hover:border-purple-500/20 transition-all duration-300">
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 backdrop-blur-2xl p-8 shadow-2xl group hover:border-purple-500/30 transition-all duration-500"
+            style={{
+                background: `
+                    radial-gradient(circle at 30% 20%, rgba(147, 51, 234, 0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 70% 80%, rgba(236, 72, 153, 0.06) 0%, transparent 50%),
+                    linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%)
+                `,
+            }}
+        >
+            {/* Subtle inner glow */}
+            <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-8">
                     <div>
-                        <p className="text-gray-400 text-sm font-medium uppercase tracking-wider mb-1">Current Plan</p>
-                        <h3 className="text-xl font-light text-white uppercase tracking-tight">{subscription.planId.replace(/-/g, ' ')}</h3>
+                        <p className="text-purple-400 text-sm font-medium uppercase tracking-widest mb-2">Current Plan</p>
+                        <h3 className="text-2xl font-light text-white uppercase tracking-tighter leading-none">{subscription.planId.replace(/-/g, ' ')}</h3>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wider ${statusColors[subscription.status] || statusColors.expired}`}>
+                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${statusColors[subscription.status] || statusColors.expired}`}>
                         {subscription.status}
                     </span>
                 </div>
 
-                <div className="space-y-3 mb-6">
-                    <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">{isCancelled ? 'Access Until' : 'Next Billing Date'}</span>
-                        <span className="text-white font-light">{expiryDate}</span>
+                <div className="space-y-4 mb-8">
+                    <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-400 font-light">{isCancelled ? 'Access Until' : 'Next Billing Date'}</span>
+                        <span className="text-white font-light tracking-tight">{expiryDate}</span>
                     </div>
-                    <div className="flex justify-between text-sm border-t border-white/5 pt-3">
-                        <span className="text-gray-400">Price</span>
-                        <span className="text-white font-medium">${(subscription.amount / 100).toFixed(2)} / month</span>
+                    <div className="flex justify-between items-center text-sm border-t border-white/5 pt-4">
+                        <span className="text-gray-400 font-light">Price</span>
+                        <span className="text-white font-semibold">
+                            ${(subscription.amount / 100).toFixed(2)} 
+                            <span className="text-gray-500 font-light ml-1">/ month</span>
+                        </span>
                     </div>
                     {subscription.pendingPlanId && (
                         <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">

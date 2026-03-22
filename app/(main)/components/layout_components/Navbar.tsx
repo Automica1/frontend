@@ -179,16 +179,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
           {/* Credits and Add Credits section - only show if user is authenticated */}
           {!isLoading && isAuthenticated && (
             <div className="flex items-center space-x-3">
-              {/* Subscription Status Badge */}
-              {subscription && (subscription.status === 'active' || subscription.status === 'cancelled') && (
-                <div
-                  className="flex items-center px-2.5 py-1 bg-gradient-to-r from-purple-500/10 to-purple-700/20 backdrop-blur-sm border border-purple-500/40 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.15)] transition-all duration-300 hover:scale-105 cursor-default"
-                  title={subscription.status === 'active' ? "Active Pro Subscription" : "Pro Subscription (Cancelling)"}
-                >
-                  <Star className="w-3.5 h-3.5 text-purple-400 mr-1.5 fill-purple-400/40" />
-                  <span className="text-purple-300 text-xs font-bold uppercase tracking-wider">Pro</span>
-                </div>
-              )}
+
 
               {/* Credits Display */}
               <button
@@ -301,12 +292,12 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                   {/* Credits & Subscription Section */}
                   <div className="px-4 py-3 border-b border-white/10">
                     {subscription && subscription.status === 'active' && (
-                      <div className="flex items-center justify-between mb-3 bg-gradient-to-r from-purple-500/10 to-transparent border border-purple-500/20 rounded-lg p-2">
+                      <div className="flex items-center justify-between mb-3 bg-white/5 border border-white/10 rounded-lg p-2 transition-colors hover:bg-white/10">
                         <div className="flex items-center space-x-2">
-                          <Star className="w-4 h-4 text-purple-400 fill-purple-400/40" />
-                          <span className="text-purple-300 text-sm font-medium">Pro Plan</span>
+                          <Star className="w-4 h-4 text-purple-400" />
+                          <span className="text-gray-200 text-sm font-medium">Pro Plan</span>
                         </div>
-                        <span className="text-xs text-green-400 font-medium px-2 py-0.5 bg-green-500/10 rounded-full border border-green-500/20">Active</span>
+                        <span className="text-xs text-green-400/80 font-medium px-2 py-0.5 bg-white/5 rounded-full border border-white/10">Active</span>
                       </div>
                     )}
                     <div className="flex items-center justify-between mb-2">
@@ -334,14 +325,14 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                     {creditsError && (
                       <div className="text-red-400 text-xs mb-2">{creditsError}</div>
                     )}
-                    {/* Add Credits link in dropdown */}
+                    {/* Subscription link in dropdown */}
                     <Link
                       href="/subscription"
                       onClick={() => setShowUserDropdown(false)}
                       className="flex items-center justify-center space-x-2 w-full px-3 py-2 bg-gradient-to-r from-green-500/20 to-green-600/20 border border-green-500/30 rounded-md text-green-300 hover:text-green-200 hover:from-green-500/30 hover:to-green-600/30 transition-all duration-200"
                     >
-                      <Plus className="w-3 h-3" />
-                      <span className="text-xs font-medium">Add Credits</span>
+                      <Star className="w-3 h-3" />
+                      <span className="text-xs font-medium">Subscription</span>
                     </Link>
                   </div>
 
@@ -384,10 +375,10 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
             <div className="flex items-center space-x-2">
               {subscription && (subscription.status === 'active' || subscription.status === 'cancelled') && (
                 <div
-                  className="flex items-center px-2 py-1 bg-gradient-to-r from-purple-500/10 to-purple-700/20 backdrop-blur-sm border border-purple-500/40 rounded-full transition-all duration-300"
+                  className="flex items-center px-2 py-1 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full transition-all duration-300"
                   title="Pro Subscription Active"
                 >
-                  <Star className="w-3.5 h-3.5 text-purple-400 fill-purple-400/40" />
+                  <Star className="w-3.5 h-3.5 text-purple-400" />
                 </div>
               )}
               <button
@@ -441,22 +432,22 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                 </Link>
               ))}
 
-              {/* Add Credits Link for Mobile */}
+              {/* Subscription Link for Mobile */}
               {!isLoading && isAuthenticated && (
                 <Link
-                  href="/credits"
+                  href="/subscription"
                   onClick={closeMobileMenu}
-                  className={`block text-xl font-medium transition-all duration-300 py-2 border-b border-gray-800/50 ${isActiveLink('/credits')
+                  className={`block text-xl font-medium transition-all duration-300 py-2 border-b border-gray-800/50 ${isActiveLink('/subscription')
                     ? 'text-green-400 bg-green-500/10 px-3 rounded-lg border-green-500/30'
                     : 'text-green-300 hover:text-green-400'
                     }`}
                 >
                   <span className="flex items-center justify-between">
                     <span className="flex items-center space-x-2">
-                      <Plus className="w-5 h-5" />
-                      <span>Add Credits</span>
+                      <Star className="w-5 h-5" />
+                      <span>Subscription</span>
                     </span>
-                    {isActiveLink('/credits') && (
+                    {isActiveLink('/subscription') && (
                       <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                     )}
                   </span>
@@ -512,8 +503,8 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                         </div>
                       )}
                       {subscription && (subscription.status === 'active' || subscription.status === 'cancelled') && (
-                        <div className="inline-flex items-center ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-purple-500/20 to-purple-700/20 text-purple-300 border border-purple-500/40 mt-1">
-                          <Star className="w-3 h-3 mr-1 fill-purple-400/40" /> Pro
+                        <div className="inline-flex items-center ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-white/5 text-gray-200 border border-white/10 mt-1">
+                          <Star className="w-3 h-3 mr-1 text-purple-400" /> Pro
                         </div>
                       )}
                       {/* Mobile Credits in User Section */}

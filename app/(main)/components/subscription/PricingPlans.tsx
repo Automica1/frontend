@@ -1,12 +1,18 @@
-// x:\Web Dev\Automica\frontend\app\(main)\components\subscription\PricingPlans.tsx
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { apiService, Plan } from '../../lib/apiService';
-import { motion } from 'framer-motion';
-import { Check, Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Zap, Star, Crown } from 'lucide-react';
+import { PricingCardUI } from '../pricing/PricingCardUI';
 
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+
+const getPlanIcon = (name: string) => {
+    switch (name.toLowerCase()) {
+        case 'starter': return <Zap className="w-6 h-6" />;
+        case 'professional': return <Star className="w-6 h-6" />;
+        case 'enterprise': return <Crown className="w-6 h-6" />;
+        default: return <Zap className="w-6 h-6" />;
+    }
+};
 
 export default function PricingPlans({ onPaymentSuccess, currentSubscription }: {
     onPaymentSuccess: () => void,
@@ -51,9 +57,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
         }
 
         try {
-            // Check if it's an upgrade (still uses order-based flow)
             const isUpgrade = currentSubscription && currentSubscription.status === 'active' && plan.price > currentSubscription.amount;
-
             let order;
             if (isUpgrade) {
                 order = await apiService.createUpgradeOrder(plan.planId);
@@ -61,7 +65,6 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
                 order = await apiService.createOrder(plan.planId);
             }
 
-            // Determine if this is a Subscription (has subscriptionId) or a one-off Order
             const orderData = order as any;
             const isSubscription = !isUpgrade && !!orderData.subscriptionId;
 
@@ -95,10 +98,8 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
             };
 
             if (isSubscription) {
-                // Razorpay Subscriptions API: use subscription_id instead of order_id
                 options.subscription_id = orderData.subscriptionId;
             } else {
-                // Legacy order / upgrade flow
                 options.order_id = orderData.orderId;
                 options.amount = order.amount;
                 options.currency = order.currency;
@@ -141,58 +142,42 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
         );
     }
 
+    const sortedPlans = [...plans].sort((a, b) => a.price - b.price);
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
-            {plans.map((plan, index) => (
-                <motion.div
-                    key={plan.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`relative overflow-hidden group bg-white/[0.03] border ${index === 1 ? 'border-purple-500/50 shadow-[0_0_30px_-10px_rgba(139,92,246,0.3)]' : 'border-white/10'
-                        } backdrop-blur-xl rounded-3xl p-8 flex flex-col`}
-                >
-                    {index === 1 && (
-                        <div className="absolute top-0 right-0 px-4 py-1 bg-purple-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-bl-xl flex items-center gap-1">
-                            <Sparkles className="w-3 h-3" />
-                            Most Popular
-                        </div>
-                    )}
+        <div className={`grid grid-cols-1 ${sortedPlans.length === 2 ? 'md:grid-cols-2 max-w-4xl' : 'md:grid-cols-3 max-w-6xl'} gap-8 lg:gap-12 mx-auto px-4 mt-20`}>
+            {sortedPlans.map((plan, index) => {
+                const isCurrent = currentSubscription && currentSubscription.status === 'active' && currentSubscription.planId === plan.planId;
+                const isUpgrade = currentSubscription && currentSubscription.status === 'active' && plan.price > currentSubscription.amount;
+                const isDowngrade = currentSubscription && currentSubscription.status === 'active' && plan.price < currentSubscription.amount;
 
-                    <div className="mb-6">
-                        <h3 className="text-2xl font-light text-white mb-2">{plan.name}</h3>
-                        <p className="text-purple-400 text-xs font-medium uppercase tracking-widest">{plan.credits.toLocaleString()} Credits / mo</p>
-                    </div>
+                let buttonText = 'Choose Plan';
+                if (isCurrent) buttonText = 'Current Plan';
+                else if (isUpgrade) buttonText = 'Upgrade Plan';
+                else if (isDowngrade) buttonText = 'Downgrade Plan';
 
-                    <div className="mb-8">
-                        <div className="flex items-baseline text-white">
-                            <span className="text-4xl font-light">${plan.price / 100}</span>
-                            <span className="text-gray-400 ml-2 font-light">/month</span>
-                        </div>
-                        <p className="text-gray-500 text-sm mt-2">{plan.description}</p>
-                    </div>
+                const isPopular = plan.name.toLowerCase() === 'professional' || plan.name.toLowerCase() === 'pro plan' || plan.name.toLowerCase() === 'pro';
 
-                    <ul className="space-y-4 mb-10 flex-1">
-                        {[
+                return (
+                    <PricingCardUI
+                        key={plan.id}
+                        name={plan.name}
+                        price={`$${plan.price / 100}`}
+                        description={plan.description || "The perfect plan to accelerate your business with Automica AI"}
+                        popular={isPopular}
+                        index={index}
+                        icon={getPlanIcon(plan.name)}
+                        features={[
                             `${plan.credits.toLocaleString()} usage credits every month`,
                             'Credits roll over indefinitely',
                             'Advanced AI features unlocked',
-                            'Priority 24/7 support',
-                            'No expiration on active sub'
-                        ].map((item, i) => (
-                            <li key={i} className="flex items-start text-gray-400 text-sm font-light leading-snug">
-                                <Check className="w-4 h-4 text-purple-500 mr-3 mt-0.5 flex-shrink-0" />
-                                {item}
-                            </li>
-                        ))}
-                    </ul>
-
-                    <button
-                        onClick={() => {
-                            const isCurrent = currentSubscription && currentSubscription.status === 'active' && currentSubscription.planId === plan.planId;
-                            const isUpgrade = currentSubscription && currentSubscription.status === 'active' && plan.price > currentSubscription.amount;
-                            const isDowngrade = currentSubscription && currentSubscription.status === 'active' && plan.price < currentSubscription.amount;
-
+                            'Priority support',
+                            'Secure access & audit logs'
+                        ]}
+                        buttonText={buttonText}
+                        isLoading={loading}
+                        disabled={isCurrent}
+                        onButtonClick={() => {
                             if (isCurrent) return;
                             if (isDowngrade) {
                                 handleDowngrade(plan);
@@ -200,33 +185,9 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
                                 handleSubscribe(plan);
                             }
                         }}
-                        disabled={loading || (currentSubscription?.status === 'active' && currentSubscription?.planId === plan.planId)}
-                        className={`w-full py-4 rounded-xl font-medium text-lg transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${index === 1
-                            ? 'bg-gradient-to-r from-purple-500 to-purple-800 text-white shadow-lg shadow-purple-500/20'
-                            : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
-                    >
-                        {loading ? (
-                            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                        ) : (
-                            (() => {
-                                const isCurrent = currentSubscription && currentSubscription.status === 'active' && currentSubscription.planId === plan.planId;
-                                const isUpgrade = currentSubscription && currentSubscription.status === 'active' && plan.price > currentSubscription.amount;
-                                const isDowngrade = currentSubscription && currentSubscription.status === 'active' && plan.price < currentSubscription.amount;
-
-                                if (isCurrent) return 'Current Plan';
-                                if (isUpgrade) return 'Upgrade Plan';
-                                if (isDowngrade) return 'Downgrade Plan';
-                                return 'Choose Plan';
-                            })()
-                        )}
-                    </button>
-
-                    <p className="mt-4 text-center text-[10px] text-gray-600 uppercase tracking-widest">
-                        SECURE PAYMENT · RAZORPAY
-                    </p>
-                </motion.div>
-            ))}
+                    />
+                );
+            })}
         </div>
     );
 }
