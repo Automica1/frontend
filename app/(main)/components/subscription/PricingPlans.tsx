@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useKindeAuth } from '@kinde-oss/kinde-auth-nextjs';
 import { apiService, Plan } from '../../lib/apiService';
 import { Loader2, Zap, Star, Crown } from 'lucide-react';
 import { PricingCardUI } from '../pricing/PricingCardUI';
@@ -18,7 +19,8 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
     onPaymentSuccess: () => void,
     currentSubscription?: any
 }) {
-    const [loading, setLoading] = useState(false);
+    const { isAuthenticated, user } = useKindeAuth();
+    const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
     const [plans, setPlans] = useState<Plan[]>([]);
     const [fetchingPlans, setFetchingPlans] = useState(true);
 
@@ -38,6 +40,16 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
 
     const loadRazorpay = () => {
         return new Promise((resolve) => {
+            if ((window as any).Razorpay) {
+                resolve(true);
+                return;
+            }
+
+            const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+            if (existingScript) {
+                existingScript.remove();
+            }
+
             const script = document.createElement('script');
             script.src = 'https://checkout.razorpay.com/v1/checkout.js';
             script.onload = () => resolve(true);
@@ -47,12 +59,18 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
     };
 
     const handleSubscribe = async (plan: Plan) => {
-        setLoading(true);
+        if (!RAZORPAY_KEY_ID) {
+            alert('Payment configuration is missing. Please contact support.');
+            return;
+        }
+
+        setLoadingPlanId(plan.planId);
+        document.querySelectorAll('.razorpay-container').forEach((node) => node.remove());
         const res = await loadRazorpay();
 
         if (!res) {
             alert('Razorpay SDK failed to load. Are you online?');
-            setLoading(false);
+            setLoadingPlanId(null);
             return;
         }
 
@@ -73,7 +91,18 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
                 name: 'Automica',
                 description: `${isUpgrade ? 'Upgrade to' : ''} ${plan.name} — ${plan.credits.toLocaleString()} Credits/mo`,
                 theme: { color: '#8b5cf6' },
-                prefill: { name: '', email: '', contact: '' },
+                // Prefill with authenticated user's details when available to avoid Razorpay asking for them
+                prefill: {
+                    // Kinde user type is narrow in our typings — cast to any to safely access optional fields
+                    name: isAuthenticated ? (((user as any)?.given_name) || ((user as any)?.name) || '') : '',
+                    email: isAuthenticated ? (((user as any)?.email) || '') : '',
+                    contact: isAuthenticated ? (((user as any)?.phone) || ((user as any)?.phone_number) || '') : '',
+                },
+                modal: {
+                    ondismiss: function () {
+                        setLoadingPlanId(null);
+                    },
+                },
                 handler: async function (response: any) {
                     try {
                         if (isSubscription) {
@@ -93,6 +122,8 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
                     } catch (err) {
                         console.error('Payment verification failed', err);
                         alert('Payment verification failed. Please contact support.');
+                    } finally {
+                        setLoadingPlanId(null);
                     }
                 },
             };
@@ -106,12 +137,12 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
             }
 
             const paymentObject = new (window as any).Razorpay(options);
+            setLoadingPlanId(null);
             paymentObject.open();
         } catch (err) {
             console.error('Failed to process subscription', err);
             alert('Failed to initiate payment. Please try again.');
-        } finally {
-            setLoading(false);
+            setLoadingPlanId(null);
         }
     };
 
@@ -120,7 +151,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
             return;
         }
 
-        setLoading(true);
+        setLoadingPlanId(plan.planId);
         try {
             await apiService.downgradeSubscription(plan.planId);
             alert(`Your downgrade to ${plan.name} has been scheduled.`);
@@ -129,7 +160,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
             console.error('Failed to downgrade', err);
             alert('Failed to schedule downgrade. Please try again.');
         } finally {
-            setLoading(false);
+            setLoadingPlanId(null);
         }
     };
 
@@ -175,8 +206,8 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
                             'Secure access & audit logs'
                         ]}
                         buttonText={buttonText}
-                        isLoading={loading}
-                        disabled={isCurrent}
+                        isLoading={loadingPlanId === plan.planId}
+                        disabled={isCurrent || !!loadingPlanId}
                         onButtonClick={() => {
                             if (isCurrent) return;
                             if (isDowngrade) {

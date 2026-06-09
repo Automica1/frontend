@@ -9,6 +9,9 @@ interface Subscription {
     amount: number;
     planId: string;
     subscriptionId?: string;
+    cancelAtCycleEnd?: boolean;
+    cancelScheduledAt?: string;
+    cancelledAt?: string;
     pendingPlanId?: string;
     planChangeDate?: any;
 }
@@ -47,6 +50,7 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
 
     const isActive = subscription.status === 'active';
     const isCancelled = subscription.status === 'cancelled';
+    const isCancellationScheduled = isActive && (!!subscription.cancelAtCycleEnd || !!subscription.cancelScheduledAt);
     const expiryDate = subscription.currentPeriodEnd
         ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
         : '—';
@@ -56,7 +60,10 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
         cancelled: 'bg-red-500/10 text-red-400 border border-red-500/20',
         past_due: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
         expired: 'bg-gray-500/10 text-gray-400 border border-gray-500/20',
+        scheduled: 'bg-amber-500/10 text-amber-300 border border-amber-500/20',
     };
+    const statusLabel = isCancellationScheduled ? 'scheduled' : subscription.status;
+    const statusText = isCancellationScheduled ? 'cancellation scheduled' : subscription.status;
 
     return (
         <div className="relative overflow-hidden rounded-3xl border border-white/10 backdrop-blur-2xl p-8 shadow-2xl group hover:border-purple-500/30 transition-all duration-500"
@@ -76,14 +83,14 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                         <p className="text-purple-400 text-sm font-medium uppercase tracking-widest mb-2">Current Plan</p>
                         <h3 className="text-2xl font-light text-white uppercase tracking-tighter leading-none">{subscription.planId.replace(/-/g, ' ')}</h3>
                     </div>
-                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${statusColors[subscription.status] || statusColors.expired}`}>
-                        {subscription.status}
+                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${statusColors[statusLabel] || statusColors.expired}`}>
+                        {statusText}
                     </span>
                 </div>
 
                 <div className="space-y-4 mb-8">
                     <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-400 font-light">{isCancelled ? 'Access Until' : 'Next Billing Date'}</span>
+                        <span className="text-gray-400 font-light">{isCancelled || isCancellationScheduled ? 'Access Until' : 'Next Billing Date'}</span>
                         <span className="text-white font-light tracking-tight">{expiryDate}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm border-t border-white/5 pt-4">
@@ -109,7 +116,7 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                 )}
 
                 {/* Cancel button — only show for active subscriptions */}
-                {isActive && !showConfirm && (
+                {isActive && !showConfirm && !isCancellationScheduled && (
                     <button
                         onClick={() => setShowConfirm(true)}
                         className="w-full py-2 text-sm text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/10 transition-all duration-200"
@@ -123,7 +130,7 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                     <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
                         <p className="text-sm text-gray-300 mb-1 font-medium">Cancel your subscription?</p>
                         <p className="text-xs text-gray-500 mb-4">
-                            You&apos;ll keep access until <span className="text-gray-300">{expiryDate}</span>. Your remaining credits won&apos;t be affected.
+                            This will cancel at the end of the current billing period on <span className="text-gray-300">{expiryDate}</span>. Your remaining credits won&apos;t be affected.
                         </p>
                         <div className="flex gap-2">
                             <button
@@ -144,9 +151,15 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                     </div>
                 )}
 
+                {isCancellationScheduled && (
+                    <p className="text-xs text-amber-300/80 text-center mt-2">
+                        Cancellation is scheduled. You keep access until {expiryDate}, then the subscription stops renewing.
+                    </p>
+                )}
+
                 {isCancelled && (
                     <p className="text-xs text-gray-500 text-center mt-2">
-                        Your subscription has been cancelled. Credits remain available until the end of the billing period.
+                        Your subscription has been cancelled on Razorpay. Credits remain available until the end of the billing period.
                     </p>
                 )}
             </div>

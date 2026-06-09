@@ -54,6 +54,9 @@ export interface Subscription {
   currentPeriodStart: string;
   currentPeriodEnd: string;
   gracePeriodEnd?: string;
+  cancelAtCycleEnd?: boolean;
+  cancelScheduledAt?: string;
+  cancelledAt?: string;
   pendingPlanId?: string;
   planChangeDate?: string;
   createdAt: string;
@@ -255,9 +258,26 @@ class ApiService {
   }
 
   async createOrder(planId: string): Promise<{ subscriptionId: string; orderId?: string; keyId: string; amount: number; currency: string }> {
+    // Attempt to get Kinde user data via /api/auth endpoint to include customer info for server-side customer creation
+    let name = '';
+    let email = '';
+    let contact = '';
+
+    try {
+      const authRes = await fetch('/api/auth', { credentials: 'include' });
+      if (authRes.ok) {
+        const authJson = await authRes.json();
+        name = (authJson?.user?.given_name) || (authJson?.user?.name) || '';
+        email = authJson?.user?.email || '';
+        contact = authJson?.user?.phone || authJson?.user?.phone_number || '';
+      }
+    } catch (e) {
+      console.warn('Could not fetch /api/auth for prefill:', e);
+    }
+
     return this.makeRequest('/subscription/create-order', {
       method: 'POST',
-      body: JSON.stringify({ planId }),
+      body: JSON.stringify({ planId, name, email, contact }),
     });
   }
 
