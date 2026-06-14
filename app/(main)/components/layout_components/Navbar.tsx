@@ -25,10 +25,10 @@ export default function Navbar({ isAdmin, initialUser }: { isAdmin?: boolean; in
 
   // Use the new Zustand-based credits hook
   const { credits, subscription, loading: creditsLoading, error: creditsError, refreshCredits } = useCredits();
-  const displayUser = user ?? initialUser ?? null;
   const hasServerSession = Boolean(initialUser?.email);
   const showAuthLoading = isLoading && !authFallbackElapsed && !hasServerSession;
-  const isUserAuthenticated = isAuthenticated || hasServerSession;
+  const isUserAuthenticated = isLoading ? hasServerSession : isAuthenticated;
+  const displayUser = isLoading ? (user ?? initialUser ?? null) : (isAuthenticated ? user : null);
 
   useEffect(() => {
     if (!isLoading || hasServerSession) {
