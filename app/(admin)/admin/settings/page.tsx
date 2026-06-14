@@ -3,6 +3,9 @@ import type { ComponentType } from "react";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { ArrowLeft, Mail, Settings, Shield, Sparkles, UserCircle2 } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export default async function AdminSettingsPage() {
   const { getUser } = getKindeServerSession();
   const user = await getUser();

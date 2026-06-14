@@ -6,6 +6,9 @@ import AdminHeader from "../components/AdminHeader";
 import AdminSidebar from "../components/AdminSidebar";
 import '../global.css';
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export default async function RootLayout({
   children,
 }: {
