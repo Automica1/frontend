@@ -32,8 +32,8 @@ export default function LoadingSpinner({
   return (
     <div className={containerClasses}>
       <div className="flex flex-col items-center space-y-3">
-        <RefreshCw className={`${sizeClasses[size]} animate-spin text-blue-600`} />
-        <span className={`${textSizeClasses[size]} text-gray-600 font-medium`}>
+        <RefreshCw className={`${sizeClasses[size]} animate-spin text-purple-300`} />
+        <span className={`${textSizeClasses[size]} text-gray-300 font-medium`}>
           {message}
         </span>
       </div>
@@ -69,8 +69,8 @@ export function TableLoadingSpinner({
     <tr>
       <td colSpan={colspan} className="px-6 py-12 text-center">
         <div className="flex flex-col items-center space-y-3">
-          <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
-          <span className="text-sm text-gray-500">{message}</span>
+          <RefreshCw className="w-6 h-6 animate-spin text-gray-300" />
+          <span className="text-sm text-gray-400">{message}</span>
         </div>
       </td>
     </tr>
@@ -80,13 +80,13 @@ export function TableLoadingSpinner({
 // Loading skeleton for cards
 export function CardLoadingSkeleton() {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 animate-pulse">
+    <div className="rounded-xl border border-white/10 bg-white/5 p-6 shadow-2xl animate-pulse backdrop-blur-2xl">
       <div className="flex items-center justify-between">
         <div className="space-y-2">
-          <div className="h-4 bg-gray-200 rounded w-20"></div>
-          <div className="h-6 bg-gray-200 rounded w-16"></div>
+          <div className="h-4 w-20 rounded bg-white/10"></div>
+          <div className="h-6 w-16 rounded bg-white/10"></div>
         </div>
-        <div className="w-8 h-8 bg-gray-200 rounded"></div>
+        <div className="w-8 h-8 rounded bg-white/10"></div>
       </div>
     </div>
   );
@@ -102,7 +102,7 @@ export function TableRowSkeleton({
     <tr className="animate-pulse">
       {Array.from({ length: columns }).map((_, index) => (
         <td key={index} className="px-6 py-4 whitespace-nowrap">
-          <div className="h-4 bg-gray-200 rounded w-full"></div>
+          <div className="h-4 w-full rounded bg-white/10"></div>
         </td>
       ))}
     </tr>

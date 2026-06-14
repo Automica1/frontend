@@ -28,7 +28,7 @@ export default function ActionsBar({
   onGenerateToken
 }: ActionsBarProps) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-200">
+    <div className="border-b border-white/10 bg-black/20 p-6">
       <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
         <SearchAndFilters
           searchTerm={searchTerm}
@@ -44,7 +44,7 @@ export default function ActionsBar({
         <div className="flex gap-3">
           <button
             onClick={onExport}
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-gray-200 transition-colors hover:bg-white/10"
           >
             <Download className="w-4 h-4" />
             Export
@@ -52,7 +52,7 @@ export default function ActionsBar({
           
           <button
             onClick={onGenerateToken}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 rounded-2xl border border-purple-400/20 bg-gradient-to-r from-purple-500/90 to-pink-500/90 px-4 py-2 text-white transition-colors hover:opacity-95"
           >
             <Plus className="w-4 h-4" />
             Generate Token

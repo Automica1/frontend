@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { apiService, Plan } from "../../lib/apiService";
+import { useAdminFeedback } from "../../components/AdminFeedback";
 import {
     Package,
     Plus,
@@ -18,6 +19,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function AdminPlansPage() {
+    const { confirm, toast } = useAdminFeedback();
     const [plans, setPlans] = useState<Plan[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -106,12 +108,28 @@ export default function AdminPlansPage() {
     };
 
     const handleDelete = async (planId: string) => {
-        if (!confirm("Are you sure you want to deactivate this plan?")) return;
+        const ok = await confirm({
+            title: "Deactivate plan",
+            message: "This will hide the plan from active subscription choices without deleting its history.",
+            confirmLabel: "Deactivate",
+            tone: "danger",
+        });
+        if (!ok) return;
 
         try {
             await apiService.deletePlan(planId);
+            toast({
+                tone: "success",
+                title: "Plan deactivated",
+                message: "The plan was updated successfully.",
+            });
             fetchPlans();
         } catch (err) {
+            toast({
+                tone: "error",
+                title: "Failed to deactivate plan",
+                message: err instanceof Error ? err.message : "Please try again.",
+            });
             setError(err instanceof Error ? err.message : "Failed to deactivate plan");
         }
     };
@@ -120,13 +138,13 @@ export default function AdminPlansPage() {
         <div className="space-y-8 pb-12">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight text-admin-text-main">Subscription Plans</h1>
-                    <p className="text-admin-text-muted mt-1 font-medium">Manage your subscription tiers and pricing.</p>
+                    <h1 className="text-3xl font-extrabold tracking-tight text-white">Subscription Plans</h1>
+                    <p className="mt-1 font-medium text-gray-400">Manage your subscription tiers and pricing.</p>
                 </div>
                 <button
                     onClick={() => handleOpenModal()}
                     title="Create a new subscription plan"
-                    className="px-4 py-2 bg-admin-primary text-white rounded-xl text-sm font-bold shadow-md shadow-admin-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 w-fit"
+                    className="inline-flex w-fit items-center gap-2 rounded-2xl border border-purple-400/20 bg-purple-500/15 px-4 py-2 text-sm font-bold text-purple-100 transition-colors hover:bg-purple-500/25"
                 >
                     <Plus className="w-4 h-4" />
                     Create New Plan
@@ -134,7 +152,7 @@ export default function AdminPlansPage() {
             </div>
 
             {error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3 text-red-800">
+                <div className="flex items-center gap-3 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-rose-100">
                     <AlertCircle className="w-5 h-5 flex-shrink-0" />
                     <p className="text-sm font-medium">{error}</p>
                 </div>
@@ -142,8 +160,8 @@ export default function AdminPlansPage() {
 
             {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <Loader2 className="w-10 h-10 text-admin-primary animate-spin" />
-                    <p className="text-admin-text-muted font-medium">Loading plans...</p>
+                    <Loader2 className="w-10 h-10 animate-spin text-purple-300" />
+                    <p className="font-medium text-gray-400">Loading plans...</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -154,7 +172,11 @@ export default function AdminPlansPage() {
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className={`bg-white rounded-2xl border ${plan.isActive ? 'border-admin-border' : 'border-slate-200 bg-slate-50/50'} shadow-sm p-6 space-y-4`}
+                                className={`rounded-[24px] border p-6 space-y-4 shadow-2xl backdrop-blur-xl ${
+                                  plan.isActive
+                                    ? 'border-white/10 bg-white/5'
+                                    : 'border-white/5 bg-black/25'
+                                }`}
                             >
                                 <div className="flex justify-between items-start">
                                     <div className={`p-3 rounded-xl ${plan.isActive ? 'bg-admin-primary/10 text-admin-primary' : 'bg-slate-200 text-slate-500'}`}>
@@ -163,14 +185,14 @@ export default function AdminPlansPage() {
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => handleOpenModal(plan)}
-                                            className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
+                                            className="rounded-xl p-2 text-gray-300 transition-colors hover:bg-white/10 hover:text-white"
                                             title="Edit Plan"
                                         >
                                             <Pencil className="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={() => handleDelete(plan.planId)}
-                                            className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
+                                            className="rounded-xl p-2 text-rose-300 transition-colors hover:bg-rose-500/10 hover:text-rose-200"
                                             title="Deactivate Plan"
                                         >
                                             <Trash2 className="w-4 h-4" />
@@ -182,24 +204,24 @@ export default function AdminPlansPage() {
                                     <div className="flex items-center gap-2">
                                         <h3 className="text-xl font-bold text-admin-text-main">{plan.name}</h3>
                                         {!plan.isActive && (
-                                            <span className="px-2 py-0.5 bg-slate-200 text-slate-600 text-[10px] font-bold rounded-full uppercase tracking-wider">Inactive</span>
+                                            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-300">Inactive</span>
                                         )}
                                     </div>
-                                    <p className="text-sm text-admin-text-muted font-medium mt-1">{plan.description}</p>
+                                    <p className="mt-1 text-sm font-medium text-gray-400">{plan.description}</p>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 py-2">
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-bold text-admin-text-muted uppercase tracking-wider">Price</p>
-                                        <p className="text-lg font-bold text-admin-text-main flex items-center gap-1">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Price</p>
+                                        <p className="flex items-center gap-1 text-lg font-bold text-white">
                                             <DollarSign className="w-4 h-4" />
                                             {plan.price / 100}
-                                            <span className="text-xs font-medium text-admin-text-muted">/mo</span>
+                                            <span className="text-xs font-medium text-gray-500">/mo</span>
                                         </p>
                                     </div>
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-bold text-admin-text-muted uppercase tracking-wider">Credits</p>
-                                        <p className="text-lg font-bold text-admin-text-main flex items-center gap-1">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Credits</p>
+                                        <p className="flex items-center gap-1 text-lg font-bold text-white">
                                             <Coins className="w-4 h-4 text-amber-500" />
                                             {plan.credits.toLocaleString()}
                                         </p>
@@ -207,8 +229,8 @@ export default function AdminPlansPage() {
                                 </div>
 
                                 <div className="pt-2">
-                                    <p className="text-[10px] font-bold text-admin-text-muted uppercase tracking-wider">Plan ID</p>
-                                    <code className="text-[10px] font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{plan.planId}</code>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Plan ID</p>
+                                    <code className="rounded border border-white/10 bg-black/25 px-2 py-0.5 text-[10px] font-mono text-gray-200">{plan.planId}</code>
                                 </div>
                             </motion.div>
                         ))}
@@ -222,54 +244,54 @@ export default function AdminPlansPage() {
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden"
+                        className="w-full max-w-lg overflow-hidden rounded-[28px] border border-white/10 bg-[#0c1018] shadow-2xl"
                     >
-                        <div className="p-6 border-b border-admin-border flex items-center justify-between">
-                            <h2 className="text-xl font-bold">{editingPlan ? 'Edit Plan' : 'Create New Plan'}</h2>
+                        <div className="flex items-center justify-between border-b border-white/10 p-6">
+                            <h2 className="text-xl font-bold text-white">{editingPlan ? 'Edit Plan' : 'Create New Plan'}</h2>
                             <button
                                 onClick={() => setIsModalOpen(false)}
                                 title="Close modal"
-                                className="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                                className="rounded-xl p-2 text-gray-400 transition-colors hover:bg-white/10 hover:text-white"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-6 p-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-admin-text-muted uppercase tracking-wider">Plan ID (Unique)</label>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Plan ID (Unique)</label>
                                     <input
                                         type="text"
                                         required
                                         disabled={!!editingPlan}
                                         value={formData.planId}
                                         onChange={(e) => setFormData({ ...formData, planId: e.target.value })}
-                                        className="w-full px-4 py-2 bg-slate-50 border border-admin-border rounded-xl focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all font-medium disabled:opacity-50"
+                                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 font-medium text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10 disabled:opacity-50"
                                         placeholder="tier-1"
                                         title="Unique ID for the plan"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-admin-text-muted uppercase tracking-wider">Plan Name</label>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Plan Name</label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-4 py-2 bg-slate-50 border border-admin-border rounded-xl focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all font-medium"
+                                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 font-medium text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
                                         placeholder="Basic Plan"
                                         title="Display name for the plan"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-admin-text-muted uppercase tracking-wider">Razorpay Plan ID</label>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Razorpay Plan ID</label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.razorpayPlanId}
                                         onChange={(e) => setFormData({ ...formData, razorpayPlanId: e.target.value })}
-                                        className="w-full px-4 py-2 bg-slate-50 border border-admin-border rounded-xl focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all font-medium"
+                                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 font-medium text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
                                         placeholder="plan_L7v... (from Razorpay)"
                                         title="The official Plan ID from your Razorpay Dashboard"
                                     />
@@ -277,11 +299,11 @@ export default function AdminPlansPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-admin-text-muted uppercase tracking-wider">Description</label>
+                                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Description</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                    className="w-full px-4 py-2 bg-slate-50 border border-admin-border rounded-xl focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all font-medium min-h-[80px]"
+                                    className="min-h-[80px] w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 font-medium text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
                                     placeholder="What's included in this plan?"
                                     title="Detailed description of plan benefits"
                                 />
@@ -289,7 +311,7 @@ export default function AdminPlansPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label htmlFor="price" className="text-xs font-bold text-admin-text-muted uppercase tracking-wider">Price ($ / month)</label>
+                                    <label htmlFor="price" className="text-xs font-bold uppercase tracking-wider text-gray-500">Price ($ / month)</label>
                                     <div className="relative">
                                         <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-admin-text-muted" />
                                         <input
@@ -299,13 +321,13 @@ export default function AdminPlansPage() {
                                             min="0"
                                             value={formData.price}
                                             onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-admin-border rounded-xl focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all font-bold"
+                                            className="w-full rounded-2xl border border-white/10 bg-white/5 py-2 pl-10 pr-4 font-bold text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
                                             title="Monthly price in Dollars"
                                         />
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                    <label htmlFor="credits" className="text-xs font-bold text-admin-text-muted uppercase tracking-wider">Credits Per Month</label>
+                                    <label htmlFor="credits" className="text-xs font-bold uppercase tracking-wider text-gray-500">Credits Per Month</label>
                                     <div className="relative">
                                         <Coins className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
                                         <input
@@ -315,7 +337,7 @@ export default function AdminPlansPage() {
                                             min="0"
                                             value={formData.credits}
                                             onChange={(e) => setFormData({ ...formData, credits: Number(e.target.value) })}
-                                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-admin-border rounded-xl focus:ring-2 focus:ring-admin-primary/20 focus:border-admin-primary transition-all font-bold"
+                                            className="w-full rounded-2xl border border-white/10 bg-white/5 py-2 pl-10 pr-4 font-bold text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
                                             title="Credits awarded per month"
                                         />
                                     </div>
@@ -331,21 +353,21 @@ export default function AdminPlansPage() {
                                 >
                                     <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isActive ? 'left-7' : 'left-1'}`}></div>
                                 </button>
-                                <span className="text-sm font-bold text-admin-text-main">Plan is Active</span>
+                                <span className="text-sm font-bold text-white">Plan is Active</span>
                             </div>
 
                             <div className="pt-4 flex gap-3">
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 px-6 py-3 border border-admin-border rounded-2xl text-sm font-bold hover:bg-slate-50 transition-all"
+                                    className="flex-1 rounded-2xl border border-white/10 px-6 py-3 text-sm font-bold text-gray-200 transition-colors hover:bg-white/10"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={isSaving}
-                                    className="flex-1 px-6 py-3 bg-admin-primary text-white rounded-2xl text-sm font-bold shadow-lg shadow-admin-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-purple-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-purple-500/20 transition-colors hover:bg-purple-400 disabled:cursor-not-allowed disabled:opacity-70"
                                 >
                                     {isSaving ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />

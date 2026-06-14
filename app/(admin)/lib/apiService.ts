@@ -59,6 +59,8 @@ interface UserListResponse {
   message: string;
   count?: number;
   users: UserInfo[];
+  limit?: number;
+  skip?: number;
 }
 
 interface UserDetailsResponse {
@@ -182,6 +184,121 @@ interface UsageHistoryResponse {
   service_name: string;
   total_records: number;
   usage_history: UsageHistoryRecord[] | null;
+}
+
+interface AdminAuditLog {
+  id: string;
+  actorEmail: string;
+  actorId?: string;
+  action: string;
+  targetType: string;
+  targetId?: string;
+  outcome: string;
+  reason?: string;
+  metadata?: Record<string, any>;
+  timestamp: string;
+}
+
+interface AdminAuditLogResponse {
+  message: string;
+  logs: AdminAuditLog[];
+  count: number;
+}
+
+export interface AdminLogEntry {
+  id: string;
+  category: 'backend-access' | 'backend-error' | 'web-access' | 'web-error' | 'audit' | 'usage' | string;
+  kind?: 'page-view' | 'api-request' | 'asset-request' | 'admin-action' | 'usage' | 'audit' | 'error' | 'signal' | 'internal-request' | string;
+  source: string;
+  timestamp: string;
+  level?: string;
+  message: string;
+  requestId?: string;
+  method?: string;
+  path?: string;
+  route?: string;
+  status?: number;
+  bytes?: number;
+  durationMs?: number;
+  remoteIp?: string;
+  clientIp?: string;
+  referer?: string;
+  host?: string;
+  upstream?: string;
+  userAgent?: string;
+  email?: string;
+  isAdmin?: boolean;
+  actorEmail?: string;
+  actorId?: string;
+  action?: string;
+  targetType?: string;
+  targetId?: string;
+  outcome?: string;
+  reason?: string;
+  userId?: string;
+  serviceName?: string;
+  endpoint?: string;
+  authMethod?: string;
+  creditsUsed?: number;
+  success?: boolean;
+  processTimeMs?: number;
+  ipAddress?: string;
+  metadata?: Record<string, any>;
+}
+
+export interface AdminLogResponse {
+  message: string;
+  source: string;
+  logs: AdminLogEntry[];
+  total: number;
+  limit: number;
+  skip: number;
+}
+
+interface AdminSubscription {
+  id: string;
+  userId: string;
+  email: string;
+  planId: string;
+  planName?: string;
+  planRazorpayId?: string;
+  subscriptionId: string;
+  status: string;
+  amount: number;
+  currency: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  gracePeriodEnd?: string;
+  cancelAtCycleEnd?: boolean;
+  cancelScheduledAt?: string;
+  cancelledAt?: string;
+  pendingPlanId?: string;
+  planChangeDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AdminSubscriptionListResponse {
+  message: string;
+  subscriptions: AdminSubscription[];
+  total: number;
+  limit: number;
+  skip: number;
+}
+
+interface AdminSubscriptionDetailResponse {
+  message: string;
+  subscription: AdminSubscription;
+}
+
+interface AdminSearchResponse {
+  message: string;
+  query: string;
+  users: UserInfo[];
+  tokens: TokenInfo[];
+  plans: Plan[];
+  usage: ServiceUsageStat[];
+  subscriptions: AdminSubscription[];
 }
 
 // Plan types
@@ -313,6 +430,39 @@ class ApiService {
     return response.json();
   }
 
+  private async makeAuthenticatedBlobRequest(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<{ blob: Blob; filename: string | null }> {
+    const authToken = await this.getAuthToken();
+
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      ...options,
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        ...options.headers,
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        this.clearAuth();
+        throw new Error('Authentication expired. Please log in again.');
+      }
+
+      const errorText = await response.text();
+      throw new Error(`API Error (${response.status}): ${errorText}`);
+    }
+
+    const disposition = response.headers.get('content-disposition') || '';
+    const filenameMatch = disposition.match(/filename="?([^"]+)"?/i);
+
+    return {
+      blob: await response.blob(),
+      filename: filenameMatch?.[1] || null,
+    };
+  }
+
   // Token Management Methods
 
   /**
@@ -359,6 +509,20 @@ class ApiService {
     return this.makeAuthenticatedRequest<TokenListResponse>('/tokens/all');
   }
 
+  async getTokens(params?: UsageQueryParams & { search?: string; status?: string }): Promise<TokenListResponse> {
+    const queryString = params ? this.buildQueryString(params as Record<string, any>) : '';
+    return this.makeAuthenticatedRequest<TokenListResponse>(`/tokens/all${queryString}`);
+  }
+
+  async exportTokensCsv(params?: UsageQueryParams & { search?: string; status?: string; scope?: 'all' | 'my' }): Promise<{ blob: Blob; filename: string | null }> {
+    const scope = params?.scope || 'all';
+    const queryString = params ? this.buildQueryString({ ...params, scope }) : `?scope=${scope}`;
+    const path = scope === 'my'
+      ? `/tokens/my-tokens/export.csv${queryString}`
+      : `/tokens/all/export.csv${queryString}`;
+    return this.makeAuthenticatedBlobRequest(path);
+  }
+
   /**
    * Get all used tokens (Admin Only)
    */
@@ -380,6 +544,16 @@ class ApiService {
    */
   async getAllUsers(): Promise<UserListResponse> {
     return this.makeAuthenticatedRequest<UserListResponse>('/admin/users');
+  }
+
+  async getUsers(params?: UsageQueryParams & { search?: string }): Promise<UserListResponse> {
+    const queryString = params ? this.buildQueryString(params as Record<string, any>) : '';
+    return this.makeAuthenticatedRequest<UserListResponse>(`/admin/users${queryString}`);
+  }
+
+  async exportUsersCsv(params?: { search?: string }): Promise<{ blob: Blob; filename: string | null }> {
+    const queryString = params ? this.buildQueryString(params as Record<string, any>) : '';
+    return this.makeAuthenticatedBlobRequest(`/admin/users/export.csv${queryString}`);
   }
 
   /**
@@ -411,6 +585,42 @@ class ApiService {
    */
   async getUserCredits(userId: string): Promise<UserCreditsResponse> {
     return this.makeAuthenticatedRequest<UserCreditsResponse>(`/admin/users/${userId}/credits`);
+  }
+
+  async addCredits(userId: string, amount: number): Promise<{ message: string; userId: string; credits: number }> {
+    return this.makeAuthenticatedRequest<{ message: string; userId: string; credits: number }>('/credits/add', {
+      method: 'POST',
+      body: JSON.stringify({ userId, amount }),
+    });
+  }
+
+  async deductCredits(userId: string, amount: number): Promise<{ message: string; userId: string; credits: number }> {
+    return this.makeAuthenticatedRequest<{ message: string; userId: string; credits: number }>('/credits/deduct', {
+      method: 'POST',
+      body: JSON.stringify({ userId, amount }),
+    });
+  }
+
+  /**
+   * Delete a user from the system (Admin Only)
+   * @param userId The ID of the user to delete
+   */
+  async deleteUser(userId: string): Promise<{ message: string; userId: string }> {
+    return this.makeAuthenticatedRequest<{ message: string; userId: string }>(`/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async suspendUser(userId: string): Promise<{ message: string; userId: string }> {
+    return this.makeAuthenticatedRequest<{ message: string; userId: string }>(`/admin/users/${userId}/suspend`, {
+      method: 'POST',
+    });
+  }
+
+  async reactivateUser(userId: string): Promise<{ message: string; userId: string }> {
+    return this.makeAuthenticatedRequest<{ message: string; userId: string }>(`/admin/users/${userId}/reactivate`, {
+      method: 'POST',
+    });
   }
 
   // Usage Tracking Methods (Admin Only)
@@ -457,8 +667,11 @@ class ApiService {
    * @param serviceName The name of the service whose usage history to retrieve
    * @param params Query parameters for pagination
    */
-  async getServiceUsageHistory(serviceName: string, params?: UsageQueryParams): Promise<UsageHistoryResponse> {
+  async getServiceUsageHistory(serviceName?: string, params?: UsageQueryParams): Promise<UsageHistoryResponse> {
     const queryString = params ? this.buildQueryString(params) : '';
+    if (!serviceName) {
+      return this.makeAuthenticatedRequest<UsageHistoryResponse>(`/admin/usage/history${queryString}`);
+    }
     return this.makeAuthenticatedRequest<UsageHistoryResponse>(`/admin/usage/service/${serviceName}/history${queryString}`);
   }
 
@@ -513,6 +726,70 @@ class ApiService {
 
   async getActiveSubscriptionCount(): Promise<{ count: number }> {
     return this.makeAuthenticatedRequest<{ count: number }>('/admin/subscriptions/active-count');
+  }
+
+  async getSubscriptions(params?: {
+    limit?: number;
+    skip?: number;
+    search?: string;
+    status?: string;
+    userId?: string;
+    email?: string;
+    planId?: string;
+    subscriptionId?: string;
+  }): Promise<AdminSubscriptionListResponse> {
+    const queryString = params ? this.buildQueryString(params as Record<string, any>) : '';
+    return this.makeAuthenticatedRequest<AdminSubscriptionListResponse>(`/admin/subscriptions${queryString}`);
+  }
+
+  async getSubscription(subscriptionId: string): Promise<AdminSubscriptionDetailResponse> {
+    return this.makeAuthenticatedRequest<AdminSubscriptionDetailResponse>(`/admin/subscriptions/${subscriptionId}`);
+  }
+
+  async reconcileSubscription(subscriptionId: string): Promise<AdminSubscriptionDetailResponse> {
+    return this.makeAuthenticatedRequest<AdminSubscriptionDetailResponse>(`/admin/subscriptions/${subscriptionId}/reconcile`, {
+      method: 'POST',
+    });
+  }
+
+  async getHealthStatus(): Promise<{ status: string; message: string }> {
+    const healthUrl = this.baseUrl.replace(/\/api\/v1$/, '') + '/health';
+    const response = await fetch(healthUrl);
+    if (!response.ok) {
+      throw new Error(`Health check failed: ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async searchAdmin(query: string): Promise<AdminSearchResponse> {
+    return this.makeAuthenticatedRequest<AdminSearchResponse>(`/admin/search${this.buildQueryString({ q: query })}`);
+  }
+
+  async getRecentAuditLogs(limit = 20): Promise<AdminAuditLogResponse> {
+    return this.makeAuthenticatedRequest<AdminAuditLogResponse>(`/admin/audit-logs/recent${this.buildQueryString({ limit })}`);
+  }
+
+  async getAdminLogs(params?: {
+    source?: string;
+    kind?: string;
+    search?: string;
+    level?: string;
+    email?: string;
+    userId?: string;
+    route?: string;
+    requestId?: string;
+    status?: string;
+    target?: string;
+    start_date?: string;
+    end_date?: string;
+    limit?: number;
+    skip?: number;
+  }): Promise<AdminLogResponse> {
+    return this.makeAuthenticatedRequest<AdminLogResponse>(`/admin/logs${this.buildQueryString(params || {})}`);
+  }
+
+  async exportAdminSummaryCsv(): Promise<{ blob: Blob; filename: string | null }> {
+    return this.makeAuthenticatedBlobRequest('/admin/export/summary.csv');
   }
 
   // Utility methods for better UX
@@ -796,6 +1073,12 @@ export type {
   UserActivity,
   UserActivityResponse,
   UserCreditsResponse,
+  AdminAuditLog,
+  AdminAuditLogResponse,
+  AdminSubscription,
+  AdminSubscriptionListResponse,
+  AdminSubscriptionDetailResponse,
+  AdminSearchResponse,
   // Usage tracking types
   DateRange,
   ServiceUsageStat,

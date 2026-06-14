@@ -2,9 +2,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import { UserInfo, apiService } from '../../../lib/apiService';
+import { UserInfo } from '../../../lib/apiService';
 import UserDetailsModal from './UserDetailsModal';
-import { Eye, User, Calendar, Database, Mail } from 'lucide-react';
+import { Eye, User, Calendar, Database, Mail, ShieldCheck, ShieldOff } from 'lucide-react';
 
 interface UserTableProps {
   users: UserInfo[];
@@ -40,8 +40,8 @@ export default function UserTable({ users, onRefresh }: UserTableProps) {
   if (validUsers.length === 0) {
     return (
       <div className="p-12 text-center">
-        <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <User className="w-8 h-8 text-slate-300" />
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+          <User className="w-8 h-8 text-gray-500" />
         </div>
         <h3 className="text-lg font-bold text-admin-text-main mb-2">No results found</h3>
         <p className="text-admin-text-muted text-sm font-medium">Try adjusting your filters or search query.</p>
@@ -52,9 +52,9 @@ export default function UserTable({ users, onRefresh }: UserTableProps) {
   return (
     <>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-admin-border">
+        <table className="min-w-full divide-y divide-white/10">
           <thead>
-            <tr className="bg-slate-50/50">
+            <tr className="bg-white/5">
               <th className="px-6 py-4 text-left text-[10px] font-bold text-admin-text-muted uppercase tracking-widest">
                 User / Account
               </th>
@@ -64,6 +64,9 @@ export default function UserTable({ users, onRefresh }: UserTableProps) {
               <th className="px-6 py-4 text-left text-[10px] font-bold text-admin-text-muted uppercase tracking-widest">
                 Credits Balance
               </th>
+              <th className="px-6 py-4 text-left text-[10px] font-bold text-admin-text-muted uppercase tracking-widest">
+                Status
+              </th>
               <th className="px-6 py-4 text-left text-[10px] font-bold text-admin-text-muted uppercase tracking-widest hidden md:table-cell">
                 Registered On
               </th>
@@ -72,13 +75,13 @@ export default function UserTable({ users, onRefresh }: UserTableProps) {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-admin-border bg-white">
+          <tbody className="divide-y divide-white/10 bg-transparent">
             {validUsers.map((user, index) => (
-              <tr key={getUserKey(user, index)} className="group hover:bg-slate-50/30 transition-colors">
+              <tr key={getUserKey(user, index)} className="group hover:bg-white/5 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-admin-primary/5 rounded-xl flex items-center justify-center border border-admin-primary/10">
-                      <Mail className="w-4 h-4 text-admin-primary" />
+                    <div className="w-9 h-9 bg-admin-primary/10 rounded-xl flex items-center justify-center border border-admin-primary/20">
+                      <Mail className="w-4 h-4 text-purple-300" />
                     </div>
                     <div>
                       <div className="text-sm font-bold text-admin-text-main group-hover:text-admin-primary transition-colors">
@@ -91,17 +94,25 @@ export default function UserTable({ users, onRefresh }: UserTableProps) {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap hidden lg:table-cell">
-                  <div className="flex items-center gap-2 text-xs font-mono bg-slate-50 border border-slate-100 px-2 py-1 rounded-md text-admin-text-muted w-fit">
+                  <div className="flex items-center gap-2 text-xs font-mono bg-white/5 border border-white/10 px-2 py-1 rounded-md text-gray-300 w-fit">
                     {user.userId || 'Unknown'}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    <div className="p-1 px-2 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-100 flex items-center gap-1.5 shadow-sm">
+                    <div className="p-1 px-2 rounded-lg text-xs font-bold border flex items-center gap-1.5 shadow-sm bg-emerald-500/10 text-emerald-200 border-emerald-400/20">
                       <Database className="w-3 h-3" />
                       {user.credits ? user.credits.toLocaleString() : '0'}
                     </div>
                   </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest ${
+                    user.isActive === false ? 'border-rose-400/20 bg-rose-500/10 text-rose-200' : 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
+                  }`}>
+                    {user.isActive === false ? <ShieldOff className="h-3 w-3" /> : <ShieldCheck className="h-3 w-3" />}
+                    {user.isActive === false ? 'Suspended' : 'Active'}
+                  </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap hidden md:table-cell text-xs font-bold text-admin-text-muted">
                   <div className="flex items-center gap-1.5">

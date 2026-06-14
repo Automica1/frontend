@@ -71,7 +71,7 @@ export default function TokenDetailsModal({
       return {
         icon: <CheckCircle className="w-3 h-3 mr-1" />,
         text: 'Used',
-        className: 'bg-green-100 text-green-800'
+        className: 'border border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
       };
     }
     
@@ -79,14 +79,14 @@ export default function TokenDetailsModal({
       return {
         icon: <XCircle className="w-3 h-3 mr-1" />,
         text: 'Expired',
-        className: 'bg-red-100 text-red-800'
+        className: 'border border-rose-400/20 bg-rose-500/10 text-rose-200'
       };
     }
     
     return {
       icon: <Clock className="w-3 h-3 mr-1" />,
       text: 'Unused',
-      className: 'bg-yellow-100 text-yellow-800'
+      className: 'border border-amber-400/20 bg-amber-500/10 text-amber-200'
     };
   };
 
@@ -94,15 +94,15 @@ export default function TokenDetailsModal({
   const daysRemaining = getDaysUntilExpiry(token.expiresAt);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      <div className="bg-[#0d0d10] border border-white/10 rounded-[28px] shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col">
         
         {/* Header - Fixed */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
-          <h3 className="text-lg font-semibold text-gray-900">Token Details</h3>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 flex-shrink-0">
+          <h3 className="text-lg font-semibold text-white">Token Details</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-white transition-colors"
           >
             <XCircle className="w-5 h-5" />
           </button>
@@ -114,14 +114,14 @@ export default function TokenDetailsModal({
             {/* Token and Credits Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Token</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Token</label>
                 <div className="flex items-center gap-2">
-                  <code className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1.5 rounded-md flex-1 break-all">
+                  <code className="text-sm font-mono text-white bg-white/5 border border-white/10 px-2 py-1.5 rounded-md flex-1 break-all">
                     {token.token}
                   </code>
                   <button
                     onClick={handleCopyToken}
-                    className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors bg-gray-100 rounded-md hover:bg-gray-200 flex-shrink-0"
+                    className="p-1.5 text-gray-400 hover:text-white transition-colors bg-white/5 border border-white/10 rounded-md hover:bg-white/10 flex-shrink-0"
                     title="Copy token"
                   >
                     {copied ? (
@@ -134,10 +134,10 @@ export default function TokenDetailsModal({
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Credits</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Credits</label>
                 <div className="flex items-center gap-2">
                   <CreditCard className="w-4 h-4 text-blue-500" />
-                  <span className="text-xl font-bold text-blue-600">{token.credits.toLocaleString()}</span>
+                  <span className="text-xl font-bold text-blue-200">{token.credits.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -145,7 +145,7 @@ export default function TokenDetailsModal({
             {/* Status and Created By Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Status</label>
                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusInfo.className}`}>
                   {statusInfo.icon}
                   {statusInfo.text}
@@ -153,22 +153,22 @@ export default function TokenDetailsModal({
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Created By</label>
-                <div className="text-sm text-gray-900 font-medium">{token.createdBy}</div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Created By</label>
+                <div className="text-sm text-white font-medium">{token.createdBy}</div>
               </div>
             </div>
             
             {/* Dates Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Created At</label>
-                <div className="text-sm text-gray-900">{formatDate(token.createdAt)}</div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Created At</label>
+                <div className="text-sm text-white">{formatDate(token.createdAt)}</div>
               </div>
               
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Expires At</label>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Expires At</label>
                 <div className="flex flex-col">
-                  <div className="text-sm text-gray-900">{formatDate(token.expiresAt)}</div>
+                  <div className="text-sm text-white">{formatDate(token.expiresAt)}</div>
                   <div className={`text-xs mt-0.5 font-medium ${
                     daysRemaining < 7 ? 'text-red-600' : 
                     daysRemaining < 30 ? 'text-orange-600' : 
@@ -185,20 +185,20 @@ export default function TokenDetailsModal({
             
             {/* Usage Information (if used) */}
             {token.isUsed && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <h4 className="text-xs font-medium text-green-800 mb-2 flex items-center gap-1.5">
+              <div className="border border-emerald-400/20 bg-emerald-500/10 rounded-lg p-3">
+                <h4 className="text-xs font-medium text-emerald-200 mb-2 flex items-center gap-1.5">
                   <CheckCircle className="w-3.5 h-3.5" />
                   Usage Information
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-green-700 mb-0.5">Used By</label>
-                    <div className="text-sm text-green-900 font-medium">{token.usedBy || 'N/A'}</div>
+                    <label className="block text-xs font-medium text-emerald-200 mb-0.5">Used By</label>
+                    <div className="text-sm text-white font-medium">{token.usedBy || 'N/A'}</div>
                   </div>
                   
                   <div>
-                    <label className="block text-xs font-medium text-green-700 mb-0.5">Used At</label>
-                    <div className="text-sm text-green-900">
+                    <label className="block text-xs font-medium text-emerald-200 mb-0.5">Used At</label>
+                    <div className="text-sm text-white">
                       {token.usedAt ? formatDate(token.usedAt) : 'N/A'}
                     </div>
                   </div>
@@ -208,8 +208,8 @@ export default function TokenDetailsModal({
             
             {/* Description */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
-              <div className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg border">
+              <label className="block text-xs font-medium text-gray-400 mb-1">Description</label>
+              <div className="text-sm text-white bg-white/5 p-3 rounded-lg border border-white/10">
                 {token.description || (
                   <span className="text-gray-500 italic">No description provided</span>
                 )}
@@ -218,8 +218,8 @@ export default function TokenDetailsModal({
             
             {/* Token ID */}
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Token ID</label>
-              <code className="text-xs font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded break-all">
+              <label className="block text-xs font-medium text-gray-400 mb-1">Token ID</label>
+              <code className="text-xs font-mono text-gray-300 bg-white/5 px-2 py-1 rounded break-all border border-white/10">
                 {token.id}
               </code>
             </div>
@@ -227,11 +227,11 @@ export default function TokenDetailsModal({
         </div>
         
         {/* Sticky Actions Footer */}
-        <div className="border-t border-gray-100 px-6 py-3 bg-gray-50 rounded-b-xl flex-shrink-0">
+        <div className="border-t border-white/10 px-6 py-3 bg-white/5 rounded-b-[28px] flex-shrink-0">
           <div className="flex gap-3">
             <button
               onClick={handleCopyToken}
-              className="flex-1 px-4 py-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex items-center justify-center gap-2 font-medium border border-blue-200"
+              className="flex-1 px-4 py-2 text-white bg-white/5 rounded-2xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2 font-medium border border-white/10"
             >
               {copied ? (
                 <>
@@ -247,7 +247,7 @@ export default function TokenDetailsModal({
             </button>
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+              className="flex-1 px-4 py-2 text-white bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors font-medium"
             >
               Close
             </button>

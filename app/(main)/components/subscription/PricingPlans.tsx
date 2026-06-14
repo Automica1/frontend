@@ -23,6 +23,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
     const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
     const [plans, setPlans] = useState<Plan[]>([]);
     const [fetchingPlans, setFetchingPlans] = useState(true);
+    const [razorpayKeyId, setRazorpayKeyId] = useState<string | null>(RAZORPAY_KEY_ID || null);
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -37,6 +38,25 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
         };
         fetchPlans();
     }, []);
+
+    useEffect(() => {
+        if (razorpayKeyId) {
+            return;
+        }
+
+        const fetchBillingConfig = async () => {
+            try {
+                const config = await apiService.getPublicBillingConfig();
+                if (config.razorpayKeyId) {
+                    setRazorpayKeyId(config.razorpayKeyId);
+                }
+            } catch (err) {
+                console.error('Failed to load billing config', err);
+            }
+        };
+
+        void fetchBillingConfig();
+    }, [razorpayKeyId]);
 
     const loadRazorpay = () => {
         return new Promise((resolve) => {
@@ -59,7 +79,8 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
     };
 
     const handleSubscribe = async (plan: Plan) => {
-        if (!RAZORPAY_KEY_ID) {
+        const keyId = razorpayKeyId;
+        if (!keyId) {
             alert('Payment configuration is missing. Please contact support.');
             return;
         }
@@ -87,7 +108,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
             const isSubscription = !isUpgrade && !!orderData.subscriptionId;
 
             const options: Record<string, any> = {
-                key: RAZORPAY_KEY_ID,
+                key: keyId,
                 name: 'Automica',
                 description: `${isUpgrade ? 'Upgrade to' : ''} ${plan.name} — ${plan.credits.toLocaleString()} Credits/mo`,
                 theme: { color: '#8b5cf6' },

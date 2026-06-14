@@ -219,7 +219,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
           {/* Show auth buttons when not authenticated */}
           {!isLoading && !isAuthenticated && (
             <>
-              <LoginLink postLoginRedirectURL="/" className="px-4 py-2 border border-gray-600/50 backdrop-blur-sm rounded-lg text-gray-300 hover:text-white hover:border-purple-500/50 transition-all duration-300 hover:scale-105">
+              <LoginLink postLoginRedirectURL="/" authUrlParams={{ prompt: "login" }} className="px-4 py-2 border border-gray-600/50 backdrop-blur-sm rounded-lg text-gray-300 hover:text-white hover:border-purple-500/50 transition-all duration-300 hover:scale-105">
                 SIGN IN
               </LoginLink>
               <RegisterLink postLoginRedirectURL="/" className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-lg font-medium hover:from-purple-600 hover:to-purple-800 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
@@ -357,7 +357,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                   )}
 
                   <div className={`${isAdmin ? 'border-t border-white/10 pt-1' : ''}`}>
-                    <LogoutLink className="flex items-center w-full px-4 py-2 text-gray-300 hover:text-white hover:bg-red-500/20 transition-colors duration-200">
+                    <LogoutLink postLogoutRedirectURL="/" className="flex items-center w-full px-4 py-2 text-gray-300 hover:text-white hover:bg-red-500/20 transition-colors duration-200">
                       <LogOut className="w-4 h-4 mr-3" />
                       Sign Out
                     </LogoutLink>
@@ -537,6 +537,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                 <>
                   <LoginLink
                     postLoginRedirectURL="/"
+                    authUrlParams={{ prompt: "login" }}
                     onClick={closeMobileMenu}
                     className="block w-full px-4 py-3 border-2 border-white/30 backdrop-blur-sm rounded-xl text-center text-white font-medium hover:text-purple-400 hover:border-purple-500 transition-all duration-300" style={{ backdropFilter: 'blur(8px)' }}
                   >
@@ -554,6 +555,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
 
               {!isLoading && isAuthenticated && (
                 <LogoutLink
+                  postLogoutRedirectURL="/"
                   onClick={closeMobileMenu}
                   className="flex items-center justify-center space-x-2 w-full px-4 py-3 text-white font-medium hover:text-red-400 hover:bg-red-500/20 backdrop-blur-sm transition-colors duration-200 rounded-xl border-2 border-red-500/50" style={{ backdropFilter: 'blur(8px)' }}
                 >

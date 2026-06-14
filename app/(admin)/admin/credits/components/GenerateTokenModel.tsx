@@ -44,14 +44,14 @@ export default function GenerateTokenModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-[#0d0d10] shadow-2xl">
         <div className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Generate New Token</h3>
+          <h3 className="mb-4 text-lg font-semibold text-white">Generate New Token</h3>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-300">
                 Credits
               </label>
               <input
@@ -60,17 +60,17 @@ export default function GenerateTokenModal({
                 onChange={(e) => setCredits(parseInt(e.target.value) || 0)}
                 min="1"
                 max="10000"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
                 disabled={isGenerating}
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="mt-1 text-xs text-gray-400">
                 Enter the number of credits (1-10,000)
               </p>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-300">
                 Description
               </label>
               <textarea
@@ -78,12 +78,12 @@ export default function GenerateTokenModal({
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 placeholder="Enter token description..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                className="w-full resize-none rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-white outline-none focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
                 disabled={isGenerating}
                 required
                 maxLength={500}
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="mt-1 text-xs text-gray-400">
                 {description.length}/500 characters
               </p>
             </div>
@@ -92,7 +92,7 @@ export default function GenerateTokenModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-gray-200 transition-colors hover:bg-white/10"
                 disabled={isGenerating}
               >
                 Cancel
@@ -100,7 +100,7 @@ export default function GenerateTokenModal({
               <button
                 type="submit"
                 disabled={isGenerating || !description.trim() || credits < 1}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl border border-purple-400/20 bg-gradient-to-r from-purple-500/90 to-pink-500/90 px-4 py-2 text-white transition-colors hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isGenerating && <RefreshCw className="w-4 h-4 animate-spin" />}
                 {isGenerating ? 'Generating...' : 'Generate Token'}

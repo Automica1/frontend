@@ -1,5 +1,5 @@
 import React from 'react';
-import { EyeIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { Eye, Trash2 } from 'lucide-react';
 
 interface Token {
   id: string;
@@ -41,7 +41,7 @@ export default function TokenRow({
   const getStatusBadge = () => {
     if (token.isUsed) {
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+        <span className="inline-flex items-center rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-200">
           Used
         </span>
       );
@@ -49,14 +49,14 @@ export default function TokenRow({
     
     if (expired) {
       return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+        <span className="inline-flex items-center rounded-full border border-rose-400/20 bg-rose-500/10 px-2.5 py-0.5 text-xs font-medium text-rose-200">
           Expired
         </span>
       );
     }
 
     return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+      <span className="inline-flex items-center rounded-full border border-blue-400/20 bg-blue-500/10 px-2.5 py-0.5 text-xs font-medium text-blue-200">
         Active
       </span>
     );
@@ -65,7 +65,7 @@ export default function TokenRow({
   const getExpiryDisplay = () => {
     if (expired) {
       return (
-        <span className="text-red-600 font-medium">
+        <span className="font-medium text-rose-300">
           Expired
         </span>
       );
@@ -74,10 +74,10 @@ export default function TokenRow({
     if (daysUntilExpiry <= 7) {
       return (
         <div>
-          <div className="text-orange-600 font-medium">
+          <div className="font-medium text-amber-200">
             {formatDate(token.expiresAt)}
           </div>
-          <div className="text-xs text-orange-500">
+          <div className="text-xs text-amber-300/80">
             {daysUntilExpiry} days left
           </div>
         </div>
@@ -86,7 +86,7 @@ export default function TokenRow({
 
     return (
       <div>
-        <div className="text-gray-900">
+        <div className="text-gray-100">
           {formatDate(token.expiresAt)}
         </div>
         <div className="text-xs text-gray-500">
@@ -97,11 +97,11 @@ export default function TokenRow({
   };
 
   return (
-    <tr className={`hover:bg-gray-50 ${isDeleting ? 'opacity-50' : ''}`}>
+    <tr className={`border-b border-white/5 transition-colors hover:bg-white/5 ${isDeleting ? 'opacity-50' : ''}`}>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
           <div className="text-sm">
-            <div className="font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">
+            <div className="rounded bg-black/25 px-2 py-1 font-mono text-gray-100">
               {formatTokenForDisplay(token.token)}
             </div>
           </div>
@@ -109,7 +109,7 @@ export default function TokenRow({
       </td>
       
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="text-sm font-medium text-gray-900">
+        <div className="text-sm font-medium text-white">
           {token.credits.toLocaleString()}
         </div>
       </td>
@@ -120,7 +120,7 @@ export default function TokenRow({
       
       <td className="px-6 py-4 whitespace-nowrap">
         <div>
-          <div className="text-sm text-gray-900">
+          <div className="text-sm text-gray-100">
             {formatDate(token.createdAt)}
           </div>
           <div className="text-xs text-gray-500">
@@ -134,7 +134,7 @@ export default function TokenRow({
       </td>
       
       <td className="px-6 py-4">
-        <div className="text-sm text-gray-900 max-w-xs truncate" title={token.description}>
+        <div className="max-w-xs truncate text-sm text-gray-200" title={token.description}>
           {token.description || 'No description'}
         </div>
       </td>
@@ -145,23 +145,23 @@ export default function TokenRow({
           <button
             onClick={() => onViewDetails(token)}
             disabled={isDeleting}
-            className="text-blue-600 hover:text-blue-900 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="rounded-xl border border-white/10 p-2 text-blue-200 transition-colors hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:text-gray-500"
             title="View Details"
           >
-            <EyeIcon className="h-5 w-5" />
+            <Eye className="h-5 w-5" />
           </button>
 
           {/* Delete Button */}
           <button
             onClick={() => onDeleteToken(token)}
             disabled={isDeleting}
-            className="text-red-600 hover:text-red-900 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+            className="rounded-xl border border-white/10 p-2 text-rose-200 transition-colors hover:bg-rose-500/10 hover:text-white disabled:cursor-not-allowed disabled:text-gray-500"
             title={isDeleting ? "Deleting..." : "Delete Token"}
           >
             {isDeleting ? (
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-red-600 border-t-transparent"></div>
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-rose-300 border-t-transparent"></div>
             ) : (
-              <TrashIcon className="h-5 w-5" />
+              <Trash2 className="h-5 w-5" />
             )}
           </button>
         </div>

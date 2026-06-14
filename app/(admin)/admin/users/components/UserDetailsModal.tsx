@@ -1,8 +1,10 @@
-// app/admin/users/components/UserDetailsModal.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { UserInfo, UserActivity, apiService } from '../../../lib/apiService';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { UserInfo, UserActivity, AdminSubscription, apiService } from '../../../lib/apiService';
+import { Loader2, Trash2, ShieldOff, ShieldCheck, Plus, Minus, BadgeInfo, Lock, ReceiptText, ExternalLink } from 'lucide-react';
+import { useAdminFeedback } from '../../../components/AdminFeedback';
 
 interface UserDetailsModalProps {
   user: UserInfo;
@@ -11,10 +13,19 @@ interface UserDetailsModalProps {
 }
 
 export default function UserDetailsModal({ user, onClose, onRefresh }: UserDetailsModalProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'details' | 'activity' | 'credits' | 'actions'>('details');
   const [activity, setActivity] = useState<UserActivity[]>([]);
   const [userCredits, setUserCredits] = useState<number>(user.credits);
+  const [subscription, setSubscription] = useState<AdminSubscription | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [creditDelta, setCreditDelta] = useState<string>('10');
+  const { toast, confirm } = useAdminFeedback();
+
+  const isActive = user.isActive !== false;
+  const userKey = user.email || user.userId || user.id;
 
   useEffect(() => {
     if (activeTab === 'activity') {
@@ -22,7 +33,13 @@ export default function UserDetailsModal({ user, onClose, onRefresh }: UserDetai
     } else if (activeTab === 'credits') {
       loadUserCredits();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
+
+  useEffect(() => {
+    void loadSubscriptionSummary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userKey]);
 
   const loadUserActivity = async () => {
     try {
@@ -30,7 +47,11 @@ export default function UserDetailsModal({ user, onClose, onRefresh }: UserDetai
       const response = await apiService.getUserActivity(user.id);
       setActivity(response.activities);
     } catch (error) {
-      console.error('Failed to load user activity:', error);
+      toast({
+        tone: 'error',
+        title: 'Failed to load activity',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
     } finally {
       setLoading(false);
     }
@@ -42,13 +63,151 @@ export default function UserDetailsModal({ user, onClose, onRefresh }: UserDetai
       const response = await apiService.getUserCredits(user.id);
       setUserCredits(response.credits);
     } catch (error) {
-      console.error('Failed to load user credits:', error);
+      toast({
+        tone: 'error',
+        title: 'Failed to load credits',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateString: string): string => {
+  const loadSubscriptionSummary = async () => {
+    if (!userKey) {
+      setSubscription(null);
+      return;
+    }
+
+    try {
+      setSubscriptionLoading(true);
+      const response = await apiService.getSubscriptions({
+        email: user.email || undefined,
+        userId: user.userId || undefined,
+        search: user.userId || user.email || undefined,
+        limit: 10,
+        skip: 0,
+      });
+
+      const preferred = pickPrimarySubscription(response.subscriptions, userKey);
+      setSubscription(preferred);
+    } catch (error) {
+      setSubscription(null);
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
+
+  const refreshAndClose = () => {
+    onRefresh();
+    onClose();
+  };
+
+  const handleDeleteUser = async () => {
+    const confirmed = await confirm({
+      title: 'Delete user account',
+      message: `Delete ${user.userId || user.email}? This removes the user record, credits, and activity history.`,
+      confirmLabel: 'Delete user',
+    });
+
+    if (!confirmed) return;
+
+    try {
+      setBusyAction('delete');
+      await apiService.deleteUser(user.userId);
+      toast({
+        tone: 'success',
+        title: 'User deleted',
+        message: `${user.userId || user.email} was removed successfully.`,
+      });
+      refreshAndClose();
+    } catch (error) {
+      toast({
+        tone: 'error',
+        title: 'Delete failed',
+        message: error instanceof Error ? error.message : 'Failed to delete user',
+      });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleSuspendToggle = async () => {
+    const confirmed = await confirm({
+      title: isActive ? 'Suspend user' : 'Reactivate user',
+      message: isActive
+        ? `Suspend ${user.userId || user.email}? They will be blocked from authenticated routes.`
+        : `Reactivate ${user.userId || user.email}? They will regain access immediately.`,
+      confirmLabel: isActive ? 'Suspend' : 'Reactivate',
+    });
+
+    if (!confirmed) return;
+
+    try {
+      setBusyAction(isActive ? 'suspend' : 'reactivate');
+      if (isActive) {
+        await apiService.suspendUser(user.userId);
+      } else {
+        await apiService.reactivateUser(user.userId);
+      }
+
+      toast({
+        tone: 'success',
+        title: isActive ? 'User suspended' : 'User reactivated',
+        message: `${user.userId || user.email} has been updated.`,
+      });
+      refreshAndClose();
+    } catch (error) {
+      toast({
+        tone: 'error',
+        title: 'Action failed',
+        message: error instanceof Error ? error.message : 'Failed to update user status',
+      });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const handleCreditAdjust = async (direction: 'add' | 'subtract') => {
+    const amount = Number(creditDelta);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast({
+        tone: 'error',
+        title: 'Invalid amount',
+        message: 'Enter a positive credit amount.',
+      });
+      return;
+    }
+
+    try {
+      setBusyAction(direction);
+      if (direction === 'add') {
+        const response = await apiService.addCredits(user.userId, amount);
+        setUserCredits(response.credits);
+      } else {
+        const response = await apiService.deductCredits(user.userId, amount);
+        setUserCredits(response.credits);
+      }
+
+      toast({
+        tone: 'success',
+        title: direction === 'add' ? 'Credits added' : 'Credits deducted',
+        message: `${amount} credits updated for ${user.userId || user.email}.`,
+      });
+      onRefresh();
+      setActiveTab('credits');
+    } catch (error) {
+      toast({
+        tone: 'error',
+        title: 'Credit update failed',
+        message: error instanceof Error ? error.message : 'Failed to update credits',
+      });
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const formatDate = (dateString?: string): string => {
     if (!dateString || dateString === "0001-01-01T00:00:00Z") {
       return 'N/A';
     }
@@ -59,45 +218,41 @@ export default function UserDetailsModal({ user, onClose, onRefresh }: UserDetai
     }
   };
 
-  const tabs = [
+  const tabs = useMemo(() => ([
     { id: 'details', label: 'Details', icon: '👤' },
     { id: 'activity', label: 'Activity', icon: '📊' },
     { id: 'credits', label: 'Credits', icon: '💰' },
     { id: 'actions', label: 'Actions', icon: '⚙️' }
-  ];
+  ] as const), []);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex justify-between items-start">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="glass-card w-full max-w-4xl overflow-hidden rounded-[28px] border border-white/10 bg-black/92">
+        <div className="border-b border-white/10 p-6">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">{user.userId || 'Unknown User'}</h2>
-              <p className="text-gray-600">{user.email}</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-purple-300">User profile</p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">{user.userId || 'Unknown User'}</h2>
+              <p className="mt-1 text-sm text-gray-300">{user.email}</p>
             </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onClick={onClose} className="rounded-2xl border border-white/10 bg-white/5 p-2.5 text-gray-300 transition-colors hover:bg-white/10 hover:text-white">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex">
+        <div className="border-b border-white/10 px-6">
+          <nav className="flex flex-wrap gap-2 py-3">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`py-3 px-6 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                onClick={() => setActiveTab(tab.id)}
+                className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium transition-colors ${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'bg-white/10 text-white'
+                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
                 <span>{tab.icon}</span>
@@ -107,48 +262,73 @@ export default function UserDetailsModal({ user, onClose, onRefresh }: UserDetai
           </nav>
         </div>
 
-        {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-96">
+        <div className="max-h-[70vh] overflow-y-auto p-6">
           {activeTab === 'details' && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">User ID</label>
-                  <p className="mt-1 text-sm text-gray-900 font-mono">{user.userId || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <p className="mt-1 text-sm text-gray-900">{user.email || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Credits</label>
-                  <p className="mt-1 text-sm text-gray-900">{user.credits?.toLocaleString() || '0'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Created At</label>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {formatDate(user.createdAt)}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Updated At</label>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {formatDate(user.updatedAt)}
-                  </p>
-                </div>
+            <div className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <InfoCard label="User ID" value={user.userId || 'N/A'} />
+                <InfoCard label="Email" value={user.email || 'N/A'} />
+                <InfoCard label="Credits" value={user.credits?.toLocaleString() || '0'} />
+                <InfoCard label="Status" value={isActive ? 'Active' : 'Suspended'} />
+                <InfoCard label="Created At" value={formatDate(user.createdAt)} />
+                <InfoCard label="Updated At" value={formatDate(user.updatedAt)} />
               </div>
-              
-              {/* Additional Info Section */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Account Summary</h3>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Total Credits</p>
-                      <p className="text-2xl font-bold text-blue-600">{user.credits?.toLocaleString() || '0'}</p>
-                    </div>
-                    <div className="text-blue-500 text-2xl">💰</div>
+
+              <div className="rounded-[24px] border border-white/10 bg-white/5 p-6">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-gray-400">
+                      <ReceiptText className="h-4 w-4 text-purple-300" />
+                      Subscription
+                    </p>
+                    <p className="mt-2 text-lg font-semibold text-white">Billing summary</p>
                   </div>
+                  {subscription && (
+                    <button
+                      onClick={() => router.push(`/admin/subscriptions?subscriptionId=${encodeURIComponent(subscription.subscriptionId)}`)}
+                      className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                    >
+                      Open subscription
+                      <ExternalLink className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="mt-5">
+                  {subscriptionLoading ? (
+                    <div className="flex items-center justify-center rounded-[20px] border border-white/10 bg-black/20 py-10 text-gray-300">
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Loading subscription details...
+                    </div>
+                  ) : subscription ? (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <InfoCard label="Plan" value={subscription.planName || subscription.planId || 'N/A'} />
+                      <InfoCard label="Plan ID" value={subscription.planId || 'N/A'} />
+                      <InfoCard label="Subscription ID" value={subscription.subscriptionId || 'N/A'} />
+                      <InfoCard label="Status" value={formatSubscriptionStatus(subscription.status)} />
+                      <InfoCard
+                        label="Current period"
+                        value={`${formatDate(subscription.currentPeriodStart)} → ${formatDate(subscription.currentPeriodEnd)}`}
+                      />
+                      <InfoCard
+                        label={subscription.cancelAtCycleEnd ? 'Cancel scheduled' : 'Cancel state'}
+                        value={subscription.cancelAtCycleEnd ? 'Yes' : 'No'}
+                      />
+                      <InfoCard
+                        label="Scheduled cancel"
+                        value={formatDate(subscription.cancelScheduledAt)}
+                      />
+                      <InfoCard
+                        label="Cancelled at"
+                        value={formatDate(subscription.cancelledAt)}
+                      />
+                    </div>
+                  ) : (
+                    <EmptyPanel
+                      title="No subscription found"
+                      message="This user does not have a linked subscription record yet."
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -157,28 +337,22 @@ export default function UserDetailsModal({ user, onClose, onRefresh }: UserDetai
           {activeTab === 'activity' && (
             <div>
               {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Loading activity...</p>
+                <div className="flex items-center justify-center py-12 text-gray-300">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Loading activity...
                 </div>
               ) : activity.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-gray-400 text-4xl mb-4">📊</div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No activity found</h3>
-                  <p className="text-gray-600">This user hasn't performed any actions yet</p>
-                </div>
+                <EmptyPanel title="No activity found" message="This user hasn't performed any actions yet." />
               ) : (
                 <div className="space-y-3">
                   {activity.map((item) => (
-                    <div key={item.id} className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex justify-between items-start">
+                    <div key={item.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <div className="flex items-start justify-between gap-4">
                         <div>
-                          <h4 className="font-medium text-gray-900">{item.action}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                          <p className="font-semibold text-white">{item.action}</p>
+                          <p className="mt-1 text-sm text-gray-400">{item.description}</p>
                         </div>
-                        <span className="text-xs text-gray-500">
-                          {formatDate(item.createdAt)}
-                        </span>
+                        <span className="text-xs font-medium uppercase tracking-[0.2em] text-gray-500">{formatDate(item.createdAt)}</span>
                       </div>
                     </div>
                   ))}
@@ -187,120 +361,185 @@ export default function UserDetailsModal({ user, onClose, onRefresh }: UserDetai
             </div>
           )}
 
-          {activeTab === 'actions' && (
-            <div className="space-y-6">
-              <div className="text-center py-4">
-                <div className="text-4xl mb-4">⚙️</div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">User Actions</h3>
-                <p className="text-gray-600">Manage user account settings and permissions</p>
-              </div>
-              
-              {/* Danger Zone */}
-              <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                <h4 className="text-red-800 font-medium mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                  Danger Zone
-                </h4>
-                <p className="text-red-700 text-sm mb-4">
-                  These actions are permanent and cannot be undone. Please proceed with caution.
-                </p>
-                <button
-                  onClick={() => {
-                    if (window.confirm(`Are you sure you want to delete user "${user.userId || user.email}"? This action cannot be undone.`)) {
-                      // TODO: Implement delete user functionality
-                      console.log('Delete user:', user.id);
-                      alert('Delete user functionality will be implemented when backend is ready.');
-                    }
-                  }}
-                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center gap-2 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                  Delete User Account
-                </button>
-              </div>
-              
-              {/* Future Actions Placeholder */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                <h4 className="text-gray-800 font-medium mb-4">Additional Actions</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-white rounded-md border border-gray-200 opacity-50">
-                    <div>
-                      <p className="font-medium text-gray-500">Reset Password</p>
-                      <p className="text-sm text-gray-400">Send password reset email to user</p>
-                    </div>
-                    <button disabled className="bg-gray-300 text-gray-500 px-3 py-1 rounded text-sm cursor-not-allowed">
-                      Coming Soon
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white rounded-md border border-gray-200 opacity-50">
-                    <div>
-                      <p className="font-medium text-gray-500">Suspend Account</p>
-                      <p className="text-sm text-gray-400">Temporarily disable user access</p>
-                    </div>
-                    <button disabled className="bg-gray-300 text-gray-500 px-3 py-1 rounded text-sm cursor-not-allowed">
-                      Coming Soon
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-white rounded-md border border-gray-200 opacity-50">
-                    <div>
-                      <p className="font-medium text-gray-500">Update Credits</p>
-                      <p className="text-sm text-gray-400">Modify user's credit balance</p>
-                    </div>
-                    <button disabled className="bg-gray-300 text-gray-500 px-3 py-1 rounded text-sm cursor-not-allowed">
-                      Coming Soon
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {activeTab === 'credits' && (
-            <div>
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Loading credits...</p>
+            <div className="grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
+              <div className="rounded-[24px] border border-white/10 bg-white/5 p-6">
+                <p className="text-sm font-medium text-gray-400">Current balance</p>
+                <p className="mt-3 text-4xl font-light tracking-tight text-white">{userCredits.toLocaleString()}</p>
+                <p className="mt-2 text-sm text-gray-400">Latest balance from the backend.</p>
+              </div>
+              <div className="rounded-[24px] border border-white/10 bg-white/5 p-6 space-y-4">
+                <label className="block text-xs font-bold uppercase tracking-[0.3em] text-gray-400">Adjust amount</label>
+                <input
+                  type="number"
+                  value={creditDelta}
+                  onChange={(e) => setCreditDelta(e.target.value)}
+                  className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none ring-0 placeholder:text-gray-500 focus:border-purple-400/40"
+                  min={1}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => handleCreditAdjust('add')}
+                    disabled={busyAction === 'add'}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-400 disabled:opacity-60"
+                  >
+                    {busyAction === 'add' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    Add
+                  </button>
+                  <button
+                    onClick={() => handleCreditAdjust('subtract')}
+                    disabled={busyAction === 'subtract'}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-rose-400 disabled:opacity-60"
+                  >
+                    {busyAction === 'subtract' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Minus className="h-4 w-4" />}
+                    Deduct
+                  </button>
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="text-center py-8">
-                    <div className="text-4xl mb-4">💰</div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                      {userCredits?.toLocaleString() || '0'} Credits
-                    </h3>
-                    <p className="text-gray-600">Current credit balance</p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'actions' && (
+            <div className="space-y-5">
+              <ActionPanel
+                title={isActive ? 'Suspend account' : 'Reactivate account'}
+                description={isActive ? 'Block this user from authenticated access.' : 'Restore authenticated access for this user.'}
+                buttonLabel={isActive ? 'Suspend user' : 'Reactivate user'}
+                icon={isActive ? ShieldOff : ShieldCheck}
+                onClick={handleSuspendToggle}
+                tone={isActive ? 'danger' : 'success'}
+                busy={busyAction === 'suspend' || busyAction === 'reactivate'}
+              />
+
+              <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-black/20 text-gray-300">
+                    <Lock className="h-5 w-5" />
                   </div>
-                  
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <h4 className="font-medium text-blue-900 mb-2">Credit Information</h4>
-                    <div className="space-y-2 text-sm text-blue-800">
-                      <p>• Credits are used for API requests and services</p>
-                      <p>• Account created: {formatDate(user.createdAt)}</p>
-                      <p>• Last updated: {formatDate(user.updatedAt)}</p>
-                    </div>
+                  <div className="flex-1">
+                    <p className="text-base font-semibold text-white">Password reset</p>
+                    <p className="mt-1 max-w-2xl text-sm leading-relaxed text-gray-400">
+                      Password reset is still handled in the identity provider console for this deployment.
+                    </p>
                   </div>
                 </div>
-              )}
+              </div>
+
+              <ActionPanel
+                title="Delete account"
+                description="Remove the user, credits, and activity history. This cannot be undone."
+                buttonLabel="Delete user"
+                icon={Trash2}
+                onClick={handleDeleteUser}
+                tone="danger"
+                busy={busyAction === 'delete'}
+              />
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
 
-        {/* Footer */}
-        <div className="p-6 border-t border-gray-200">
-          <div className="flex justify-end">
-            <button
-              onClick={onClose}
-              className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-            >
-              Close
-            </button>
-          </div>
+function InfoCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
+      <p className="text-[10px] font-bold uppercase tracking-[0.32em] text-gray-400">{label}</p>
+      <p className="mt-3 break-words text-base font-medium text-white">{value}</p>
+    </div>
+  );
+}
+
+function EmptyPanel({ title, message }: { title: string; message: string }) {
+  return (
+    <div className="rounded-[24px] border border-white/10 bg-white/5 p-8 text-center">
+      <BadgeInfo className="mx-auto h-10 w-10 text-gray-500" />
+      <h3 className="mt-4 text-lg font-semibold text-white">{title}</h3>
+      <p className="mt-2 text-sm text-gray-400">{message}</p>
+    </div>
+  );
+}
+
+function formatSubscriptionStatus(value?: string) {
+  if (!value) return 'N/A';
+  return value.replace(/_/g, ' ');
+}
+
+function pickPrimarySubscription(subscriptions: AdminSubscription[], userKey: string) {
+  if (subscriptions.length === 0) return null;
+
+  const normalizedUserKey = userKey.toLowerCase();
+  const scored = subscriptions
+    .filter((sub) => {
+      const matchesUser =
+        sub.userId?.toLowerCase() === normalizedUserKey ||
+        sub.email?.toLowerCase() === normalizedUserKey ||
+        sub.subscriptionId?.toLowerCase().includes(normalizedUserKey);
+      return matchesUser;
+    })
+    .sort((a, b) => {
+      const aScore = subscriptionScore(a);
+      const bScore = subscriptionScore(b);
+      if (aScore !== bScore) return bScore - aScore;
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    });
+
+  if (scored.length > 0) return scored[0];
+
+  return subscriptions
+    .slice()
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] || null;
+}
+
+function subscriptionScore(subscription: AdminSubscription) {
+  const status = (subscription.status || '').toLowerCase();
+  if (status === 'active') return 5;
+  if (status === 'past_due') return 4;
+  if (status === 'created') return 3;
+  if (status === 'cancelled') return 2;
+  if (status === 'expired') return 1;
+  return 0;
+}
+
+function ActionPanel({
+  title,
+  description,
+  buttonLabel,
+  icon: Icon,
+  onClick,
+  tone,
+  busy,
+}: {
+  title: string;
+  description: string;
+  buttonLabel: string;
+  icon: React.ComponentType<{ className?: string }>;
+  onClick: () => Promise<void> | void;
+  tone: 'danger' | 'success' | 'neutral';
+  busy: boolean;
+}) {
+  const toneClasses = {
+    danger: 'border-rose-500/20 bg-rose-500/10 text-rose-200 hover:bg-rose-500/15',
+    success: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/15',
+    neutral: 'border-white/10 bg-white/5 text-white hover:bg-white/10',
+  }[tone];
+
+  return (
+    <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-base font-semibold text-white">{title}</p>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-gray-400">{description}</p>
         </div>
+        <button
+          onClick={() => void onClick()}
+          disabled={busy}
+          className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60 ${toneClasses}`}
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
+          {buttonLabel}
+        </button>
       </div>
     </div>
   );

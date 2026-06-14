@@ -123,6 +123,21 @@ class ApiService {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
+  async getPublicBillingConfig(): Promise<{ razorpayKeyId?: string }> {
+    const response = await fetch(`${this.baseUrl}/billing-config`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to load billing config: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
   // Helper method to update credits after successful API calls
   private updateCreditsFromResponse(response: any) {
     // Check for both naming conventions: remainingCredits and remaining_credits

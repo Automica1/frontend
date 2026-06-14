@@ -86,7 +86,7 @@ export const FileUpload2 = ({
   const handleAuthCheck = (): boolean => {
     if (!isAuthenticated) {
       const redirectUrl = getRedirectUrl();
-      router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}`);
+      router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}&prompt=login`);
       return false;
     }
     return true;
@@ -95,7 +95,7 @@ export const FileUpload2 = ({
   // Handle sign in click with dynamic redirect
   const handleSignInClick = () => {
     const redirectUrl = getRedirectUrl();
-    router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}`);
+    router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}&prompt=login`);
   };
 
   // Validate file type and size

@@ -1,23 +1,40 @@
 @import "tailwindcss";
 
 @theme {
-  --color-admin-primary: #2563eb;
-  --color-admin-secondary: #4f46e5;
-  --color-admin-bg: #f8fafc;
-  --color-admin-card: #ffffff;
-  --color-admin-border: #e2e8f0;
-  --color-admin-text-main: #0f172a;
-  --color-admin-text-muted: #64748b;
+  --color-admin-primary: #a855f7;
+  --color-admin-secondary: #ec4899;
+  --color-admin-bg: #0b0b0d;
+  --color-admin-card: rgba(255, 255, 255, 0.04);
+  --color-admin-border: rgba(255, 255, 255, 0.10);
+  --color-admin-text-main: #f8fafc;
+  --color-admin-text-muted: #94a3b8;
 }
 
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+
   body {
     @apply antialiased text-admin-text-main bg-admin-bg font-sans;
+    background-image:
+      radial-gradient(circle at top left, rgba(168, 85, 247, 0.12), transparent 30%),
+      radial-gradient(circle at top right, rgba(236, 72, 153, 0.08), transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.015) 0%, transparent 100%);
   }
 }
 
 @layer utilities {
   .glass-card {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-sm;
+    @apply bg-white/5 backdrop-blur-2xl border border-white/10 shadow-2xl;
+  }
+
+  .glass-card-strong {
+    @apply bg-white/10 backdrop-blur-2xl border border-white/15 shadow-2xl;
+  }
+
+  .admin-grid {
+    background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.18) 1px, transparent 0);
+    background-size: 36px 36px;
   }
 }

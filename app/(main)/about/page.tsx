@@ -91,7 +91,7 @@ export default function About() {
     if (isAuthenticated) {
       router.push("/services");
     } else {
-      router.push("/api/auth/login?post_login_redirect_url=/services");
+      router.push("/api/auth/login?post_login_redirect_url=/services&prompt=login");
     }
   };
   return (

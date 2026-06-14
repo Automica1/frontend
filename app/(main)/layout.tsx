@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./components/layout_components/AuthProvider";
 import NavbarClient from "./components/layout_components/NavbarClient"
@@ -10,15 +9,8 @@ import Script from 'next/script'
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-CG19BVRCRK';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: {
@@ -205,19 +197,11 @@ export default async function RootLayout({
           }}
         />
 
-        {/* Performance optimizations */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-
         {/* ✅ ADDED: Preload critical resources */}
         <link rel="preload" href="/og-image.png" as="image" />
         <link rel="preload" href="/logo.png" as="image" />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <AuthProvider>
           <CreditsProvider>
             <NavbarClient isAdmin={isAdmin} />

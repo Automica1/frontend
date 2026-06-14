@@ -111,7 +111,7 @@ export const FileUpload = ({
   const handleAuthCheck = (): boolean => {
     if (!isAuthenticated) {
       const redirectUrl = getRedirectUrl();
-      router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}`);
+      router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}&prompt=login`);
       return false;
     }
     return true;
@@ -206,7 +206,7 @@ export const FileUpload = ({
 
   const handleSignInClick = () => {
     const redirectUrl = getRedirectUrl();
-    router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}`);
+    router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}&prompt=login`);
   };
 
   const isImageFile = (file: FileWithPreview) => {

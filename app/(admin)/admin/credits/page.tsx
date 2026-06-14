@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect, useMemo } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ActionsBar from './components/ActionBar';
 import StatsGrid from './components/StatsGrid';
 import TokenTable from './components/TokenTable';
@@ -34,15 +35,29 @@ interface TokenStats {
 }
 
 export default function TokenManagementPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const filterFromUrl = useMemo(() => {
+    const initialFilter = searchParams.get('filter');
+    if (initialFilter === 'used' || initialFilter === 'unused' || initialFilter === 'my-tokens') {
+      return initialFilter;
+    }
+    return 'all';
+  }, [searchParams]);
+
   // State management
   const [tokens, setTokens] = useState<Token[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [totalTokens, setTotalTokens] = useState(0);
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
 
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'used' | 'unused' | 'my-tokens'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'used' | 'unused' | 'my-tokens'>(filterFromUrl);
   const [sortBy, setSortBy] = useState<'createdAt' | 'credits' | 'expiresAt'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -92,10 +107,15 @@ export default function TokenManagementPage() {
       setLoading(true);
       setError(null);
 
-      // Load all tokens (admin only)
-      const response = await apiService.getAllTokens();
+      const response = await apiService.getTokens({
+        search: searchTerm,
+        status: filterStatus === 'all' ? undefined : filterStatus,
+        limit: pageSize,
+        skip: (page - 1) * pageSize,
+      });
       const convertedTokens = response.tokens.map(convertTokenInfo);
       setTokens(convertedTokens);
+      setTotalTokens(response.count || convertedTokens.length);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load tokens. Please try again.';
       setError(errorMessage);
@@ -119,6 +139,7 @@ export default function TokenManagementPage() {
       const response = await apiService.getMyTokens();
       const convertedTokens = response.tokens.map(convertTokenInfo);
       setTokens(convertedTokens);
+      setTotalTokens(convertedTokens.length);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load your tokens. Please try again.';
       setError(errorMessage);
@@ -173,22 +194,44 @@ export default function TokenManagementPage() {
     }
   };
 
-  // Export tokens
-  const handleExport = () => {
-    try {
-      const csvContent = [
-        'Token,Credits,Status,Created By,Created,Expires,Used By,Used At,Description',
-        ...filteredAndSortedTokens.map(token => {
-          const status = token.isUsed ? 'Used' : isTokenExpired(token.expiresAt) ? 'Expired' : 'Unused';
-          return `"${token.token}",${token.credits},"${status}","${token.createdBy}","${formatDate(token.createdAt)}","${formatDate(token.expiresAt)}","${token.usedBy || ''}","${token.usedAt ? formatDate(token.usedAt) : ''}","${token.description}"`;
-        })
-      ].join('\n');
+  const handleSearchTermChange = (value: string) => {
+    setPage(1);
+    setSearchTerm(value);
+  };
 
-      const blob = new Blob([csvContent], { type: 'text/csv' });
+  const handleFilterStatusChange = (value: 'all' | 'used' | 'unused' | 'my-tokens') => {
+    setPage(1);
+    setFilterStatus(value);
+
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === 'all') {
+      params.delete('filter');
+    } else {
+      params.set('filter', value);
+    }
+
+    const queryString = params.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+  };
+
+  useEffect(() => {
+    setFilterStatus(filterFromUrl);
+    setPage(1);
+  }, [filterFromUrl]);
+
+  // Export tokens
+  const handleExport = async () => {
+    try {
+      const { blob, filename } = await apiService.exportTokensCsv({
+        search: searchTerm || undefined,
+        status: filterStatus === 'all' || filterStatus === 'my-tokens' ? undefined : filterStatus,
+        scope: filterStatus === 'my-tokens' ? 'my' : 'all',
+      });
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `tokens-export-${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = filename || `tokens-export-${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -209,7 +252,6 @@ export default function TokenManagementPage() {
     try {
       await navigator.clipboard.writeText(token);
       // Success feedback is handled in the modal component
-      console.log('Token copied:', apiService.formatTokenForDisplay(token));
     } catch (err) {
       console.error('Failed to copy token:', err);
     }
@@ -217,24 +259,7 @@ export default function TokenManagementPage() {
 
   // Filter and sort tokens
   const filteredAndSortedTokens = useMemo(() => {
-    let filtered = tokens.filter(token => {
-      // Search filter
-      const searchMatch = searchTerm === '' ||
-        token.token.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        token.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        token.createdBy.toLowerCase().includes(searchTerm.toLowerCase());
-
-      if (!searchMatch) return false;
-
-      // Status filter
-      if (filterStatus === 'used') {
-        return token.isUsed;
-      } else if (filterStatus === 'unused') {
-        return !token.isUsed && !isTokenExpired(token.expiresAt);
-      }
-
-      return true; // 'all'
-    });
+    let filtered = [...tokens];
 
     // Sort
     filtered.sort((a, b) => {
@@ -262,7 +287,7 @@ export default function TokenManagementPage() {
     });
 
     return filtered;
-  }, [tokens, searchTerm, filterStatus, sortBy, sortOrder]);
+  }, [tokens, sortBy, sortOrder]);
 
   // Calculate statistics
   const stats: TokenStats = useMemo(() => {
@@ -289,10 +314,23 @@ export default function TokenManagementPage() {
     }
   };
 
-  // Load tokens on component mount
+  const handleRefresh = () => {
+    if (filterStatus === 'my-tokens') {
+      loadMyTokens();
+    } else {
+      loadTokens();
+    }
+  };
+
+  // Load tokens on component mount and whenever filters/page change
   useEffect(() => {
-    loadTokens();
-  }, []);
+    if (filterStatus === 'my-tokens') {
+      loadMyTokens();
+    } else {
+      loadTokens();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, filterStatus, page]);
 
   // Check if any filters are active
   const hasFilters = searchTerm !== '' || filterStatus !== 'all';
@@ -313,16 +351,23 @@ export default function TokenManagementPage() {
         </div>
         <div className="flex gap-3">
           <button
-            onClick={loadTokens}
-            className="px-4 py-2.5 bg-white border border-admin-border rounded-xl text-sm font-bold text-admin-text-main hover:bg-slate-50 hover:border-admin-primary/30 active:scale-95 transition-all flex items-center gap-2"
+            onClick={handleRefresh}
+            className="px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-sm font-bold text-white hover:bg-white/10 hover:border-white/20 active:scale-95 transition-all flex items-center gap-2"
             disabled={loading}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Sync Tokens
           </button>
           <button
-            onClick={loadMyTokens}
-            className="px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200 active:scale-95 transition-all flex items-center gap-2"
+            onClick={() => {
+              setPage(1);
+              setFilterStatus('my-tokens');
+              const params = new URLSearchParams(searchParams.toString());
+              params.set('filter', 'my-tokens');
+              const queryString = params.toString();
+              router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+            }}
+            className="px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-sm font-bold text-gray-100 hover:bg-white/10 hover:border-white/20 active:scale-95 transition-all flex items-center gap-2"
             disabled={loading}
           >
             <User className="w-4 h-4" />
@@ -353,23 +398,23 @@ export default function TokenManagementPage() {
         <div className="space-y-8 animate-pulse">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-white p-6 rounded-2xl border border-admin-border h-32 shadow-sm"></div>
+              <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-6 h-32 shadow-2xl backdrop-blur-2xl"></div>
             ))}
           </div>
-          <div className="bg-white rounded-2xl border border-admin-border h-96 shadow-sm"></div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 h-96 shadow-2xl backdrop-blur-2xl"></div>
         </div>
       ) : (
         <>
           {/* Statistics Grid */}
           <StatsGrid stats={stats} />
 
-          <div className="bg-white rounded-3xl border border-admin-border shadow-sm overflow-hidden mt-8">
+          <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/5 shadow-2xl backdrop-blur-2xl mt-8">
             {/* Actions Bar */}
             <ActionsBar
               searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
+              setSearchTerm={handleSearchTermChange}
               filterStatus={filterStatus}
-              setFilterStatus={setFilterStatus}
+              setFilterStatus={handleFilterStatusChange}
               sortBy={sortBy}
               setSortBy={setSortBy}
               sortOrder={sortOrder}
@@ -389,6 +434,31 @@ export default function TokenManagementPage() {
               isTokenExpired={isTokenExpired}
               hasFilters={hasFilters}
             />
+          </div>
+
+          <div className="flex items-center justify-between rounded-[24px] border border-white/10 bg-white/5 px-5 py-4 text-sm text-gray-300">
+            <p>
+              Showing {tokens.length} of {totalTokens} tokens
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={page === 1}
+                className="inline-flex items-center gap-1 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <span className="min-w-20 text-center text-xs font-semibold uppercase tracking-[0.22em] text-gray-400">
+                Page {page}
+              </span>
+              <button
+                onClick={() => setPage((current) => current + 1)}
+                disabled={page * pageSize >= totalTokens}
+                className="inline-flex items-center gap-1 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-white disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
           </div>
 
           {/* Generate Token Modal */}

@@ -32,21 +32,21 @@ export default function SearchAndFilters({
     <div className="flex flex-col sm:flex-row gap-4 flex-1">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
         <input
           type="text"
           placeholder="Search tokens..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-64"
-        />
+        className="w-full rounded-2xl border border-white/10 bg-white/5 pl-10 pr-4 py-2 text-sm text-white outline-none transition-all placeholder:text-gray-500 focus:border-purple-400/40 focus:bg-white/10 focus:ring-2 focus:ring-purple-500/10 sm:w-64"
+      />
       </div>
       
       {/* Filter */}
       <select
         value={filterStatus}
         onChange={(e) => setFilterStatus(e.target.value as 'all' | 'used' | 'unused' | 'my-tokens')}
-        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white outline-none focus:border-purple-400/40 focus:bg-white/10 focus:ring-2 focus:ring-purple-500/10"
       >
         <option value="all">All Tokens</option>
         <option value="my-tokens">My Tokens</option>
@@ -58,7 +58,7 @@ export default function SearchAndFilters({
       <select
         value={`${sortBy}-${sortOrder}`}
         onChange={(e) => handleSortChange(e.target.value)}
-        className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white outline-none focus:border-purple-400/40 focus:bg-white/10 focus:ring-2 focus:ring-purple-500/10"
       >
         <option value="createdAt-desc">Newest First</option>
         <option value="createdAt-asc">Oldest First</option>

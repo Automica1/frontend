@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   BarChart, 
   Bar, 
@@ -46,6 +47,7 @@ import {
 } from '../../lib/apiService';
 
 const CHART_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16', '#F97316'];
+const HISTORY_PAGE_SIZE = 50;
 
 interface AnalyticsData {
   globalStats: GlobalUsageStatsResponse;
@@ -54,13 +56,18 @@ interface AnalyticsData {
 }
 
 const UsageAnalyticsPage = () => {
+  const searchParams = useSearchParams();
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [dateRange, setDateRange] = useState('allTime');
-  const [selectedService, setSelectedService] = useState('');
+  const [selectedService, setSelectedService] = useState(searchParams.get('service') || '');
+  const [historyPage, setHistoryPage] = useState(1);
   const [serviceHistory, setServiceHistory] = useState<UsageHistoryResponse | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedUserHistory, setSelectedUserHistory] = useState<{ userId: string; email: string } | null>(null);
+  const [userHistory, setUserHistory] = useState<UsageHistoryResponse | null>(null);
+  const [userHistoryLoading, setUserHistoryLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -104,13 +111,11 @@ const UsageAnalyticsPage = () => {
     }
   };
 
-  const fetchServiceHistory = async (serviceName: string) => {
-    if (!serviceName) return;
-    
+  const fetchServiceHistory = async (serviceName?: string, page = 1) => {
     try {
       setHistoryLoading(true);
       
-      const params: UsageQueryParams = { limit: 50, skip: 0 };
+      const params: UsageQueryParams = { limit: HISTORY_PAGE_SIZE, skip: (page - 1) * HISTORY_PAGE_SIZE };
       
       // Add date range parameters if not 'allTime'
       if (dateRange !== 'allTime' && datePresets[dateRange]) {
@@ -129,16 +134,33 @@ const UsageAnalyticsPage = () => {
     }
   };
 
-  useEffect(() => {
-    if (selectedService) {
-      fetchServiceHistory(selectedService);
-    } else {
-      setServiceHistory(null);
+  const fetchUserHistory = async (userId: string, email: string) => {
+    try {
+      setSelectedUserHistory({ userId, email });
+      setUserHistoryLoading(true);
+      const params: UsageQueryParams = { limit: HISTORY_PAGE_SIZE, skip: 0 };
+      if (dateRange !== 'allTime' && datePresets[dateRange]) {
+        params.start_date = datePresets[dateRange].start_date;
+        params.end_date = datePresets[dateRange].end_date;
+      }
+      const history = await apiService.getUserUsageHistory(userId, params);
+      setUserHistory(history);
+    } catch (err) {
+      console.error('Error fetching user history:', err);
+    } finally {
+      setUserHistoryLoading(false);
     }
-  }, [selectedService, dateRange]);
+  };
+
+  useEffect(() => {
+    if (activeTab === 'history') {
+      void fetchServiceHistory(selectedService || undefined, historyPage);
+    }
+  }, [activeTab, selectedService, dateRange, historyPage]);
 
   const handleServiceSelect = (serviceName: string) => {
     setSelectedService(serviceName);
+    setHistoryPage(1);
     setActiveTab('history');
   };
 
@@ -198,12 +220,12 @@ const UsageAnalyticsPage = () => {
     switch (authMethod.toLowerCase()) {
       case 'bearer_token':
       case 'api_key':
-        return 'bg-blue-100 text-blue-800';
+        return 'border border-blue-400/20 bg-blue-500/10 text-blue-200';
       case 'browser':
       case 'session':
-        return 'bg-green-100 text-green-800';
+        return 'border border-emerald-400/20 bg-emerald-500/10 text-emerald-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'border border-white/10 bg-white/5 text-gray-200';
     }
   };
 
@@ -223,8 +245,8 @@ const UsageAnalyticsPage = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Analytics</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <h2 className="text-xl font-semibold text-white mb-2">Error Loading Analytics</h2>
+          <p className="text-gray-400 mb-4">{error}</p>
           <div className="space-x-3">
             <button
               onClick={fetchAnalytics}
@@ -309,21 +331,21 @@ const UsageAnalyticsPage = () => {
   const hasNoData = globalStats.length === 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-transparent p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Usage Analytics</h1>
-              <p className="text-gray-600 mb-2">Monitor service usage, performance, and user activity</p>
+              <h1 className="text-3xl font-bold text-white mb-2">Usage Analytics</h1>
+              <p className="text-gray-400 mb-2">Monitor service usage, performance, and user activity</p>
               <p className="text-sm text-gray-500">Period: {formatDateRange()}</p>
             </div>
             <div className="flex space-x-3">
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20"
               >
                 <option value="allTime">All Time</option>
                 <option value="today">Today</option>
@@ -336,7 +358,7 @@ const UsageAnalyticsPage = () => {
               <button
                 onClick={handleExportData}
                 disabled={hasNoData}
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center text-sm"
+                className="inline-flex items-center rounded-2xl border border-emerald-400/20 bg-emerald-500/15 px-4 py-2 text-sm text-emerald-100 transition-colors hover:bg-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
@@ -344,7 +366,7 @@ const UsageAnalyticsPage = () => {
               <button
                 onClick={fetchAnalytics}
                 disabled={loading}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center text-sm"
+                className="inline-flex items-center rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white transition-colors hover:bg-white/10 disabled:opacity-50"
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
@@ -355,33 +377,33 @@ const UsageAnalyticsPage = () => {
 
         {/* Error Banner */}
         {error && analytics && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-            <div className="flex">
-              <div className="ml-3">
-                <p className="text-sm text-yellow-700">
-                  Warning: {error}. Showing cached data.
-                </p>
-              </div>
+        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <p className="text-sm text-amber-100/80">
+                Warning: {error}. Showing cached data.
+              </p>
             </div>
           </div>
+        </div>
         )}
 
         {/* No Data Banner */}
         {hasNoData && (
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+          <div className="mb-6 rounded-2xl border border-sky-500/20 bg-sky-500/10 p-4">
             <div className="flex">
-              <AlertCircle className="h-5 w-5 text-blue-400 mr-3 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="mr-3 mt-0.5 h-5 w-5 flex-shrink-0 text-sky-300" />
               <div>
-                <h3 className="text-sm font-medium text-blue-800">No Data Available</h3>
-                <p className="text-sm text-blue-700 mt-1">
+                <h3 className="text-sm font-medium text-white">No Data Available</h3>
+                <p className="mt-1 text-sm text-sky-100/80">
                   No usage data found for the selected period. This might be because:
                 </p>
-                <ul className="text-sm text-blue-700 mt-2 list-disc list-inside">
+                <ul className="mt-2 list-inside list-disc text-sm text-sky-100/80">
                   <li>The API tracking was implemented recently and doesn't have historical data</li>
                   <li>No API calls were made during this time period</li>
                   <li>The selected date range is before data collection began</li>
                 </ul>
-                <p className="text-sm text-blue-700 mt-2">
+                <p className="mt-2 text-sm text-sky-100/80">
                   Try selecting "All Time" or a more recent date range to see available data.
                 </p>
               </div>
@@ -391,11 +413,11 @@ const UsageAnalyticsPage = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white/5 p-6 rounded-[24px] border border-white/10 shadow-2xl backdrop-blur-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total API Calls</p>
-                <p className="text-2xl font-bold text-gray-900">{totalStats.totalCalls.toLocaleString()}</p>
+                <p className="text-sm font-medium text-gray-400">Total API Calls</p>
+                <p className="text-2xl font-bold text-white">{totalStats.totalCalls.toLocaleString()}</p>
                 <p className="text-xs text-gray-500 mt-1">
                   {totalStats.successCalls} success, {totalStats.failedCalls} failed
                 </p>
@@ -404,10 +426,10 @@ const UsageAnalyticsPage = () => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white/5 p-6 rounded-[24px] border border-white/10 shadow-2xl backdrop-blur-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Success Rate</p>
+                <p className="text-sm font-medium text-gray-400">Success Rate</p>
                 <p className="text-2xl font-bold text-green-600">{successRate}%</p>
                 <p className="text-xs text-gray-500 mt-1">
                   {totalStats.totalCalls > 0 ? 'Based on all requests' : 'No data available'}
@@ -417,10 +439,10 @@ const UsageAnalyticsPage = () => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white/5 p-6 rounded-[24px] border border-white/10 shadow-2xl backdrop-blur-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Credits Used</p>
+                <p className="text-sm font-medium text-gray-400">Total Credits Used</p>
                 <p className="text-2xl font-bold text-purple-600">{totalStats.totalCredits.toLocaleString()}</p>
                 <p className="text-xs text-gray-500 mt-1">
                   Across all services
@@ -430,10 +452,10 @@ const UsageAnalyticsPage = () => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white/5 p-6 rounded-[24px] border border-white/10 shadow-2xl backdrop-blur-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Active Services</p>
+                <p className="text-sm font-medium text-gray-400">Active Services</p>
                 <p className="text-2xl font-bold text-orange-600">{totalServices}</p>
                 <p className="text-xs text-gray-500 mt-1">
                   {totalUsers} active users
@@ -446,7 +468,7 @@ const UsageAnalyticsPage = () => {
 
         {/* Tabs */}
         <div className="mb-6">
-          <nav className="flex space-x-8 border-b border-gray-200">
+          <nav className="flex space-x-8 border-b border-white/10">
             {[
               { id: 'overview', label: 'Overview' },
               { id: 'services', label: 'Services' },
@@ -459,7 +481,7 @@ const UsageAnalyticsPage = () => {
                 className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-white/10'
                 }`}
               >
                 {tab.label}
@@ -472,8 +494,8 @@ const UsageAnalyticsPage = () => {
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Service Usage Chart */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Usage Overview</h3>
+            <div className="bg-white/5 p-6 rounded-[24px] border border-white/10 shadow-2xl backdrop-blur-xl">
+              <h3 className="text-lg font-semibold text-white mb-4">Service Usage Overview</h3>
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={chartData}>
@@ -505,8 +527,8 @@ const UsageAnalyticsPage = () => {
             </div>
 
             {/* Usage Distribution Pie Chart */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Usage Distribution</h3>
+            <div className="bg-white/5 p-6 rounded-[24px] border border-white/10 shadow-2xl backdrop-blur-xl">
+              <h3 className="text-lg font-semibold text-white mb-4">Usage Distribution</h3>
               {pieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
@@ -541,54 +563,54 @@ const UsageAnalyticsPage = () => {
         )}
 
         {activeTab === 'services' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Service Performance</h3>
+          <div className="bg-white/5 rounded-[24px] border border-white/10 shadow-2xl backdrop-blur-xl">
+            <div className="p-6 border-b border-white/10">
+              <h3 className="text-lg font-semibold text-white">Service Performance</h3>
             </div>
             {globalStats.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-white/10">
+                  <thead className="bg-transparent">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Calls</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Success Rate</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credits Used</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Service</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Total Calls</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Success Rate</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Credits Used</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-transparent divide-y divide-white/10">
                     {globalStats.map((service, index) => {
                       const serviceSuccessRate = apiService.calculateSuccessRate(service.success_calls, service.total_calls);
                       return (
-                        <tr key={index} className="hover:bg-gray-50">
+                        <tr key={index} className="hover:bg-transparent">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-white">
                               {apiService.formatServiceName(service.service_name)}
                             </div>
-                            <div className="text-sm text-gray-500">{service.service_name}</div>
+                            <div className="text-sm text-gray-400">{service.service_name}</div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                             {service.total_calls.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               serviceSuccessRate === 100
-                                ? 'bg-green-100 text-green-800'
+                                ? 'border border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
                                 : serviceSuccessRate >= 95
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
+                                ? 'border border-amber-400/20 bg-amber-500/10 text-amber-200'
+                                : 'border border-rose-400/20 bg-rose-500/10 text-rose-200'
                             }`}>
                               {serviceSuccessRate}%
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                             {service.total_credits.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <button
                               onClick={() => handleServiceSelect(service.service_name)}
-                              className="text-blue-600 hover:text-blue-900 flex items-center transition-colors"
+                              className="inline-flex items-center gap-1 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-colors hover:bg-white/10"
                             >
                               <Eye className="h-4 w-4 mr-1" />
                               View History
@@ -611,40 +633,50 @@ const UsageAnalyticsPage = () => {
         )}
 
         {activeTab === 'users' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">User Activity</h3>
+          <div className="bg-white/5 rounded-[24px] border border-white/10 shadow-2xl backdrop-blur-xl">
+            <div className="p-6 border-b border-white/10">
+              <h3 className="text-lg font-semibold text-white">User Activity</h3>
             </div>
             {userStats.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-white/10">
+                  <thead className="bg-transparent">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Calls</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Success Rate</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credits Used</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Total Calls</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Success Rate</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Credits Used</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-transparent divide-y divide-white/10">
                     {userStats.map((user, index) => {
                       const userSuccessRate = apiService.calculateSuccessRate(user.success_calls, user.total_calls);
                       return (
-                        <tr key={index} className="hover:bg-gray-50">
+                        <tr key={index} className="hover:bg-transparent">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="font-medium text-gray-900">{user.email}</div>
-                            <div className="text-sm text-gray-500">{user.user_id}</div>
+                            <div className="font-medium text-white">{user.email}</div>
+                            <div className="text-sm text-gray-400">{user.user_id}</div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                             {user.total_calls.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-emerald-400/20 bg-emerald-500/10 text-emerald-200">
                               {userSuccessRate}%
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                             {user.total_credits.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => void fetchUserHistory(user.user_id, user.email)}
+                              className="inline-flex items-center gap-1 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-colors hover:bg-white/10"
+                            >
+                              <Eye className="h-4 w-4" />
+                              View Usage
+                            </button>
                           </td>
                         </tr>
                       );
@@ -663,11 +695,11 @@ const UsageAnalyticsPage = () => {
         )}
 
         {activeTab === 'history' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white/5 rounded-[24px] border border-white/10 shadow-2xl backdrop-blur-xl">
+            <div className="p-6 border-b border-white/10">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Usage History {selectedService && `- ${apiService.formatServiceName(selectedService)}`}
+                <h3 className="text-lg font-semibold text-white">
+                  Usage History {selectedService ? `- ${apiService.formatServiceName(selectedService)}` : '- All Services'}
                 </h3>
                 <div className="flex space-x-3">
                   <div className="relative">
@@ -677,15 +709,15 @@ const UsageAnalyticsPage = () => {
                       placeholder="Search history..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="pl-10 pr-4 py-2 border border-white/10 rounded-2xl text-sm bg-white/5 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                     />
                   </div>
                   <select
                     value={selectedService}
                     onChange={(e) => setSelectedService(e.target.value)}
-                    className="border border-gray-300 rounded-md px-3 py-2 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="border border-white/10 rounded-2xl px-3 py-2 bg-white/5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                   >
-                    <option value="">Select Service</option>
+                    <option value="">All Services</option>
                     {globalStats.map((service) => (
                       <option key={service.service_name} value={service.service_name}>
                         {apiService.formatServiceName(service.service_name)}
@@ -701,35 +733,40 @@ const UsageAnalyticsPage = () => {
                 <RefreshCw className="h-6 w-6 animate-spin text-blue-600 mr-3" />
                 <span>Loading history...</span>
               </div>
-            ) : selectedService && serviceHistory ? (
+            ) : serviceHistory ? (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-white/10">
+                  <thead className="bg-transparent">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Endpoint</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auth Method</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credits</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response Time</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Timestamp</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Service</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Endpoint</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Auth Method</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Credits</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Response Time</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-transparent divide-y divide-white/10">
                     {filteredHistory.length > 0 ? filteredHistory.map((record) => (
-                      <tr key={record.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <tr key={record.id} className="hover:bg-transparent">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                           <div className="font-medium">{apiService.formatDate(record.created_at)}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{record.email}</div>
-                          <div className="text-sm text-gray-500 truncate max-w-32" title={record.user_id}>
+                          <div className="text-sm font-medium text-white">{record.email}</div>
+                          <div className="text-sm text-gray-400 truncate max-w-32" title={record.user_id}>
                             {record.user_id}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{record.endpoint}</div>
-                          <div className="text-sm text-gray-500">{record.method}</div>
+                          <div className="text-sm font-medium text-white">{apiService.formatServiceName(record.service_name)}</div>
+                          <div className="text-sm text-gray-400">{record.service_name}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-white">{record.endpoint}</div>
+                          <div className="text-sm text-gray-400">{record.method}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getAuthMethodColor(record.auth_method)}`}>
@@ -739,7 +776,7 @@ const UsageAnalyticsPage = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            record.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            record.success ? 'border border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border border-rose-400/20 bg-rose-500/10 text-rose-200'
                           }`}>
                             {record.success ? (
                               <CheckCircle className="h-3 w-3 mr-1" />
@@ -749,10 +786,10 @@ const UsageAnalyticsPage = () => {
                             {record.success ? 'Success' : 'Failed'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                           {record.credits_used}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                           <span className={`${record.process_time_ms > 5000 ? 'text-red-600' : record.process_time_ms > 2000 ? 'text-yellow-600' : 'text-green-600'}`}>
                             {record.process_time_ms}ms
                           </span>
@@ -763,7 +800,7 @@ const UsageAnalyticsPage = () => {
                         <td colSpan={7} className="px-6 py-12 text-center">
                           <Clock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                           <p className="text-gray-500">
-                            {searchTerm ? 'No records match your search criteria' : 'No usage history available for this service'}
+                            {searchTerm ? 'No records match your search criteria' : 'No usage history available'}
                           </p>
                           {!searchTerm && selectedService && (
                             <p className="text-gray-400 text-sm mt-1">
@@ -778,7 +815,7 @@ const UsageAnalyticsPage = () => {
                 
                 {/* Pagination Info */}
                 {serviceHistory && serviceHistory.usage_history && serviceHistory.usage_history.length > 0 && (
-                  <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                  <div className="bg-transparent px-6 py-3 border-t border-white/10">
                     <div className="flex justify-between items-center text-sm text-gray-500">
                       <span>
                         Showing {serviceHistory.pagination.skip + 1} to {' '}
@@ -788,25 +825,21 @@ const UsageAnalyticsPage = () => {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => {
-                            if (serviceHistory.pagination.skip > 0) {
-                              // Implement pagination logic here
-                              console.log('Previous page');
-                            }
+                            if (historyPage > 1) setHistoryPage((current) => Math.max(1, current - 1));
                           }}
-                          disabled={serviceHistory.pagination.skip === 0}
-                          className="px-3 py-1 border border-gray-300 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                          disabled={historyPage === 1}
+                          className="px-3 py-1 border border-white/10 rounded-2xl text-xs text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5"
                         >
                           Previous
                         </button>
                         <button
                           onClick={() => {
                             if (serviceHistory.pagination.skip + serviceHistory.pagination.limit < serviceHistory.total_records) {
-                              // Implement pagination logic here
-                              console.log('Next page');
+                              setHistoryPage((current) => current + 1);
                             }
                           }}
                           disabled={serviceHistory.pagination.skip + serviceHistory.pagination.limit >= serviceHistory.total_records}
-                          className="px-3 py-1 border border-gray-300 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                          className="px-3 py-1 border border-white/10 rounded-2xl text-xs text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white/5"
                         >
                           Next
                         </button>
@@ -822,7 +855,7 @@ const UsageAnalyticsPage = () => {
                   <p className="text-gray-500">
                     {globalStats.length === 0 
                       ? 'No services available for the selected period'
-                      : 'Select a service to view its usage history'
+                      : 'Showing combined usage across all services. Choose a service to narrow the view.'
                     }
                   </p>
                   {globalStats.length === 0 && (
@@ -836,6 +869,68 @@ const UsageAnalyticsPage = () => {
           </div>
         )}
       </div>
+
+      {selectedUserHistory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8 backdrop-blur-sm">
+          <div className="max-h-[85vh] w-full max-w-6xl overflow-hidden rounded-[28px] border border-white/10 bg-[#0d0d10] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-purple-300">User usage history</p>
+                <h3 className="text-lg font-semibold text-white">{selectedUserHistory.email}</h3>
+                <p className="text-sm text-gray-400">{selectedUserHistory.userId}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedUserHistory(null);
+                  setUserHistory(null);
+                }}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white hover:bg-white/10"
+              >
+                Close
+              </button>
+            </div>
+            <div className="max-h-[calc(85vh-80px)] overflow-auto p-6">
+              {userHistoryLoading ? (
+                <div className="flex items-center justify-center py-16 text-gray-300">
+                  <RefreshCw className="mr-3 h-5 w-5 animate-spin text-purple-300" />
+                  Loading user history...
+                </div>
+              ) : userHistory?.usage_history && userHistory.usage_history.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-white/10">
+                    <thead>
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Timestamp</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Service</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Endpoint</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-400">Credits</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/10">
+                      {userHistory.usage_history.map((record) => (
+                        <tr key={record.id}>
+                          <td className="px-4 py-3 text-sm text-white">{apiService.formatDate(record.created_at)}</td>
+                          <td className="px-4 py-3 text-sm text-white">{apiService.formatServiceName(record.service_name)}</td>
+                          <td className="px-4 py-3 text-sm text-gray-300">{record.endpoint}</td>
+                          <td className="px-4 py-3 text-sm text-gray-300">
+                            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${record.success ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200' : 'border-rose-400/20 bg-rose-500/10 text-rose-200'}`}>
+                              {record.success ? 'Success' : 'Failed'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-white">{record.credits_used}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-16 text-center text-gray-400">No usage records found for this user.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

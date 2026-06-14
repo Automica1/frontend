@@ -30,7 +30,7 @@ export default function UnauthorizedPage() {
               </Link>
 
               <Link
-                href="/api/auth/logout"
+                href="/api/auth/logout?post_logout_redirect_url=/"
                 className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold text-admin-text-muted bg-slate-50 border border-admin-border hover:bg-slate-100 hover:text-admin-text-main transition-all"
               >
                 <LogOut className="w-4 h-4" />
