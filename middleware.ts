@@ -4,6 +4,10 @@ import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 export default withAuth(
   async function middleware(req: NextRequest) {
+    if (req.nextUrl.pathname.startsWith('/api/auth')) {
+      return NextResponse.next();
+    }
+
     // Handle admin route protection
     if (req.nextUrl.pathname.startsWith('/admin')) {
       const { getUser, getRoles } = getKindeServerSession();
