@@ -1,4 +1,4 @@
-import Link from "next/link";
+// import Link from "next/link";
 
 export default function AdminNotFound() {
   return (
@@ -9,12 +9,12 @@ export default function AdminNotFound() {
         <p className="text-sm text-gray-300">
           This admin route does not exist or was moved.
         </p>
-        <Link
+        {/* <Link
           href="/admin"
           className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/15"
         >
           Go to admin
-        </Link>
+        </Link> */}
       </div>
     </main>
   );
