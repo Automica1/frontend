@@ -114,6 +114,7 @@ export default async function RootLayout({
 }>) {
 
   const { getUser, getRoles } = getKindeServerSession();
+  const user = await getUser();
   const roles = await getRoles();
 
   const isAdmin = roles?.some(role =>
@@ -204,7 +205,7 @@ export default async function RootLayout({
       <body className="antialiased">
         <AuthProvider>
           <CreditsProvider>
-            <NavbarClient isAdmin={isAdmin} />
+            <NavbarClient isAdmin={isAdmin} initialUser={user} />
             {children}
             <Footer />
           </CreditsProvider>

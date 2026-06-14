@@ -4,14 +4,18 @@ import Image from 'next/image';
 import { Star, Wallet, Brain, ChevronDown, User, LogOut, Coins, Menu, X, Settings, Plus } from 'lucide-react';
 import { RegisterLink, LoginLink, LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
+import type { KindeUser } from '@kinde-oss/kinde-auth-nextjs/types';
 import { useCredits } from '../../hooks/useCredits';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
+type NavbarUser = KindeUser<any> | null | undefined;
+
+export default function Navbar({ isAdmin, initialUser }: { isAdmin?: boolean; initialUser?: NavbarUser }) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [authFallbackElapsed, setAuthFallbackElapsed] = useState(false);
 
   // Get current pathname for active link highlighting
   const pathname = usePathname();
@@ -21,6 +25,23 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
 
   // Use the new Zustand-based credits hook
   const { credits, subscription, loading: creditsLoading, error: creditsError, refreshCredits } = useCredits();
+  const displayUser = user ?? initialUser ?? null;
+  const hasServerSession = Boolean(initialUser?.email);
+  const showAuthLoading = isLoading && !authFallbackElapsed && !hasServerSession;
+  const isUserAuthenticated = isAuthenticated || hasServerSession;
+
+  useEffect(() => {
+    if (!isLoading || hasServerSession) {
+      setAuthFallbackElapsed(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setAuthFallbackElapsed(true);
+    }, 1500);
+
+    return () => window.clearTimeout(timer);
+  }, [isLoading, hasServerSession]);
 
   // Navigation links configuration
   const navLinks = [
@@ -71,7 +92,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
   // Function to get the appropriate avatar URL
   const getAvatarUrl = (userPicture: string | string[]) => {
     if (shouldUseDefaultAvatar(userPicture)) {
-      const fullName = `${user?.given_name || ''} ${user?.family_name || ''}`.trim();
+      const fullName = `${displayUser?.given_name || ''} ${displayUser?.family_name || ''}`.trim();
       return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(fullName)}&backgroundColor=4c1d95&fontSize=38`;
     }
     // If userPicture is an array, use the first element; otherwise, return as is
@@ -177,7 +198,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
         {/* Desktop Auth Section */}
         <div className="hidden md:flex items-center space-x-4 animate-[slideInRight_0.8s_ease-out_0.4s_both]">
           {/* Credits and Add Credits section - only show if user is authenticated */}
-          {!isLoading && isAuthenticated && (
+          {isUserAuthenticated && (
             <div className="flex items-center space-x-3">
 
 
@@ -212,12 +233,12 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
           )}
 
           {/* Show loading state */}
-          {isLoading && (
+          {showAuthLoading && (
             <div className="px-4 py-2 text-gray-300">Loading...</div>
           )}
 
           {/* Show auth buttons when not authenticated */}
-          {!isLoading && !isAuthenticated && (
+          {!showAuthLoading && !isUserAuthenticated && (
             <>
               <LoginLink postLoginRedirectURL="/" authUrlParams={{ prompt: "login" }} className="px-4 py-2 border border-gray-600/50 backdrop-blur-sm rounded-lg text-gray-300 hover:text-white hover:border-purple-500/50 transition-all duration-300 hover:scale-105">
                 SIGN IN
@@ -229,16 +250,16 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
           )}
 
           {/* Show user info when authenticated */}
-          {!isLoading && isAuthenticated && user && (
+          {!showAuthLoading && isUserAuthenticated && displayUser && (
             <div className="relative user-dropdown">
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
                 className="flex items-center space-x-3 px-3 py-2 bg-gradient-to-r from-purple-500/20 to-purple-700/20 backdrop-blur-sm border border-purple-500/30 rounded-lg text-white hover:from-purple-500/30 hover:to-purple-700/30 transition-all duration-300 hover:scale-105"
               >
-                {user.picture ? (
+                {displayUser.picture ? (
                   <Image
-                    src={getAvatarUrl(user.picture)}
-                    alt={user.given_name || user.email || "User"}
+                    src={getAvatarUrl(displayUser.picture)}
+                    alt={displayUser.given_name || displayUser.email || "User"}
                     width={24}
                     height={24}
                     className="w-6 h-6 rounded-full border border-purple-500/50"
@@ -249,7 +270,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                   </div>
                 )}
                 <span className="text-sm font-medium">
-                  {user.given_name || user.email?.split('@')[0] || 'User'}
+                  {displayUser.given_name || displayUser.email?.split('@')[0] || 'User'}
                 </span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showUserDropdown ? 'rotate-180' : ''}`} />
               </button>
@@ -260,10 +281,10 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                   {/* User Info Section */}
                   <div className="px-4 py-3 border-b border-white/10">
                     <div className="flex items-center space-x-3">
-                      {user.picture ? (
+                      {displayUser.picture ? (
                         <Image
-                          src={getAvatarUrl(user.picture)}
-                          alt={user.given_name || user.email || "User"}
+                          src={getAvatarUrl(displayUser.picture)}
+                          alt={displayUser.given_name || displayUser.email || "User"}
                           width={40}
                           height={40}
                           className="w-10 h-10 rounded-full border border-purple-500/50"
@@ -274,12 +295,12 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <div className="text-white font-medium truncate">
-                          {user.given_name && user.family_name
-                            ? `${user.given_name} ${user.family_name}`
-                            : user.given_name || 'User'}
+                          <div className="text-white font-medium truncate">
+                          {displayUser.given_name && displayUser.family_name
+                            ? `${displayUser.given_name} ${displayUser.family_name}`
+                            : displayUser.given_name || 'User'}
                         </div>
-                        <div className="text-gray-400 text-sm truncate">{user.email}</div>
+                        <div className="text-gray-400 text-sm truncate">{displayUser.email}</div>
                         {isAdmin && (
                           <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 mt-1">
                             Admin
@@ -371,7 +392,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
         {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center space-x-2">
           {/* Mobile Credits Display (only when authenticated) */}
-          {!isLoading && isAuthenticated && (
+          {isUserAuthenticated && (
             <div className="flex items-center space-x-2">
               {subscription && (subscription.status === 'active' || subscription.status === 'cancelled') && (
                 <div
@@ -433,7 +454,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
               ))}
 
               {/* Subscription Link for Mobile */}
-              {!isLoading && isAuthenticated && (
+          {isUserAuthenticated && (
                 <Link
                   href="/subscription"
                   onClick={closeMobileMenu}
@@ -455,7 +476,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
               )}
 
               {/* Admin Dashboard Link for Mobile */}
-              {!isLoading && isAuthenticated && isAdmin && (
+              {isUserAuthenticated && isAdmin && (
                 <Link
                   href="/admin"
                   onClick={closeMobileMenu}
@@ -474,13 +495,13 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
               )}
 
               {/* Mobile User Section (when authenticated) */}
-              {!isLoading && isAuthenticated && user && (
+              {isUserAuthenticated && displayUser && (
                 <div className="border-t border-white/20 pt-4 mt-4">
                   <div className="flex items-center space-x-3 mb-3 p-3 bg-black/70 backdrop-blur-sm rounded-xl border border-purple-500/40" style={{ backdropFilter: 'blur(12px)' }}>
-                    {user.picture ? (
+                    {displayUser.picture ? (
                       <Image
-                        src={getAvatarUrl(user.picture)}
-                        alt={user.given_name || user.email || "User"}
+                        src={getAvatarUrl(displayUser.picture)}
+                        alt={displayUser.given_name || displayUser.email || "User"}
                         width={40}
                         height={40}
                         className="w-10 h-10 rounded-full border-2 border-purple-500/50"
@@ -492,11 +513,11 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="text-white font-semibold text-base truncate">
-                        {user.given_name && user.family_name
-                          ? `${user.given_name} ${user.family_name}`
-                          : user.given_name || 'User'}
+                        {displayUser.given_name && displayUser.family_name
+                          ? `${displayUser.given_name} ${displayUser.family_name}`
+                          : displayUser.given_name || 'User'}
                       </div>
-                      <div className="text-gray-300 text-sm truncate">{user.email}</div>
+                      <div className="text-gray-300 text-sm truncate">{displayUser.email}</div>
                       {isAdmin && (
                         <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 mt-1">
                           Admin
@@ -533,7 +554,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
 
             {/* Bottom Auth Section - Always visible */}
             <div className="px-4 py-3 bg-black/60 backdrop-blur-md border-t border-white/20 space-y-3 mx-3 mb-3 rounded-2xl flex-shrink-0" style={{ backdropFilter: 'blur(16px)' }}>
-              {!isLoading && !isAuthenticated && (
+              {!showAuthLoading && !isUserAuthenticated && (
                 <>
                   <LoginLink
                     postLoginRedirectURL="/"
@@ -553,7 +574,7 @@ export default function Navbar({ isAdmin }: { isAdmin?: boolean }) {
                 </>
               )}
 
-              {!isLoading && isAuthenticated && (
+              {!showAuthLoading && isUserAuthenticated && (
                 <LogoutLink
                   postLogoutRedirectURL="/"
                   onClick={closeMobileMenu}

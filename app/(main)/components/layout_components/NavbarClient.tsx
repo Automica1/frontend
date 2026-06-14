@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import dynamic from 'next/dynamic';
+import type { KindeUser } from '@kinde-oss/kinde-auth-nextjs/types';
 
 // Dynamic import of Navbar with no SSR to prevent hydration mismatches
 const Navbar = dynamic(() => import('./Navbar'), {
@@ -40,8 +41,9 @@ const Navbar = dynamic(() => import('./Navbar'), {
 
 interface NavbarClientProps {
   isAdmin?: boolean;
+  initialUser?: KindeUser<any> | null;
 }
 
-export default function NavbarClient({ isAdmin }: NavbarClientProps) {
-  return <Navbar isAdmin={isAdmin} />;
+export default function NavbarClient({ isAdmin, initialUser }: NavbarClientProps) {
+  return <Navbar isAdmin={isAdmin} initialUser={initialUser} />;
 }
