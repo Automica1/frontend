@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs';
 import ActionsBar from './components/ActionBar';
 import StatsGrid from './components/StatsGrid';
 import TokenTable from './components/TokenTable';
@@ -38,6 +39,7 @@ export default function TokenManagementPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { isAuthenticated, isLoading: authLoading } = useKindeBrowserClient();
   const filterFromUrl = useMemo(() => {
     const initialFilter = searchParams.get('filter');
     if (initialFilter === 'used' || initialFilter === 'unused' || initialFilter === 'my-tokens') {
@@ -324,13 +326,25 @@ export default function TokenManagementPage() {
 
   // Load tokens on component mount and whenever filters/page change
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setLoading(false);
+      setTokens([]);
+      setError('Authentication required. Please sign in again.');
+      return;
+    }
+
     if (filterStatus === 'my-tokens') {
       loadMyTokens();
     } else {
       loadTokens();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, filterStatus, page]);
+  }, [searchTerm, filterStatus, page, authLoading, isAuthenticated]);
 
   // Check if any filters are active
   const hasFilters = searchTerm !== '' || filterStatus !== 'all';
