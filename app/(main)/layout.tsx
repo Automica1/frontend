@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import "./globals.css";
 import { AuthProvider } from "./components/layout_components/AuthProvider";
 import NavbarClient from "./components/layout_components/NavbarClient"
 import Footer from "./components/layout_components/Footer";
@@ -122,95 +121,18 @@ export default async function RootLayout({
   );
 
   return (
-    <html lang="en">
-      <head>
-        {/* Google Analytics - Only load in production */}
+    <AuthProvider>
+      <CreditsProvider>
         {process.env.NODE_ENV === 'production' && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script id="google-analytics" strategy="afterInteractive">
-              {`
-                 window.dataLayer = window.dataLayer || [];
-                 function gtag(){dataLayer.push(arguments);}
-                 gtag('js', new Date());
-                 gtag('config', '${GA_ID}');
-               `}
-            </Script>
-          </>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+            strategy="afterInteractive"
+          />
         )}
-
-        {/* Structured Data for Organization */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              "name": "Automica AI",
-              "url": "https://automica.ai",
-              "logo": "https://automica.ai/logo.png",
-              "description": "Plug and Play AI Automation Platform for business automation and intelligent workflows",
-              "sameAs": [
-                "https://twitter.com/AutomicaAI",
-                "https://linkedin.com/company/automica-ai"
-              ],
-              "contactPoint": {
-                "@type": "ContactPoint",
-                "contactType": "customer service",
-                "email": "support@automica.ai"
-              }
-            })
-          }}
-        />
-
-        {/* Structured Data for Software Application */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "SoftwareApplication",
-              "name": "Automica AI Platform",
-              "description": "Plug and Play AI Automation Platform for building intelligent workflows and automating business tasks",
-              "url": "https://automica.ai",
-              "applicationCategory": "BusinessApplication",
-              "operatingSystem": "Web-based",
-              "browserRequirements": "Requires JavaScript. Recommended: Chrome, Firefox, Safari, Edge",
-              "offers": {
-                "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "USD",
-                "description": "Free tier available with premium plans"
-              },
-              "author": {
-                "@type": "Organization",
-                "name": "Automica AI"
-              },
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": "4.8",
-                "ratingCount": "150"
-              }
-            })
-          }}
-        />
-
-        {/* ✅ ADDED: Preload critical resources */}
-        <link rel="preload" href="/og-image.png" as="image" />
-        <link rel="preload" href="/logo.png" as="image" />
-      </head>
-      <body className="antialiased">
-        <AuthProvider>
-          <CreditsProvider>
-            <NavbarClient isAdmin={isAdmin} initialUser={user} />
-            {children}
-            <Footer />
-          </CreditsProvider>
-        </AuthProvider>
-      </body>
-    </html>
+        <NavbarClient isAdmin={isAdmin} initialUser={user} />
+        {children}
+        <Footer />
+      </CreditsProvider>
+    </AuthProvider>
   );
 }
