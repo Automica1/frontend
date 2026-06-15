@@ -20,7 +20,7 @@ const defaultConfig: RouterLoadingConfig = {
 };
 
 export const useRouterLoading = (config: RouterLoadingConfig = {}) => {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? '/';
   const searchParams = useSearchParams();
   const { startLoading, setProgress, completeLoading, resetLoading } = useLoadingActions();
 

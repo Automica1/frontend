@@ -61,7 +61,7 @@ const UsageAnalyticsPage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [dateRange, setDateRange] = useState('allTime');
-  const [selectedService, setSelectedService] = useState(searchParams.get('service') || '');
+  const [selectedService, setSelectedService] = useState(searchParams?.get('service') || '');
   const [historyPage, setHistoryPage] = useState(1);
   const [serviceHistory, setServiceHistory] = useState<UsageHistoryResponse | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);

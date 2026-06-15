@@ -57,8 +57,8 @@ export default function AdminSubscriptionsPage() {
   const searchParams = useSearchParams();
   const { confirm, toast } = useAdminFeedback();
   const [filters, setFilters] = useState<SubscriptionFilters>({
-    search: searchParams.get('search') || searchParams.get('userId') || searchParams.get('email') || searchParams.get('subscriptionId') || '',
-    status: searchParams.get('status') || '',
+    search: searchParams?.get('search') || searchParams?.get('userId') || searchParams?.get('email') || searchParams?.get('subscriptionId') || '',
+    status: searchParams?.get('status') || '',
   });
   const [page, setPage] = useState(1);
   const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([]);
@@ -69,7 +69,7 @@ export default function AdminSubscriptionsPage() {
   const [selected, setSelected] = useState<AdminSubscription | null>(null);
   const [selectedLoading, setSelectedLoading] = useState(false);
   const [reconciling, setReconciling] = useState(false);
-  const subscriptionIdParam = searchParams.get('subscriptionId');
+  const subscriptionIdParam = searchParams?.get('subscriptionId');
 
   useEffect(() => {
     void loadData();

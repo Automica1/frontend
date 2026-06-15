@@ -41,7 +41,7 @@ export default function TokenManagementPage() {
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useKindeBrowserClient();
   const filterFromUrl = useMemo(() => {
-    const initialFilter = searchParams.get('filter');
+    const initialFilter = searchParams?.get('filter');
     if (initialFilter === 'used' || initialFilter === 'unused' || initialFilter === 'my-tokens') {
       return initialFilter;
     }
@@ -205,7 +205,7 @@ export default function TokenManagementPage() {
     setPage(1);
     setFilterStatus(value);
 
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
     if (value === 'all') {
       params.delete('filter');
     } else {
@@ -213,7 +213,8 @@ export default function TokenManagementPage() {
     }
 
     const queryString = params.toString();
-    router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+    const nextPathname = pathname ?? '/admin/credits';
+    router.replace(queryString ? `${nextPathname}?${queryString}` : nextPathname, { scroll: false });
   };
 
   useEffect(() => {
@@ -376,10 +377,11 @@ export default function TokenManagementPage() {
             onClick={() => {
               setPage(1);
               setFilterStatus('my-tokens');
-              const params = new URLSearchParams(searchParams.toString());
+              const params = new URLSearchParams(searchParams?.toString() ?? '');
               params.set('filter', 'my-tokens');
               const queryString = params.toString();
-              router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+              const nextPathname = pathname ?? '/admin/credits';
+              router.replace(queryString ? `${nextPathname}?${queryString}` : nextPathname, { scroll: false });
             }}
             className="px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-sm font-bold text-gray-100 hover:bg-white/10 hover:border-white/20 active:scale-95 transition-all flex items-center gap-2"
             disabled={loading}

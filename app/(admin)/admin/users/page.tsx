@@ -25,7 +25,7 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<UserFiltersState>({
-    search: searchParams.get('search') || '',
+    search: searchParams?.get('search') || '',
     sortBy: 'newest'
   });
 

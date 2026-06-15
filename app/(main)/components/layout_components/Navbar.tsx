@@ -19,6 +19,7 @@ export default function Navbar({ isAdmin, initialUser }: { isAdmin?: boolean; in
 
   // Get current pathname for active link highlighting
   const pathname = usePathname();
+  const safePathname = pathname ?? '/';
 
   // Get user authentication state
   const { user, isAuthenticated, isLoading } = useKindeBrowserClient();
@@ -55,9 +56,9 @@ export default function Navbar({ isAdmin, initialUser }: { isAdmin?: boolean; in
   // Function to check if a link is active
   const isActiveLink = (href: string) => {
     if (href === '/') {
-      return pathname === '/';
+      return safePathname === '/';
     }
-    return pathname.startsWith(href);
+    return safePathname.startsWith(href);
   };
 
   // Function to get link classes based on active state

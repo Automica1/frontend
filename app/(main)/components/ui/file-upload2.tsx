@@ -56,7 +56,7 @@ export const FileUpload2 = ({
   // Authentication with dynamic redirect
   const { isAuthenticated, user } = useKindeAuth();
   const router = useRouter();
-  const pathname = usePathname(); // Get current path for dynamic redirect
+  const pathname = usePathname() ?? '/'; // Get current path for dynamic redirect
 
   // File validation constants
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes

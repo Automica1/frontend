@@ -70,7 +70,7 @@ export const FileUpload = ({
   // Authentication with dynamic redirect
   const { isAuthenticated, user } = useKindeAuth();
   const router = useRouter();
-  const pathname = usePathname(); // Get current path for dynamic redirect
+  const pathname = usePathname() ?? '/'; // Get current path for dynamic redirect
 
   // Create dynamic redirect URL based on current path
   const getRedirectUrl = () => {

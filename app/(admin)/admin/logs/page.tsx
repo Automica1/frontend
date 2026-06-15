@@ -160,8 +160,8 @@ export default function AdminLogsPage() {
     }
   };
 
-  const [source, setSource] = useState<LogSource>(() => normalizeSource(searchParams.get('source')));
-  const [kind, setKind] = useState<LogKindFilter>(() => normalizeKind(searchParams.get('kind'), normalizeSource(searchParams.get('source'))));
+  const [source, setSource] = useState<LogSource>(() => normalizeSource(searchParams?.get('source') ?? null));
+  const [kind, setKind] = useState<LogKindFilter>(() => normalizeKind(searchParams?.get('kind') ?? null, normalizeSource(searchParams?.get('source') ?? null)));
   const [logs, setLogs] = useState<AdminLogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -179,7 +179,7 @@ export default function AdminLogsPage() {
   const [endDate, setEndDate] = useState('');
 
   const applyKindFilter = (nextKind: LogKindFilter) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
     params.set('source', source);
     params.set('kind', nextKind);
     router.replace(`/admin/logs?${params.toString()}`);
@@ -375,7 +375,7 @@ export default function AdminLogsPage() {
                     <button
                       key={item}
                       onClick={() => {
-                        const params = new URLSearchParams(searchParams.toString());
+                        const params = new URLSearchParams(searchParams?.toString() ?? '');
                         params.set('source', item);
                         params.set('kind', item === 'backend-access' || item === 'web-access' ? 'signal' : 'all');
                         router.replace(`/admin/logs?${params.toString()}`);
