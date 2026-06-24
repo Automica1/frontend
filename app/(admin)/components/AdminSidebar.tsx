@@ -14,6 +14,7 @@ import {
   ReceiptText,
   FileText,
   UserCircle2,
+  FlaskConical,
   LucideIcon,
 } from "lucide-react";
 
@@ -43,6 +44,11 @@ const navigationItems: NavItem[] = [
     name: 'Services',
     href: '/admin/services',
     icon: Database,
+  },
+  {
+    name: 'Beta Keys',
+    href: '/admin/beta-keys',
+    icon: FlaskConical,
   },
   {
     name: 'Plans',

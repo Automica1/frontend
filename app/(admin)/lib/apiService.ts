@@ -36,6 +36,47 @@ interface TokenListResponse {
   tokens: TokenInfo[];
 }
 
+interface BetaKeyInfo {
+  id: string;
+  keyPrefix: string;
+  serviceName: string;
+  label: string;
+  createdBy: string;
+  createdAt: string;
+  expiresAt?: string;
+  revokedAt?: string;
+  isActive: boolean;
+  usageCount: number;
+  lastUsedAt?: string;
+}
+
+interface BetaKeyGenerateRequest {
+  serviceName: string;
+  label: string;
+  expiresInDays?: number;
+}
+
+interface BetaKeyGenerateResponse {
+  message: string;
+  betaKey: string;
+  keyPrefix: string;
+  serviceName: string;
+  label: string;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+interface BetaKeyListResponse {
+  message: string;
+  keys: BetaKeyInfo[];
+  total: number;
+}
+
+interface BetaKeyRevokeResponse {
+  message: string;
+  id: string;
+}
+
 interface AuthResponse {
   accessToken: string;
   expiresIn: number;
@@ -1053,6 +1094,29 @@ class ApiService {
       }
     };
   }
+
+  // Beta key management (Admin only)
+  async getSupportedBetaServices(): Promise<{ message: string; services: string[] }> {
+    return this.makeAuthenticatedRequest('/admin/beta-keys/services');
+  }
+
+  async listBetaKeys(service?: string): Promise<BetaKeyListResponse> {
+    const queryString = service ? `?service=${encodeURIComponent(service)}` : '';
+    return this.makeAuthenticatedRequest<BetaKeyListResponse>(`/admin/beta-keys${queryString}`);
+  }
+
+  async generateBetaKey(payload: BetaKeyGenerateRequest): Promise<BetaKeyGenerateResponse> {
+    return this.makeAuthenticatedRequest<BetaKeyGenerateResponse>('/admin/beta-keys', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async revokeBetaKey(keyId: string): Promise<BetaKeyRevokeResponse> {
+    return this.makeAuthenticatedRequest<BetaKeyRevokeResponse>(`/admin/beta-keys/${keyId}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 // Export singleton instance
@@ -1094,5 +1158,10 @@ export type {
   // Plan types
   Plan,
   CreatePlanRequest,
-  UpdatePlanRequest
+  UpdatePlanRequest,
+  BetaKeyInfo,
+  BetaKeyGenerateRequest,
+  BetaKeyGenerateResponse,
+  BetaKeyListResponse,
+  BetaKeyRevokeResponse
 };

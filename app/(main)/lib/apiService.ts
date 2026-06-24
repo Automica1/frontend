@@ -485,7 +485,10 @@ class ApiService {
   }
 
   // Signature verification with enhanced validation
-  async verifySignatures(base64Images: string[]): Promise<SignatureVerificationResponseWithCredits> {
+  async verifySignatures(
+    base64Images: string[],
+    options?: { betaKey?: string }
+  ): Promise<SignatureVerificationResponseWithCredits> {
     if (!Array.isArray(base64Images) || base64Images.length !== 2) {
       throw new Error('Signature verification requires exactly 2 images');
     }
@@ -499,9 +502,14 @@ class ApiService {
     });
 
     const reqId = this.generateReqId('sig-verify');
+    const extraHeaders: Record<string, string> = {};
+    if (options?.betaKey) {
+      extraHeaders['X-Beta-Key'] = options.betaKey;
+    }
 
     return this.makeRequest<SignatureVerificationResponseWithCredits>('/signature-verification', {
       method: 'POST',
+      headers: extraHeaders,
       body: JSON.stringify({
         req_id: reqId,
         doc_base64: cleanImages,

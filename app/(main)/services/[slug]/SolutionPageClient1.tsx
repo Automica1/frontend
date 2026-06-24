@@ -46,6 +46,7 @@ interface SerializableSolution {
   pricing?: any;
   documentation?: any;
   heroImage?: string;
+  hasBeta?: boolean;
 }
 
 interface SerializableService {
@@ -153,6 +154,8 @@ export default function SolutionPageClient({
       IconComponent,
       gradient: solution.gradient,
       apiEndpoint: solution.apiEndpoint,
+      slug: solution.slug,
+      hasBeta: solution.hasBeta,
     };
 
     switch (activeSection) {

@@ -37,6 +37,7 @@ export interface Solution {
   gifSrc?: string;
   available?: boolean;
   soon?: boolean;
+  hasBeta?: boolean;
   tagline: string;
   description: string;
   icon: LucideIcon;
@@ -53,6 +54,7 @@ export const rawSolutions: Record<SolutionKey, Solution> = {
     title: "Signature Verification",
     slug: "signature-verification",
     popular: true,
+    hasBeta: true,
     tagline: "Authenticate Signatures—Fast and Flawless.",
     description: "A concise, AI-driven service that authenticates both handwritten and digital signatures in real time, ensuring document integrity and preventing fraud. With seamless API integration and industry-leading accuracy, it automates your verification workflows to boost compliance and reduce operational risk.",
     icon: FileCheck,

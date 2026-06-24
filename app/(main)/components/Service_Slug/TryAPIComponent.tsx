@@ -11,6 +11,7 @@ import { FileUpload } from '../ui/file-upload';
 // import { TabbedResponseSection } from '../../TabbedResponseSection';
 import {TabbedResponseSection} from '../TabbedResponse/index'
 import { ProcessingActionCard } from '../TabbedResponse/ProcessingActionCard';
+import BetaAccessPanel from './BetaAccessPanel';
 
 interface TryAPIComponentProps {
   solution: Solution;
@@ -19,6 +20,8 @@ interface TryAPIComponentProps {
 export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [hasStartedProcessing, setHasStartedProcessing] = useState(false);
+  const [betaEnabled, setBetaEnabled] = useState(false);
+  const [betaKey, setBetaKey] = useState('');
   const solutionType = useSolutionType(solution);
   const currentApi = useSolutionApi(solutionType);
 
@@ -40,6 +43,11 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
 
   const handleSubmit = async () => {
     if (files.length === 0) return;
+
+    if (solution.hasBeta && betaEnabled && !betaKey.trim()) {
+      alert('Please enter your beta key to use the beta version.');
+      return;
+    }
     
     // Set processing state to true to show results section
     setHasStartedProcessing(true);
@@ -54,7 +62,10 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
           }
           const base64Images = await filesToBase64(files);
           console.log('Calling signature verification API');
-          await currentApi.execute(base64Images);
+          await currentApi.execute(
+            base64Images,
+            solution.hasBeta && betaEnabled ? { betaKey: betaKey.trim() } : undefined
+          );
           break;
           
         case 'face-verify':
@@ -223,6 +234,15 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - File Upload */}
           <div className="space-y-6">
+            {solution.hasBeta && solution.slug && (
+              <BetaAccessPanel
+                serviceSlug={solution.slug}
+                enabled={betaEnabled}
+                betaKey={betaKey}
+                onEnabledChange={setBetaEnabled}
+                onBetaKeyChange={setBetaKey}
+              />
+            )}
             {/* Conditional FileUpload component usage with dynamic height */}
             <div className={`w-full max-w-4xl mx-auto min-h-96 ${containerHeight} border border-dashed bg-black border-neutral-800 rounded-lg`}>
               {shouldUseFileUpload2 ? (

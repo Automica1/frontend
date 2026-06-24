@@ -241,6 +241,7 @@ export default async function SolutionPage({ params }: SolutionPageProps) {
     })),
     documentation: solution.documentation,
     heroImage: solution.heroImage,
+    hasBeta: solution.hasBeta ?? false,
   };
 
   // Extract serializable services data (exclude icons, will be resolved client-side)

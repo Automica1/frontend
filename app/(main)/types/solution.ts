@@ -5,6 +5,7 @@ export interface Solution {
   gradient: string;
   apiEndpoint?: string;
   slug?: string;
+  hasBeta?: boolean;
 }
 
 export type SolutionType = 'qr-extract' | 'signature-verification' | 'id-crop' | 'face-verify' | 'face-cropping' | 'qr-mask' | 'unknown';
@@ -25,6 +26,7 @@ export interface SerializableSolution {
   }>;
   documentation?: any;
   heroImage?: string;
+  hasBeta?: boolean;
 }
 
 export interface SerializableService {

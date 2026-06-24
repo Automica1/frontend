@@ -52,7 +52,7 @@ export const configs: Record<string, ApiConfig> = {
       req_id: "abc123",
       doc_base64: ["/9j/4AAQSkZJRgABAQAAAQABAAD...", "/9j/4AAQSkZJRgABAQAAAQABAAD..."]
     },
-    description: "Verify signatures across multiple document images"
+    description: "Verify signatures across multiple document images. For beta routing, add header X-Beta-Key: bk_live_... (admin-issued)."
   }
 };
 
