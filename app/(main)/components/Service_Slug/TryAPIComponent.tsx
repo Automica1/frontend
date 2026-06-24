@@ -234,15 +234,6 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - File Upload */}
           <div className="space-y-6">
-            {solution.hasBeta && solution.slug && (
-              <BetaAccessPanel
-                serviceSlug={solution.slug}
-                enabled={betaEnabled}
-                betaKey={betaKey}
-                onEnabledChange={setBetaEnabled}
-                onBetaKeyChange={setBetaKey}
-              />
-            )}
             {/* Conditional FileUpload component usage with dynamic height */}
             <div className={`w-full max-w-4xl mx-auto min-h-96 ${containerHeight} border border-dashed bg-black border-neutral-800 rounded-lg`}>
               {shouldUseFileUpload2 ? (
@@ -263,6 +254,17 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                 files={files}
                 onSubmit={handleSubmit}
                 loading={currentApi.loading}
+                betaControls={
+                  solution.hasBeta && solution.slug ? (
+                    <BetaAccessPanel
+                      serviceSlug={solution.slug}
+                      enabled={betaEnabled}
+                      betaKey={betaKey}
+                      onEnabledChange={setBetaEnabled}
+                      onBetaKeyChange={setBetaKey}
+                    />
+                  ) : undefined
+                }
               />
             ) : (
               /* Show Results Section after processing starts with matching height */

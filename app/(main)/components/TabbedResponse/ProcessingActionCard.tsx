@@ -9,6 +9,7 @@ interface ProcessingActionCardProps {
   files: File[];
   onSubmit: () => void;
   loading: boolean;
+  betaControls?: React.ReactNode;
 }
 
 export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
@@ -16,7 +17,8 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
   solutionType,
   files,
   onSubmit,
-  loading
+  loading,
+  betaControls,
 }) => {
   const getButtonText = (type: SolutionType) => {
     switch (type) {
@@ -204,7 +206,8 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
       </div>
 
       {/* Fixed Process Button at bottom */}
-      <div className="flex-shrink-0 p-6 pt-4 ">
+      <div className="flex-shrink-0 p-6 pt-4 space-y-3">
+        {betaControls}
         <button
           onClick={onSubmit}
           disabled={isDisabled()}

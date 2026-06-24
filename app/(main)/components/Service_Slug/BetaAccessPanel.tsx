@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { FlaskConical, Shield } from 'lucide-react';
+import { ChevronUp } from 'lucide-react';
 
 interface BetaAccessPanelProps {
   serviceSlug: string;
@@ -34,84 +34,74 @@ export default function BetaAccessPanel({
   onEnabledChange,
   onBetaKeyChange,
 }: BetaAccessPanelProps) {
+  const [open, setOpen] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     const stored = loadStoredBetaKey(serviceSlug);
     if (stored) {
       onBetaKeyChange(stored);
+      onEnabledChange(true);
+      setOpen(true);
     }
     setInitialized(true);
-  }, [serviceSlug, onBetaKeyChange]);
+  }, [serviceSlug, onBetaKeyChange, onEnabledChange]);
 
   useEffect(() => {
     if (!initialized) return;
     storeBetaKey(serviceSlug, betaKey);
   }, [serviceSlug, betaKey, initialized]);
 
+  const handleClose = () => {
+    setOpen(false);
+    onEnabledChange(false);
+    onBetaKeyChange('');
+    storeBetaKey(serviceSlug, '');
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-xs text-gray-500 hover:text-gray-400 transition-colors"
+      >
+        Have a beta key?
+      </button>
+    );
+  }
+
   return (
-    <div className="rounded-xl border border-purple-500/30 bg-purple-500/5 p-4 space-y-4">
-      <div className="flex items-start gap-3">
-        <div className="rounded-lg bg-purple-500/20 p-2">
-          <FlaskConical className="h-5 w-5 text-purple-300" />
-        </div>
-        <div className="flex-1">
-          <h3 className="text-sm font-semibold text-white">Try beta version</h3>
-          <p className="text-xs text-gray-400 mt-1">
-            Use an admin-issued beta key to route requests to the beta model. Stable mode uses production sign verify.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => onEnabledChange(false)}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium border transition-colors ${
-            !enabled
-              ? 'border-white/20 bg-white/10 text-white'
-              : 'border-white/10 text-gray-400 hover:text-white hover:border-white/20'
-          }`}
-        >
-          <span className="inline-flex items-center justify-center gap-2">
-            <Shield className="h-4 w-4" />
-            Stable
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => onEnabledChange(true)}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium border transition-colors ${
-            enabled
-              ? 'border-purple-400/40 bg-purple-500/20 text-white'
-              : 'border-white/10 text-gray-400 hover:text-white hover:border-white/20'
-          }`}
-        >
-          <span className="inline-flex items-center justify-center gap-2">
-            <FlaskConical className="h-4 w-4" />
-            Beta
-          </span>
-        </button>
-      </div>
-
-      {enabled && (
-        <div className="space-y-2">
-          <label htmlFor="beta-key-input" className="text-xs font-medium text-gray-300">
-            Beta key
-          </label>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer select-none">
           <input
-            id="beta-key-input"
-            type="password"
-            value={betaKey}
-            onChange={(e) => onBetaKeyChange(e.target.value.trim())}
-            placeholder="bk_live_..."
-            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-gray-500 focus:border-purple-400/50 focus:outline-none"
-            autoComplete="off"
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => onEnabledChange(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-gray-400 focus:ring-0 focus:ring-offset-0"
           />
-          <p className="text-[11px] text-gray-500">
-            Beta models may change. Results are not production guarantees.
-          </p>
-        </div>
+          Use beta endpoint
+        </label>
+        <button
+          type="button"
+          onClick={handleClose}
+          className="inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-400"
+          aria-label="Hide beta options"
+        >
+          <ChevronUp className="h-3 w-3" />
+          Hide
+        </button>
+      </div>
+      {enabled && (
+        <input
+          type="password"
+          value={betaKey}
+          onChange={(e) => onBetaKeyChange(e.target.value.trim())}
+          placeholder="Beta key"
+          className="w-full rounded-md border border-gray-700 bg-gray-800/80 px-2.5 py-1.5 text-xs text-gray-200 placeholder:text-gray-600 focus:border-gray-600 focus:outline-none"
+          autoComplete="off"
+        />
       )}
     </div>
   );
