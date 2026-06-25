@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Solution, SolutionType } from '../../types/solution';
 import { ProcessingActionCard } from '../TabbedResponse/ProcessingActionCard';
 import { TabbedResponseSection } from '../TabbedResponse/index';
@@ -41,28 +41,38 @@ interface TryAPIRightPanelProps {
 
 function RightPanelTabButton({
   label,
+  sublabel,
   active,
   onClick,
-  showBadge,
+  highlight,
 }: {
   label: string;
+  sublabel?: string;
   active: boolean;
   onClick: () => void;
-  showBadge?: boolean;
+  highlight?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`relative flex-1 px-3 py-2.5 text-xs font-medium transition-colors ${
+      className={`relative flex-1 px-2 py-2 text-xs font-medium transition-colors ${
         active
           ? 'bg-purple-600 text-white border-b-2 border-purple-400'
-          : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
+          : highlight
+            ? 'text-blue-200 bg-blue-950/50 border-b-2 border-blue-500/60 animate-pulse hover:bg-blue-950/70'
+            : 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
       }`}
     >
-      {label}
-      {showBadge && !active && (
-        <span className="absolute right-3 top-2 h-1.5 w-1.5 rounded-full bg-blue-400" aria-hidden />
+      <span className="block truncate">{label}</span>
+      {sublabel && (
+        <span
+          className={`mt-0.5 block truncate text-[10px] font-semibold ${
+            active ? 'text-blue-100' : highlight ? 'text-blue-300' : 'text-gray-500'
+          }`}
+        >
+          {sublabel}
+        </span>
       )}
     </button>
   );
@@ -95,6 +105,8 @@ export default function TryAPIRightPanel({
   serviceSlug,
 }: TryAPIRightPanelProps) {
   const [activeTab, setActiveTab] = useState<RightPanelTab>('setup');
+  const autoOpenedForSessionRef = useRef<string | null>(null);
+  const userLeftFeedbackRef = useRef(false);
 
   const canShowFeedbackForm = Boolean(pendingSession && pendingThumbnails.length > 0);
   const showFeedbackTab = Boolean(
@@ -102,6 +114,7 @@ export default function TryAPIRightPanel({
   );
   const showDeviceBanner = Boolean(pendingSession && pendingThumbnails.length === 0);
   const deviceBanner = showDeviceBanner ? <BetaFeedbackDeviceBanner compact /> : undefined;
+  const feedbackCredits = pendingSession?.creditsCharged ?? 0;
 
   const betaControls =
     solution.hasBeta && solution.slug ? (
@@ -115,19 +128,50 @@ export default function TryAPIRightPanel({
       />
     ) : undefined;
 
+  const handleTabChange = (tab: RightPanelTab) => {
+    if (activeTab === 'feedback' && tab !== 'feedback' && canShowFeedbackForm) {
+      userLeftFeedbackRef.current = true;
+    }
+    setActiveTab(tab);
+  };
+
+  useEffect(() => {
+    if (!hasStartedProcessing) {
+      autoOpenedForSessionRef.current = null;
+      userLeftFeedbackRef.current = false;
+    }
+  }, [hasStartedProcessing]);
+
   useEffect(() => {
     if (hasStartedProcessing) {
       setActiveTab('result');
     } else {
-      setActiveTab(canShowFeedbackForm && submitBlocked ? 'feedback' : 'setup');
+      setActiveTab('setup');
+    }
+  }, [hasStartedProcessing]);
+
+  useEffect(() => {
+    if (!hasStartedProcessing && canShowFeedbackForm && submitBlocked) {
+      setActiveTab('feedback');
     }
   }, [hasStartedProcessing, canShowFeedbackForm, submitBlocked]);
+
+  useEffect(() => {
+    if (!hasStartedProcessing || !canShowFeedbackForm || !pendingSession) return;
+    if (userLeftFeedbackRef.current) return;
+    if (autoOpenedForSessionRef.current === pendingSession.id) return;
+
+    autoOpenedForSessionRef.current = pendingSession.id;
+    setActiveTab('feedback');
+  }, [hasStartedProcessing, canShowFeedbackForm, pendingSession]);
 
   useEffect(() => {
     if (!showFeedbackTab && activeTab === 'feedback') {
       setActiveTab(hasStartedProcessing ? 'result' : 'setup');
     }
   }, [activeTab, showFeedbackTab, hasStartedProcessing]);
+
+  const openFeedback = () => handleTabChange('feedback');
 
   const feedbackPanel =
     canShowFeedbackForm && pendingSession ? (
@@ -146,26 +190,42 @@ export default function TryAPIRightPanel({
       <p className="text-xs text-gray-400">Loading feedback session…</p>
     );
 
-  const resultAddon =
+  const feedbackNudge =
     canShowFeedbackForm && pendingSession ? (
       <BetaFeedbackResultNudge
         creditsToRefund={pendingSession.creditsCharged}
-        onOpenFeedback={() => setActiveTab('feedback')}
+        onOpenFeedback={openFeedback}
       />
     ) : null;
 
-  const tabs: { id: RightPanelTab; label: string; show: boolean }[] = hasStartedProcessing
-    ? [
-        { id: 'setup', label: 'Setup', show: true },
-        { id: 'result', label: 'Result', show: true },
-        { id: 'feedback', label: 'Feedback', show: showFeedbackTab },
-      ]
-    : [
-        { id: 'setup', label: 'Setup', show: true },
-        { id: 'feedback', label: 'Feedback', show: showFeedbackTab },
-      ];
+  const feedbackTabLabel = 'Rate result';
+  const feedbackTabSublabel =
+    feedbackCredits > 0 ? `+${feedbackCredits} credits` : undefined;
+
+  const tabs: { id: RightPanelTab; label: string; sublabel?: string; show: boolean }[] =
+    hasStartedProcessing
+      ? [
+          { id: 'setup', label: 'Setup', show: true },
+          { id: 'result', label: 'Result', show: true },
+          {
+            id: 'feedback',
+            label: feedbackTabLabel,
+            sublabel: feedbackTabSublabel,
+            show: showFeedbackTab,
+          },
+        ]
+      : [
+          { id: 'setup', label: 'Setup', show: true },
+          {
+            id: 'feedback',
+            label: feedbackTabLabel,
+            sublabel: feedbackTabSublabel,
+            show: showFeedbackTab,
+          },
+        ];
 
   const visibleTabs = tabs.filter((t) => t.show);
+  const highlightFeedbackTab = canShowFeedbackForm && activeTab !== 'feedback';
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-700 h-full flex flex-col overflow-hidden">
@@ -175,15 +235,16 @@ export default function TryAPIRightPanel({
             <RightPanelTabButton
               key={tab.id}
               label={tab.label}
+              sublabel={tab.sublabel}
               active={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              showBadge={tab.id === 'feedback' && canShowFeedbackForm}
+              onClick={() => handleTabChange(tab.id)}
+              highlight={tab.id === 'feedback' && highlightFeedbackTab}
             />
           ))}
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
         {activeTab === 'setup' && (
           <ProcessingActionCard
             solution={solution}
@@ -200,19 +261,30 @@ export default function TryAPIRightPanel({
         )}
 
         {activeTab === 'result' && hasStartedProcessing && (
-          <TabbedResponseSection
-            solution={solution}
-            solutionType={solutionType}
-            data={data}
-            loading={loading}
-            error={error}
-            errorDetails={errorDetails}
-            maskedBase64={maskedBase64}
-            fileName={fileName}
-            compact
-            embedded
-            resultAddon={resultAddon}
-          />
+          <>
+            {feedbackNudge && (
+              <BetaFeedbackResultNudge
+                creditsToRefund={pendingSession!.creditsCharged}
+                onOpenFeedback={openFeedback}
+                variant="banner"
+              />
+            )}
+            <div className="flex-1 min-h-0">
+              <TabbedResponseSection
+                solution={solution}
+                solutionType={solutionType}
+                data={data}
+                loading={loading}
+                error={error}
+                errorDetails={errorDetails}
+                maskedBase64={maskedBase64}
+                fileName={fileName}
+                compact
+                embedded
+                resultAddon={feedbackNudge}
+              />
+            </div>
+          </>
         )}
 
         {activeTab === 'feedback' && showFeedbackTab && (
