@@ -97,6 +97,9 @@ export default function TryAPIRightPanel({
   const [activeTab, setActiveTab] = useState<RightPanelTab>('setup');
 
   const canShowFeedbackForm = Boolean(pendingSession && pendingThumbnails.length > 0);
+  const showFeedbackTab = Boolean(
+    pendingSession || (hasStartedProcessing && betaEnabled)
+  );
   const showDeviceBanner = Boolean(pendingSession && pendingThumbnails.length === 0);
   const deviceBanner = showDeviceBanner ? <BetaFeedbackDeviceBanner compact /> : undefined;
 
@@ -121,10 +124,10 @@ export default function TryAPIRightPanel({
   }, [hasStartedProcessing, canShowFeedbackForm, submitBlocked]);
 
   useEffect(() => {
-    if (!canShowFeedbackForm && activeTab === 'feedback') {
+    if (!showFeedbackTab && activeTab === 'feedback') {
       setActiveTab(hasStartedProcessing ? 'result' : 'setup');
     }
-  }, [activeTab, canShowFeedbackForm, hasStartedProcessing]);
+  }, [activeTab, showFeedbackTab, hasStartedProcessing]);
 
   const feedbackPanel =
     canShowFeedbackForm && pendingSession ? (
@@ -137,7 +140,11 @@ export default function TryAPIRightPanel({
         onSubmitted={onFeedbackSubmitted}
         embedded
       />
-    ) : null;
+    ) : showDeviceBanner ? (
+      deviceBanner
+    ) : (
+      <p className="text-xs text-gray-400">Loading feedback session…</p>
+    );
 
   const resultAddon =
     canShowFeedbackForm && pendingSession ? (
@@ -149,12 +156,13 @@ export default function TryAPIRightPanel({
 
   const tabs: { id: RightPanelTab; label: string; show: boolean }[] = hasStartedProcessing
     ? [
+        { id: 'setup', label: 'Setup', show: true },
         { id: 'result', label: 'Result', show: true },
-        { id: 'feedback', label: 'Feedback', show: canShowFeedbackForm },
+        { id: 'feedback', label: 'Feedback', show: showFeedbackTab },
       ]
     : [
         { id: 'setup', label: 'Setup', show: true },
-        { id: 'feedback', label: 'Feedback', show: canShowFeedbackForm },
+        { id: 'feedback', label: 'Feedback', show: showFeedbackTab },
       ];
 
   const visibleTabs = tabs.filter((t) => t.show);
@@ -207,7 +215,7 @@ export default function TryAPIRightPanel({
           />
         )}
 
-        {activeTab === 'feedback' && canShowFeedbackForm && (
+        {activeTab === 'feedback' && showFeedbackTab && (
           <div className="h-full overflow-y-auto p-3">{feedbackPanel}</div>
         )}
       </div>
