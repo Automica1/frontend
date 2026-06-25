@@ -12,7 +12,9 @@ import { FileUpload } from '../ui/file-upload';
 // import { TabbedResponseSection } from '../../TabbedResponseSection';
 import {TabbedResponseSection} from '../TabbedResponse/index'
 import { ProcessingActionCard } from '../TabbedResponse/ProcessingActionCard';
-import TryAPIRightPanel from './TryAPIRightPanel';
+import BetaAccessPanel from './BetaAccessPanel';
+import BetaFeedbackPanel from './BetaFeedbackPanel';
+import BetaFeedbackDeviceBanner from './BetaFeedbackDeviceBanner';
 import {
   apiService,
   createThumbnail,
@@ -86,6 +88,21 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const showDeviceBanner = Boolean(
     solution.hasBeta && pendingSession && pendingThumbnails.length === 0
   );
+
+  const feedbackPanel =
+    canShowFeedbackForm && pendingSession ? (
+      <BetaFeedbackPanel
+        serviceSlug={serviceSlug}
+        solutionType={solutionType}
+        session={pendingSession}
+        thumbnails={pendingThumbnails}
+        credits={credits}
+        onSubmitted={handleFeedbackSubmitted}
+        embedded
+      />
+    ) : null;
+
+  const deviceBanner = showDeviceBanner ? <BetaFeedbackDeviceBanner compact /> : undefined;
 
   const Icon = solution.IconComponent;
 
@@ -360,25 +377,13 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
 
           {/* Right Column - integrated panel */}
           <div className={`${containerHeight} min-h-0`}>
-            {solution.hasBeta ? (
-              <TryAPIRightPanel
+            {!hasStartedProcessing ? (
+              <ProcessingActionCard
                 solution={solution}
                 solutionType={solutionType}
                 files={files}
-                hasStartedProcessing={hasStartedProcessing}
-                loading={currentApi.loading}
-                data={currentApi.data}
-                error={currentApi.error}
-                errorDetails={currentApi.errorData}
-                maskedBase64={maskedBase64}
-                fileName={files[0]?.name}
-                betaEnabled={betaEnabled}
-                betaKey={betaKey}
-                onBetaEnabledChange={setBetaEnabled}
-                onBetaKeyChange={setBetaKey}
                 onSubmit={handleSubmit}
-                onRetry={handleRetry}
-                onReset={handleReset}
+                loading={currentApi.loading}
                 submitBlocked={betaRunBlocked}
                 submitBlockedMessage={
                   zeroCreditBetaGate
@@ -387,21 +392,21 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                       ? 'Complete pending feedback on the device where you ran your last test.'
                       : undefined
                 }
-                pendingSession={pendingSession}
-                pendingThumbnails={pendingThumbnails}
-                credits={credits}
-                onFeedbackSubmitted={handleFeedbackSubmitted}
-                serviceSlug={serviceSlug}
-              />
-            ) : !hasStartedProcessing ? (
-              <ProcessingActionCard
-                solution={solution}
-                solutionType={solutionType}
-                files={files}
-                onSubmit={handleSubmit}
-                loading={currentApi.loading}
-                submitBlocked={false}
+                deviceBanner={deviceBanner}
+                feedbackSlot={!hasStartedProcessing ? feedbackPanel : undefined}
                 compact
+                betaControls={
+                  solution.hasBeta && solution.slug ? (
+                    <BetaAccessPanel
+                      serviceSlug={solution.slug}
+                      enabled={betaEnabled}
+                      betaKey={betaKey}
+                      onEnabledChange={setBetaEnabled}
+                      onBetaKeyChange={setBetaKey}
+                      variant="inline"
+                    />
+                  ) : undefined
+                }
               />
             ) : (
               <TabbedResponseSection
@@ -416,6 +421,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                 onRetry={handleRetry}
                 onReset={handleReset}
                 compact
+                feedbackSlot={feedbackPanel}
               />
             )}
           </div>

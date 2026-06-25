@@ -22,7 +22,6 @@ interface BetaFeedbackPanelProps {
   credits: number | null;
   onSubmitted: (remainingCredits: number) => void;
   embedded?: boolean;
-  variant?: 'default' | 'embedded' | 'integrated';
 }
 
 type WizardStep = 'confirm' | 'correct';
@@ -35,9 +34,7 @@ export default function BetaFeedbackPanel({
   credits,
   onSubmitted,
   embedded = false,
-  variant,
 }: BetaFeedbackPanelProps) {
-  const panelVariant = variant ?? (embedded ? 'embedded' : 'default');
   const [step, setStep] = useState<WizardStep>('confirm');
   const [expectedClassification, setExpectedClassification] = useState('');
   const [expectedScore, setExpectedScore] = useState('');
@@ -126,42 +123,28 @@ export default function BetaFeedbackPanel({
     });
   };
 
-  const shellClass =
-    panelVariant === 'integrated'
-      ? 'space-y-3'
-      : panelVariant === 'embedded'
-        ? 'space-y-2.5'
-        : 'rounded-lg border border-gray-700/80 bg-gray-900/40 px-3 py-3 space-y-2.5';
+  const shellClass = embedded
+    ? 'space-y-2.5'
+    : `rounded-lg border border-gray-700/80 bg-gray-900/40 px-3 py-3 space-y-2.5`;
 
   return (
     <div className={shellClass}>
-      {panelVariant === 'integrated' ? (
-        <div className="border-b border-gray-700/60 pb-2">
-          <p className="text-sm font-medium text-gray-200">
-            {zeroCredits ? 'Earn credits to keep testing' : 'Rate this result'}
+      <div className="flex items-start gap-2">
+        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/15 flex-shrink-0">
+          <MessageSquareText className="h-3.5 w-3.5 text-blue-400" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-gray-200">
+            {zeroCredits ? 'Earn credits to keep testing' : 'Help improve your custom model'}
           </p>
           <p className="text-[11px] text-gray-500 mt-0.5">
-            Was the API outcome correct? Submit feedback for a {refundAmount}-credit refund.
+            Share feedback on this test — we&apos;ll credit back {refundAmount} credits. We store the
+            feedback you submit, not your uploaded documents.
           </p>
         </div>
-      ) : (
-        <div className="flex items-start gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/15 flex-shrink-0">
-            <MessageSquareText className="h-3.5 w-3.5 text-blue-400" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-gray-200">
-              {zeroCredits ? 'Earn credits to keep testing' : 'Help improve your custom model'}
-            </p>
-            <p className="text-[11px] text-gray-500 mt-0.5">
-              Share feedback on this test — we&apos;ll credit back {refundAmount} credits. We store the
-              feedback you submit, not your uploaded documents.
-            </p>
-          </div>
-        </div>
-      )}
+      </div>
 
-      {thumbnails.length > 0 && panelVariant !== 'integrated' && (
+      {thumbnails.length > 0 && (
         <div className="space-y-1">
           <div className="flex gap-1.5 overflow-x-auto pb-0.5">
             {thumbnails.map((thumb, index) => (

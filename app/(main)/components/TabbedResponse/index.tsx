@@ -23,9 +23,7 @@ interface TabbedResponseSectionProps {
   onReset?: () => void;
   showBetaFeedbackNudge?: boolean;
   feedbackSlot?: React.ReactNode;
-  resultAddon?: React.ReactNode;
   compact?: boolean;
-  embedded?: boolean;
 }
 
 export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
@@ -41,9 +39,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   onReset,
   showBetaFeedbackNudge = false,
   feedbackSlot,
-  resultAddon,
   compact = false,
-  embedded = false,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('processed-image');
   const { copiedBase64, copyBase64 } = useClipboard();
@@ -123,11 +119,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   const isResultTabDisabled = false;
 
   return (
-    <div
-      className={`overflow-hidden h-full flex flex-col ${
-        embedded ? '' : 'bg-gray-900 rounded-lg border border-gray-700'
-      }`}
-    >
+    <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden h-full flex flex-col">
       {/* Tab Navigation */}
       <TabNavigation
         activeTab={activeTab}
@@ -163,7 +155,6 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
               error={error}
               errorDetails={errorDetails}
             />
-            {!loading && resultAddon}
           </div>
         )}
         
@@ -200,7 +191,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         </div>
       )}
 
-      {!loading && !embedded && (onRetry || onReset) && (
+      {!loading && (onRetry || onReset) && (
         <div className={`flex-shrink-0 border-t border-gray-700 ${compact ? 'p-3' : 'p-4'}`}>
           <div className="flex gap-3">
             {onRetry && (
