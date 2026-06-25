@@ -35,6 +35,7 @@ export interface BetaFeedbackExpectedResult {
   expectedSimilarityMin?: number;
   expectedSimilarityMax?: number;
   notes?: string;
+  responseAsExpected?: boolean;
 }
 
 export interface BetaFeedbackSessionSummary {

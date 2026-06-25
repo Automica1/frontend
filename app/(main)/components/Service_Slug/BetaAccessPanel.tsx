@@ -9,6 +9,7 @@ interface BetaAccessPanelProps {
   betaKey: string;
   onEnabledChange: (enabled: boolean) => void;
   onBetaKeyChange: (key: string) => void;
+  variant?: 'card' | 'inline';
 }
 
 const storageKey = (slug: string) => `automica-beta-key:${slug}`;
@@ -33,6 +34,7 @@ export default function BetaAccessPanel({
   betaKey,
   onEnabledChange,
   onBetaKeyChange,
+  variant = 'inline',
 }: BetaAccessPanelProps) {
   const [open, setOpen] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -64,70 +66,60 @@ export default function BetaAccessPanel({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full rounded-lg border border-gray-700 bg-gray-800/70 px-3 py-2.5 text-left transition-colors hover:border-gray-600 hover:bg-gray-800"
+        className="w-full rounded-md border border-gray-700/80 bg-gray-800/50 px-2.5 py-2 text-left transition-colors hover:border-gray-600 hover:bg-gray-800"
       >
-        <span className="flex items-center justify-between gap-3">
-          <span className="flex items-center gap-2 text-sm text-gray-200">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-500/15">
-              <FlaskConical className="h-3.5 w-3.5 text-blue-400" />
-            </span>
-            Try beta version
+        <span className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2 text-xs text-gray-300">
+            <FlaskConical className="h-3.5 w-3.5 text-blue-400" />
+            Custom model (beta)
           </span>
-          <span className="flex items-center gap-1 text-xs text-gray-500">
-            Optional
-            <ChevronDown className="h-3.5 w-3.5" />
-          </span>
+          <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
         </span>
       </button>
     );
   }
 
+  const containerClass =
+    variant === 'inline'
+      ? 'rounded-md border border-gray-700/80 bg-gray-800/30 px-2.5 py-2 space-y-2'
+      : 'rounded-lg border border-blue-500/30 bg-blue-900/15 px-3 py-3 space-y-2.5';
+
   return (
-    <div className="rounded-lg border border-blue-500/30 bg-blue-900/15 px-3 py-3 space-y-2.5">
+    <div className={containerClass}>
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-500/20">
-            <FlaskConical className="h-3.5 w-3.5 text-blue-400" />
-          </span>
-          <div>
-            <p className="text-sm font-medium text-blue-200">Beta access</p>
-            <p className="text-[11px] text-blue-300/70">Uses your dedicated custom AI model when enabled</p>
-          </div>
-        </div>
+        <label className="flex items-center gap-2 text-xs text-gray-300 cursor-pointer select-none flex-1 min-w-0">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => onEnabledChange(e.target.checked)}
+            className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-0 focus:ring-offset-0 flex-shrink-0"
+          />
+          <span className="truncate">Route to custom model (beta)</span>
+        </label>
         <button
           type="button"
           onClick={handleClose}
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-gray-400 hover:bg-gray-800/60 hover:text-gray-200"
+          className="inline-flex items-center text-gray-500 hover:text-gray-300 flex-shrink-0"
           aria-label="Hide beta options"
         >
           <ChevronUp className="h-3.5 w-3.5" />
-          Hide
         </button>
       </div>
 
-      <label className="flex items-center gap-2.5 rounded-md border border-gray-700/80 bg-gray-900/40 px-2.5 py-2 text-sm text-gray-300 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={(e) => onEnabledChange(e.target.checked)}
-          className="h-4 w-4 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-0 focus:ring-offset-0"
-        />
-        Route this request to beta
-      </label>
-
       {enabled && (
         <>
-          <p className="text-[11px] text-gray-400 leading-relaxed">
-            Your test cases help calibrate your dedicated model. We store inputs from custom AI runs to improve accuracy.
+          <p className="text-[10px] text-gray-500 leading-snug">
+            Your test cases help calibrate your dedicated model. We store the feedback you share—not
+            your uploaded documents.
           </p>
           <input
-          type="password"
-          value={betaKey}
-          onChange={(e) => onBetaKeyChange(e.target.value.trim())}
-          placeholder="Enter beta key (bk_live_...)"
-          className="w-full rounded-md border border-gray-700 bg-gray-900/60 px-3 py-2 text-sm text-gray-200 placeholder:text-gray-500 focus:border-blue-500/40 focus:outline-none"
-          autoComplete="off"
-        />
+            type="password"
+            value={betaKey}
+            onChange={(e) => onBetaKeyChange(e.target.value.trim())}
+            placeholder="Beta key (bk_live_...)"
+            className="w-full rounded-md border border-gray-700 bg-gray-900/60 px-2.5 py-1.5 text-xs text-gray-200 placeholder:text-gray-500 focus:border-blue-500/40 focus:outline-none"
+            autoComplete="off"
+          />
         </>
       )}
     </div>

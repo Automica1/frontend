@@ -12,6 +12,9 @@ interface ProcessingActionCardProps {
   betaControls?: React.ReactNode;
   submitBlocked?: boolean;
   submitBlockedMessage?: string;
+  deviceBanner?: React.ReactNode;
+  feedbackSlot?: React.ReactNode;
+  compact?: boolean;
 }
 
 export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
@@ -23,6 +26,9 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
   betaControls,
   submitBlocked = false,
   submitBlockedMessage,
+  deviceBanner,
+  feedbackSlot,
+  compact = false,
 }) => {
   const getButtonText = (type: SolutionType) => {
     switch (type) {
@@ -98,20 +104,18 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
   const Icon = getIcon(solutionType);
 
   return (
-    <div className="bg-gray-900 rounded-lg border border-gray-700 h-full flex flex-col">
-      {/* Scrollable content area */}
-      <div className="flex-1 overflow-y-auto p-6 pb-0">
-        <div className="space-y-4">
-          {/* Header */}
+    <div className="bg-gray-900 rounded-lg border border-gray-700 h-full flex flex-col overflow-hidden">
+      <div className={`flex-1 min-h-0 overflow-y-auto ${compact ? 'p-4 pb-0' : 'p-6 pb-0'}`}>
+        <div className={compact ? 'space-y-3' : 'space-y-4'}>
           <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 bg-gradient-to-br ${solution.gradient} rounded-lg flex items-center justify-center`}>
-              <Icon className="w-5 h-5 text-white" />
+            <div className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br ${solution.gradient} rounded-lg flex items-center justify-center flex-shrink-0`}>
+              <Icon className={`${compact ? 'w-4 h-4' : 'w-5 h-5'} text-white`} />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">
+            <div className="min-w-0">
+              <h3 className={`${compact ? 'text-base' : 'text-lg'} font-semibold text-white`}>
                 Process Files
               </h3>
-              <p className="text-sm text-gray-400">
+              <p className={`${compact ? 'text-xs' : 'text-sm'} text-gray-400 truncate`}>
                 {getStatusMessage()}
               </p>
             </div>
@@ -145,18 +149,17 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
 
           {/* Special requirements for signature verification */}
           {solutionType === 'signature-verification' && (
-            <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-4">
-              <div className="flex items-center space-x-2 mb-2">
-                <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                <h4 className="font-semibold text-blue-400">Requirements</h4>
+            <div className={`bg-blue-900/20 border border-blue-500 rounded-lg ${compact ? 'p-3' : 'p-4'}`}>
+              <div className="flex items-center space-x-2 mb-1.5">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <h4 className={`font-semibold text-blue-400 ${compact ? 'text-sm' : ''}`}>Requirements</h4>
               </div>
-              <ul className="text-blue-300 text-sm space-y-1 list-disc list-inside">
+              <ul className={`text-blue-300 space-y-0.5 list-disc list-inside ${compact ? 'text-xs' : 'text-sm'}`}>
                 <li>Upload exactly 2 signature images</li>
-                <li>Images should be clear and well-lit</li>
-                <li>Supported formats: JPG, PNG, JPEG</li>
+                <li>Clear, well-lit images · JPG, PNG, JPEG</li>
               </ul>
-              <div className="mt-2 text-center">
-                <span className={`text-sm font-medium ${files.length === 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+              <div className="mt-1.5 text-center">
+                <span className={`text-xs font-medium ${files.length === 2 ? 'text-green-400' : 'text-yellow-400'}`}>
                   {files.length}/2 signatures uploaded
                   {files.length === 2 ? ' ✓' : ''}
                 </span>
@@ -211,7 +214,13 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
       </div>
 
       {/* Fixed Process Button at bottom */}
-      <div className="flex-shrink-0 p-6 pt-4 space-y-3">
+      <div className={`flex-shrink-0 space-y-2 ${compact ? 'p-4 pt-3' : 'p-6 pt-4'}`}>
+        {feedbackSlot && (
+          <div className="max-h-[200px] overflow-y-auto border-t border-gray-700/80 pt-2 -mx-1 px-1">
+            {feedbackSlot}
+          </div>
+        )}
+        {deviceBanner}
         {betaControls}
         {submitBlocked && submitBlockedMessage && (
           <p className="text-xs text-amber-300/90 rounded-md border border-amber-500/30 bg-amber-950/20 px-3 py-2">
@@ -221,7 +230,7 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
         <button
           onClick={onSubmit}
           disabled={isDisabled()}
-          className={`w-full px-6 py-4 bg-gradient-to-r ${solution.gradient} rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+          className={`w-full px-4 ${compact ? 'py-3 text-base' : 'py-4 text-lg'} bg-gradient-to-r ${solution.gradient} rounded-lg font-semibold transition-all duration-300 hover:scale-[1.02] flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
         >
           {loading ? (
             <>

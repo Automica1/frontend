@@ -91,6 +91,7 @@ interface BetaFeedbackSessionInfo {
   failureMessage?: string;
   creditsCharged: number;
   creditsRefunded?: number;
+  betaKeyPrefix?: string;
   actualResult?: {
     similarity_percentage?: number;
     classification?: string;
@@ -100,6 +101,7 @@ interface BetaFeedbackSessionInfo {
     expectedSimilarityMin?: number;
     expectedSimilarityMax?: number;
     notes?: string;
+    responseAsExpected?: boolean;
   };
   createdAt: string;
   feedbackSubmittedAt?: string;

@@ -22,6 +22,8 @@ interface TabbedResponseSectionProps {
   onRetry?: () => void;
   onReset?: () => void;
   showBetaFeedbackNudge?: boolean;
+  feedbackSlot?: React.ReactNode;
+  compact?: boolean;
 }
 
 export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
@@ -36,6 +38,8 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   onRetry,
   onReset,
   showBetaFeedbackNudge = false,
+  feedbackSlot,
+  compact = false,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('processed-image');
   const { copiedBase64, copyBase64 } = useClipboard();
@@ -142,7 +146,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         )}
         
         {activeTab === 'result' && (
-          <div className="p-6 h-full overflow-auto">
+          <div className={`${compact ? 'p-3' : 'p-6'} h-full overflow-auto`}>
             <ResultTab
               data={data}
               solutionType={solutionType}
@@ -173,7 +177,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         )}
       </div>
 
-      {!loading && showBetaFeedbackNudge && (
+      {!loading && showBetaFeedbackNudge && !feedbackSlot && (
         <div className="flex-shrink-0 border-t border-blue-500/20 bg-blue-950/20 px-4 py-3">
           <p className="text-xs text-blue-200">
             Label your expected result to earn credits back on your last custom model test.
@@ -181,8 +185,14 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         </div>
       )}
 
+      {!loading && feedbackSlot && (
+        <div className="flex-shrink-0 border-t border-gray-700/80 px-3 py-3 max-h-[220px] overflow-y-auto">
+          {feedbackSlot}
+        </div>
+      )}
+
       {!loading && (onRetry || onReset) && (
-        <div className="flex-shrink-0 border-t border-gray-700 p-4">
+        <div className={`flex-shrink-0 border-t border-gray-700 ${compact ? 'p-3' : 'p-4'}`}>
           <div className="flex gap-3">
             {onRetry && (
               <button

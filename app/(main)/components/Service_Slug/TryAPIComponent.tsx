@@ -14,6 +14,7 @@ import {TabbedResponseSection} from '../TabbedResponse/index'
 import { ProcessingActionCard } from '../TabbedResponse/ProcessingActionCard';
 import BetaAccessPanel from './BetaAccessPanel';
 import BetaFeedbackPanel from './BetaFeedbackPanel';
+import BetaFeedbackDeviceBanner from './BetaFeedbackDeviceBanner';
 import {
   apiService,
   createThumbnail,
@@ -81,6 +82,27 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
 
   const zeroCreditBetaGate = Boolean(solution.hasBeta && betaEnabled && credits === 0 && pendingSession);
   const betaRunBlocked = zeroCreditBetaGate;
+  const canShowFeedbackForm = Boolean(
+    solution.hasBeta && pendingSession && pendingThumbnails.length > 0
+  );
+  const showDeviceBanner = Boolean(
+    solution.hasBeta && pendingSession && pendingThumbnails.length === 0
+  );
+
+  const feedbackPanel =
+    canShowFeedbackForm && pendingSession ? (
+      <BetaFeedbackPanel
+        serviceSlug={serviceSlug}
+        solutionType={solutionType}
+        session={pendingSession}
+        thumbnails={pendingThumbnails}
+        credits={credits}
+        onSubmitted={handleFeedbackSubmitted}
+        embedded
+      />
+    ) : null;
+
+  const deviceBanner = showDeviceBanner ? <BetaFeedbackDeviceBanner compact /> : undefined;
 
   const Icon = solution.IconComponent;
 
@@ -323,7 +345,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const shouldUseFileUpload2 = solutionType === 'signature-verification' || solutionType === 'face-verify';
   
   // Determine height based on solution type
-  const containerHeight = shouldUseFileUpload2 ? 'h-[500px]' : 'h-[500px]';
+  const containerHeight = 'h-[500px]';
   return (
     <div className="md:pt-24 pt-16 pb-16 px-4">
       <div className="max-w-6xl mx-auto">
@@ -353,77 +375,54 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
             </div>
           </div>
 
-          {/* Right Column - Conditional Content */}
-          <div className={`space-y-6 h-${containerHeight}`}>
+          {/* Right Column - integrated panel */}
+          <div className={`${containerHeight} min-h-0`}>
             {!hasStartedProcessing ? (
-              /* Show Processing Action Card before processing */
-              <div className="space-y-4 h-full flex flex-col">
-                {solution.hasBeta && pendingSession && (
-                  <BetaFeedbackPanel
-                    serviceSlug={serviceSlug}
-                    session={pendingSession}
-                    thumbnails={pendingThumbnails}
-                    credits={credits}
-                    onSubmitted={handleFeedbackSubmitted}
-                  />
-                )}
-                <div className="flex-1 min-h-0">
-                  <ProcessingActionCard
-                    solution={solution}
-                    solutionType={solutionType}
-                    files={files}
-                    onSubmit={handleSubmit}
-                    loading={currentApi.loading}
-                    submitBlocked={betaRunBlocked}
-                    submitBlockedMessage={
-                      zeroCreditBetaGate
-                        ? 'Submit feedback on your last test to earn credits back, or buy more credits to continue.'
-                        : 'Submit feedback on your last custom model test before running another beta request.'
-                    }
-                    betaControls={
-                      solution.hasBeta && solution.slug ? (
-                        <BetaAccessPanel
-                          serviceSlug={solution.slug}
-                          enabled={betaEnabled}
-                          betaKey={betaKey}
-                          onEnabledChange={setBetaEnabled}
-                          onBetaKeyChange={setBetaKey}
-                        />
-                      ) : undefined
-                    }
-                  />
-                </div>
-              </div>
+              <ProcessingActionCard
+                solution={solution}
+                solutionType={solutionType}
+                files={files}
+                onSubmit={handleSubmit}
+                loading={currentApi.loading}
+                submitBlocked={betaRunBlocked}
+                submitBlockedMessage={
+                  zeroCreditBetaGate
+                    ? 'Submit feedback on your last test to earn credits back, or buy more credits to continue.'
+                    : showDeviceBanner
+                      ? 'Complete pending feedback on the device where you ran your last test.'
+                      : undefined
+                }
+                deviceBanner={deviceBanner}
+                feedbackSlot={!hasStartedProcessing ? feedbackPanel : undefined}
+                compact
+                betaControls={
+                  solution.hasBeta && solution.slug ? (
+                    <BetaAccessPanel
+                      serviceSlug={solution.slug}
+                      enabled={betaEnabled}
+                      betaKey={betaKey}
+                      onEnabledChange={setBetaEnabled}
+                      onBetaKeyChange={setBetaKey}
+                      variant="inline"
+                    />
+                  ) : undefined
+                }
+              />
             ) : (
-              /* Show Results Section after processing starts with matching height */
-              <div className="space-y-4 h-full flex flex-col">
-                <div className={`flex-1 min-h-0 ${containerHeight}`}>
-                  <TabbedResponseSection
-                    solution={solution}
-                    solutionType={solutionType}
-                    data={currentApi.data}
-                    loading={currentApi.loading}
-                    error={currentApi.error}
-                    errorDetails={currentApi.errorData}
-                    maskedBase64={maskedBase64}
-                    fileName={files[0]?.name}
-                    onRetry={handleRetry}
-                    onReset={handleReset}
-                    showBetaFeedbackNudge={Boolean(
-                      solution.hasBeta && betaEnabled && pendingSession
-                    )}
-                  />
-                </div>
-                {solution.hasBeta && pendingSession && (
-                  <BetaFeedbackPanel
-                    serviceSlug={serviceSlug}
-                    session={pendingSession}
-                    thumbnails={pendingThumbnails}
-                    credits={credits}
-                    onSubmitted={handleFeedbackSubmitted}
-                  />
-                )}
-              </div>
+              <TabbedResponseSection
+                solution={solution}
+                solutionType={solutionType}
+                data={currentApi.data}
+                loading={currentApi.loading}
+                error={currentApi.error}
+                errorDetails={currentApi.errorData}
+                maskedBase64={maskedBase64}
+                fileName={files[0]?.name}
+                onRetry={handleRetry}
+                onReset={handleReset}
+                compact
+                feedbackSlot={feedbackPanel}
+              />
             )}
           </div>
         </div>

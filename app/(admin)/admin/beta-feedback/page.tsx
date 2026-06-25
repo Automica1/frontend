@@ -1,13 +1,17 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs';
-import { Loader2, MessageSquareText, RefreshCw, X } from 'lucide-react';
+import { Loader2, MessageSquareText, RefreshCw } from 'lucide-react';
 import {
   apiService,
-  type BetaFeedbackSessionDetail,
   type BetaFeedbackSessionInfo,
 } from '../../lib/apiService';
+import BetaFeedbackDetailPanel from './BetaFeedbackDetailPanel';
+import {
+  classificationsMatch,
+  formatClassificationLabel,
+} from '../../../(main)/lib/betaFeedbackConfig';
 
 const statusStyles: Record<string, string> = {
   pending_feedback: 'text-amber-300 bg-amber-500/10 border-amber-500/30',
@@ -19,21 +23,30 @@ const outcomeStyles: Record<string, string> = {
   failed: 'text-red-300 bg-red-500/10 border-red-500/30',
 };
 
-function toImageSrc(base64: string): string {
-  if (base64.startsWith('data:')) return base64;
-  return `data:image/jpeg;base64,${base64}`;
-}
-
 export default function BetaFeedbackPage() {
   const { isAuthenticated, isLoading: authLoading } = useKindeBrowserClient();
   const [sessions, setSessions] = useState<BetaFeedbackSessionInfo[]>([]);
+  const [services, setServices] = useState<string[]>(['signature-verification']);
   const [selectedService, setSelectedService] = useState('signature-verification');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending_feedback' | 'refunded'>('all');
+  const [outcomeFilter, setOutcomeFilter] = useState<'all' | 'completed' | 'failed'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [sessionDetail, setSessionDetail] = useState<BetaFeedbackSessionDetail | null>(null);
+  const [sessionDetail, setSessionDetail] = useState<Awaited<
+    ReturnType<typeof apiService.getBetaFeedbackSession>
+  >['session'] | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void apiService.getSupportedBetaServices().then((res) => {
+      if (res.services?.length) {
+        setServices(res.services);
+      }
+    });
+  }, [isAuthenticated]);
 
   const loadSessions = useCallback(async () => {
     try {
@@ -77,6 +90,14 @@ export default function BetaFeedbackPage() {
     void loadSessionDetail(selectedSessionId);
   }, [loadSessionDetail, selectedSessionId]);
 
+  const filteredSessions = useMemo(() => {
+    return sessions.filter((session) => {
+      if (statusFilter !== 'all' && session.status !== statusFilter) return false;
+      if (outcomeFilter !== 'all' && session.runOutcome !== outcomeFilter) return false;
+      return true;
+    });
+  }, [outcomeFilter, sessions, statusFilter]);
+
   const formatDate = (value?: string) => {
     if (!value) return '—';
     return new Date(value).toLocaleString();
@@ -111,13 +132,35 @@ export default function BetaFeedbackPage() {
             Review custom model test cases, expected labels, and refunds.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={selectedService}
             onChange={(e) => setSelectedService(e.target.value)}
             className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200"
           >
-            <option value="signature-verification">signature-verification</option>
+            {services.map((service) => (
+              <option key={service} value={service}>
+                {service}
+              </option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200"
+          >
+            <option value="all">All statuses</option>
+            <option value="pending_feedback">Pending</option>
+            <option value="refunded">Refunded</option>
+          </select>
+          <select
+            value={outcomeFilter}
+            onChange={(e) => setOutcomeFilter(e.target.value as typeof outcomeFilter)}
+            className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200"
+          >
+            <option value="all">All outcomes</option>
+            <option value="completed">Completed</option>
+            <option value="failed">Failed</option>
           </select>
           <button
             type="button"
@@ -147,6 +190,7 @@ export default function BetaFeedbackPage() {
                 <th className="px-4 py-3 font-medium">Outcome</th>
                 <th className="px-4 py-3 font-medium">Actual</th>
                 <th className="px-4 py-3 font-medium">Expected</th>
+                <th className="px-4 py-3 font-medium">Match</th>
                 <th className="px-4 py-3 font-medium">Credits</th>
                 <th className="px-4 py-3 font-medium">Created</th>
               </tr>
@@ -154,24 +198,36 @@ export default function BetaFeedbackPage() {
             <tbody className="divide-y divide-gray-800">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    <Loader2 className="h-5 w-5 animate-spin inline-block mr-2" />
                     Loading sessions…
                   </td>
                 </tr>
-              ) : sessions.length === 0 ? (
+              ) : filteredSessions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                    No beta feedback sessions yet.
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    No beta feedback sessions match your filters.
                   </td>
                 </tr>
               ) : (
-                sessions.map((session) => {
+                filteredSessions.map((session) => {
                   const outcome = getOutcomeLabel(session);
+                  const matched =
+                    session.actualResult?.classification &&
+                    session.expectedResult?.expectedClassification
+                      ? classificationsMatch(
+                          session.actualResult.classification,
+                          session.expectedResult.expectedClassification
+                        )
+                      : null;
+                  const isSelected = session.id === selectedSessionId;
                   return (
                     <tr
                       key={session.id || `${session.email}-${session.reqId}`}
                       onClick={() => handleRowClick(session)}
-                      className={`text-gray-300 ${session.id ? 'cursor-pointer hover:bg-gray-900/60' : ''}`}
+                      className={`text-gray-300 ${
+                        session.id ? 'cursor-pointer hover:bg-gray-900/60' : ''
+                      } ${isSelected ? 'bg-blue-950/30' : ''}`}
                     >
                       <td className="px-4 py-3">
                         <div className="font-medium text-gray-200">{session.email}</div>
@@ -200,18 +256,27 @@ export default function BetaFeedbackPage() {
                         )}
                       </td>
                       <td className="px-4 py-3 text-xs">
-                        {session.actualResult?.classification || '—'}
+                        {formatClassificationLabel(session.actualResult?.classification)}
                         {typeof session.actualResult?.similarity_percentage === 'number'
                           ? ` (${session.actualResult.similarity_percentage.toFixed(1)}%)`
                           : ''}
                       </td>
                       <td className="px-4 py-3 text-xs">
-                        {session.expectedResult?.expectedClassification || '—'}
+                        {formatClassificationLabel(session.expectedResult?.expectedClassification)}
                         {session.expectedResult?.notes ? (
-                          <div className="text-gray-500 mt-0.5 truncate max-w-[200px]">
+                          <div className="text-gray-500 mt-0.5 truncate max-w-[180px]" title={session.expectedResult.notes}>
                             {session.expectedResult.notes}
                           </div>
                         ) : null}
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        {matched === null ? (
+                          <span className="text-gray-500">—</span>
+                        ) : matched ? (
+                          <span className="text-green-400">Match</span>
+                        ) : (
+                          <span className="text-amber-400">Corrected</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-xs">
                         charged {session.creditsCharged}
@@ -230,143 +295,14 @@ export default function BetaFeedbackPage() {
       </div>
 
       {selectedSessionId && (
-        <div className="fixed inset-0 z-50 flex items-end justify-end bg-black/65 p-4 backdrop-blur-sm md:items-stretch">
-          <div className="flex h-full w-full max-w-2xl flex-col overflow-hidden rounded-[28px] border border-white/10 bg-[#0d0d10] shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-500">
-                  Session detail
-                </p>
-                <h2 className="mt-2 text-xl font-semibold text-white">{selectedSessionId}</h2>
-              </div>
-              <button
-                type="button"
-                onClick={closeDetail}
-                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-              {detailLoading && (
-                <div className="flex items-center gap-3 text-gray-300">
-                  <Loader2 className="h-5 w-5 animate-spin text-blue-300" />
-                  <span className="text-sm">Loading session details…</span>
-                </div>
-              )}
-
-              {detailError && (
-                <div className="rounded-lg border border-red-500/30 bg-red-950/20 px-4 py-3 text-sm text-red-300">
-                  {detailError}
-                </div>
-              )}
-
-              {sessionDetail && (
-                <>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <DetailTile label="User" value={sessionDetail.email} subvalue={sessionDetail.userId} />
-                    <DetailTile label="Request ID" value={sessionDetail.reqId} />
-                    <DetailTile label="Status" value={sessionDetail.status} />
-                    <DetailTile
-                      label="Run outcome"
-                      value={sessionDetail.runOutcome || '—'}
-                      subvalue={sessionDetail.failureMessage}
-                    />
-                    <DetailTile
-                      label="Credits"
-                      value={`Charged ${sessionDetail.creditsCharged}`}
-                      subvalue={
-                        sessionDetail.creditsRefunded
-                          ? `Refunded ${sessionDetail.creditsRefunded}`
-                          : sessionDetail.status === 'refunded'
-                            ? 'Refunded'
-                            : 'Not refunded yet'
-                      }
-                    />
-                    <DetailTile label="Created" value={formatDate(sessionDetail.createdAt)} />
-                  </div>
-
-                  {sessionDetail.failureMessage && (
-                    <div className="rounded-lg border border-red-500/30 bg-red-950/20 px-4 py-3">
-                      <p className="text-xs font-medium text-red-300 mb-1">Failure message</p>
-                      <p className="text-sm text-red-200">{sessionDetail.failureMessage}</p>
-                    </div>
-                  )}
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4">
-                      <p className="text-xs font-medium text-gray-400 mb-2">Actual result</p>
-                      <p className="text-sm text-gray-200">
-                        {sessionDetail.actualResult?.classification || '—'}
-                        {typeof sessionDetail.actualResult?.similarity_percentage === 'number'
-                          ? ` · ${sessionDetail.actualResult.similarity_percentage.toFixed(1)}%`
-                          : ''}
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4">
-                      <p className="text-xs font-medium text-gray-400 mb-2">Expected result</p>
-                      <p className="text-sm text-gray-200">
-                        {sessionDetail.expectedResult?.expectedClassification || '—'}
-                      </p>
-                      {sessionDetail.expectedResult?.notes && (
-                        <p className="text-xs text-gray-500 mt-1">{sessionDetail.expectedResult.notes}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-medium text-gray-400 mb-3">Input images</p>
-                    {sessionDetail.inputs && sessionDetail.inputs.length > 0 ? (
-                      <div className="flex flex-wrap gap-3">
-                        {sessionDetail.inputs.map((input, index) => (
-                          <img
-                            key={`${sessionDetail.id}-input-${index}`}
-                            src={toImageSrc(input)}
-                            alt={`Input ${index + 1}`}
-                            className="h-32 w-32 rounded-lg border border-gray-700 object-cover bg-gray-900"
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-gray-500">No input images stored for this session.</p>
-                    )}
-                  </div>
-
-                  {(sessionDetail.feedbackSubmittedAt || sessionDetail.refundedAt) && (
-                    <div className="text-xs text-gray-500 space-y-1">
-                      {sessionDetail.feedbackSubmittedAt && (
-                        <p>Feedback submitted: {formatDate(sessionDetail.feedbackSubmittedAt)}</p>
-                      )}
-                      {sessionDetail.refundedAt && (
-                        <p>Refunded: {formatDate(sessionDetail.refundedAt)}</p>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+        <BetaFeedbackDetailPanel
+          sessionId={selectedSessionId}
+          sessionDetail={sessionDetail}
+          detailLoading={detailLoading}
+          detailError={detailError}
+          onClose={closeDetail}
+        />
       )}
-    </div>
-  );
-}
-
-function DetailTile({
-  label,
-  value,
-  subvalue,
-}: {
-  label: string;
-  value: string;
-  subvalue?: string;
-}) {
-  return (
-    <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4">
-      <p className="text-xs font-medium text-gray-400">{label}</p>
-      <p className="text-sm text-gray-200 mt-1 break-all">{value}</p>
-      {subvalue && <p className="text-xs text-gray-500 mt-1 break-all">{subvalue}</p>}
     </div>
   );
 }
