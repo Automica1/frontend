@@ -6,6 +6,7 @@ import { Copy, FlaskConical, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import {
   apiService,
   type BetaKeyInfo,
+  type UserInfo,
 } from '../../lib/apiService';
 
 export default function BetaKeysPage() {
@@ -20,6 +21,10 @@ export default function BetaKeysPage() {
   const [label, setLabel] = useState('');
   const [expiresInDays, setExpiresInDays] = useState<number | ''>('');
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+  const [userSearch, setUserSearch] = useState('');
+  const [userResults, setUserResults] = useState<UserInfo[]>([]);
+  const [selectedUser, setSelectedUser] = useState<UserInfo | null>(null);
+  const [isSearchingUsers, setIsSearchingUsers] = useState(false);
 
   const loadKeys = useCallback(async () => {
     try {
@@ -52,9 +57,42 @@ export default function BetaKeysPage() {
     loadKeys();
   }, [authLoading, isAuthenticated, loadKeys]);
 
+  useEffect(() => {
+    if (!showGenerateModal || generatedKey) return;
+
+    const query = userSearch.trim();
+    if (query.length < 2) {
+      setUserResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        setIsSearchingUsers(true);
+        const response = await apiService.getUsers({ search: query, limit: 8, skip: 0 });
+        setUserResults(response.users || []);
+      } catch {
+        setUserResults([]);
+      } finally {
+        setIsSearchingUsers(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [userSearch, showGenerateModal, generatedKey]);
+
+  const resetGenerateForm = () => {
+    setLabel('');
+    setExpiresInDays('');
+    setUserSearch('');
+    setUserResults([]);
+    setSelectedUser(null);
+    setGeneratedKey(null);
+  };
+
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!label.trim()) return;
+    if (!label.trim() || !selectedUser?.email) return;
 
     try {
       setIsGenerating(true);
@@ -62,11 +100,15 @@ export default function BetaKeysPage() {
       const response = await apiService.generateBetaKey({
         serviceName: selectedService,
         label: label.trim(),
+        assignedUserEmail: selectedUser.email,
         expiresInDays: expiresInDays === '' ? undefined : Number(expiresInDays),
       });
-      setGeneratedKey(response.betaKey);
       setLabel('');
       setExpiresInDays('');
+      setUserSearch('');
+      setUserResults([]);
+      setSelectedUser(null);
+      setGeneratedKey(response.betaKey);
       await loadKeys();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate beta key');
@@ -108,7 +150,7 @@ export default function BetaKeysPage() {
             Beta Keys
           </h1>
           <p className="text-sm text-gray-400 mt-1">
-            Generate offline beta keys for services that support beta routing.
+            Generate beta keys tied to a specific user. Only that user can use each key.
           </p>
         </div>
         <div className="flex gap-2">
@@ -121,7 +163,7 @@ export default function BetaKeysPage() {
           </button>
           <button
             onClick={() => {
-              setGeneratedKey(null);
+              resetGenerateForm();
               setShowGenerateModal(true);
             }}
             className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 text-sm font-medium text-white"
@@ -158,6 +200,7 @@ export default function BetaKeysPage() {
           <thead className="bg-white/5 text-left text-gray-400">
             <tr>
               <th className="px-4 py-3">Prefix</th>
+              <th className="px-4 py-3">Assigned user</th>
               <th className="px-4 py-3">Label</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Usage</th>
@@ -169,11 +212,11 @@ export default function BetaKeysPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">Loading beta keys...</td>
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading beta keys...</td>
               </tr>
             ) : keys.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">No beta keys yet for this service.</td>
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">No beta keys yet for this service.</td>
               </tr>
             ) : (
               keys.map((key) => {
@@ -182,6 +225,7 @@ export default function BetaKeysPage() {
                 return (
                   <tr key={key.id} className="border-t border-white/5 text-gray-200">
                     <td className="px-4 py-3 font-mono text-xs">{key.keyPrefix}...</td>
+                    <td className="px-4 py-3 text-xs">{key.assignedUserEmail || '—'}</td>
                     <td className="px-4 py-3">{key.label}</td>
                     <td className="px-4 py-3">{status}</td>
                     <td className="px-4 py-3">{key.usageCount}</td>
@@ -229,7 +273,7 @@ export default function BetaKeysPage() {
                   </button>
                   <button
                     onClick={() => {
-                      setGeneratedKey(null);
+                      resetGenerateForm();
                       setShowGenerateModal(false);
                     }}
                     className="rounded-2xl bg-white/10 px-4 py-2 text-sm text-white"
@@ -249,11 +293,64 @@ export default function BetaKeysPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-300 mb-2">Label / recipient</label>
+                  <label className="block text-sm text-gray-300 mb-2">Assigned user</label>
+                  {selectedUser ? (
+                    <div className="flex items-center justify-between rounded-2xl border border-purple-500/30 bg-purple-500/10 px-3 py-2">
+                      <div>
+                        <p className="text-sm text-white">{selectedUser.email}</p>
+                        <p className="text-xs text-gray-400">{selectedUser.userId}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedUser(null);
+                          setUserSearch('');
+                          setUserResults([]);
+                        }}
+                        className="text-xs text-gray-300 hover:text-white"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <input
+                        value={userSearch}
+                        onChange={(e) => setUserSearch(e.target.value)}
+                        placeholder="Search by email (min 2 chars)"
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-white"
+                      />
+                      {isSearchingUsers && (
+                        <p className="text-xs text-gray-400">Searching users...</p>
+                      )}
+                      {userResults.length > 0 && (
+                        <div className="max-h-40 overflow-y-auto rounded-2xl border border-white/10 bg-black/40">
+                          {userResults.map((user) => (
+                            <button
+                              key={user.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setUserSearch('');
+                                setUserResults([]);
+                              }}
+                              className="block w-full border-b border-white/5 px-3 py-2 text-left hover:bg-white/5 last:border-b-0"
+                            >
+                              <p className="text-sm text-white">{user.email}</p>
+                              <p className="text-xs text-gray-400">{user.userId}</p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Label</label>
                   <input
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
-                    placeholder="e.g. Acme Corp pilot tester"
+                    placeholder="e.g. Acme Corp pilot"
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-white"
                     required
                     maxLength={100}
@@ -273,7 +370,10 @@ export default function BetaKeysPage() {
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowGenerateModal(false)}
+                    onClick={() => {
+                      resetGenerateForm();
+                      setShowGenerateModal(false);
+                    }}
                     className="flex-1 rounded-2xl border border-white/10 px-4 py-2 text-gray-200"
                     disabled={isGenerating}
                   >
@@ -281,8 +381,8 @@ export default function BetaKeysPage() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 text-white"
-                    disabled={isGenerating}
+                    className="flex-1 rounded-2xl bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 text-white disabled:opacity-50"
+                    disabled={isGenerating || !selectedUser}
                   >
                     {isGenerating ? 'Generating...' : 'Generate'}
                   </button>

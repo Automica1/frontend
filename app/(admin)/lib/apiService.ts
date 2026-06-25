@@ -41,6 +41,7 @@ interface BetaKeyInfo {
   keyPrefix: string;
   serviceName: string;
   label: string;
+  assignedUserEmail: string;
   createdBy: string;
   createdAt: string;
   expiresAt?: string;
@@ -53,6 +54,7 @@ interface BetaKeyInfo {
 interface BetaKeyGenerateRequest {
   serviceName: string;
   label: string;
+  assignedUserEmail: string;
   expiresInDays?: number;
 }
 
@@ -62,6 +64,7 @@ interface BetaKeyGenerateResponse {
   keyPrefix: string;
   serviceName: string;
   label: string;
+  assignedUserEmail: string;
   expiresAt?: string;
   createdAt: string;
 }
