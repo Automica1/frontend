@@ -12,6 +12,7 @@ interface TabNavigationProps {
   isResultTabDisabled: boolean;
   isQrExtractSolution: boolean;
   fileType: 'image' | 'pdf';
+  tabBadge?: Partial<Record<TabType, string>>;
 }
 
 export const TabNavigation: React.FC<TabNavigationProps> = ({
@@ -21,7 +22,8 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   showResultTab,
   isProcessedImageTabDisabled,
   isResultTabDisabled,
-  isQrExtractSolution
+  isQrExtractSolution,
+  tabBadge,
 }) => {
   return (
     <div className="flex border-b border-gray-700 flex-shrink-0">
@@ -44,6 +46,11 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
             <Shield className={`w-4 h-4 ${isResultTabDisabled ? 'text-gray-600' : ''}`} />
           )}
           <span>Result</span>
+          {tabBadge?.result && activeTab !== 'result' && (
+            <span className="ml-1 rounded bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300">
+              {tabBadge.result}
+            </span>
+          )}
         </button>
       )}
 

@@ -22,6 +22,7 @@ interface BetaFeedbackPanelProps {
   credits: number | null;
   onSubmitted: (remainingCredits: number) => void;
   embedded?: boolean;
+  placement?: 'footer' | 'inline';
 }
 
 type WizardStep = 'confirm' | 'correct';
@@ -34,6 +35,7 @@ export default function BetaFeedbackPanel({
   credits,
   onSubmitted,
   embedded = false,
+  placement = 'footer',
 }: BetaFeedbackPanelProps) {
   const [step, setStep] = useState<WizardStep>('confirm');
   const [expectedClassification, setExpectedClassification] = useState('');
@@ -42,6 +44,7 @@ export default function BetaFeedbackPanel({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const panelPlacement = placement === 'inline' ? 'inline' : embedded ? 'footer' : 'default';
   const zeroCredits = credits === 0;
   const refundAmount = session.creditsCharged;
   const classificationOptions = getClassificationOptions(solutionType);
@@ -123,28 +126,42 @@ export default function BetaFeedbackPanel({
     });
   };
 
-  const shellClass = embedded
-    ? 'space-y-2.5'
-    : `rounded-lg border border-gray-700/80 bg-gray-900/40 px-3 py-3 space-y-2.5`;
+  const shellClass =
+    panelPlacement === 'inline'
+      ? 'rounded-lg border border-gray-700 bg-gray-800/40 px-3 py-3 space-y-3'
+      : panelPlacement === 'footer'
+        ? 'space-y-2.5'
+        : 'rounded-lg border border-gray-700/80 bg-gray-900/40 px-3 py-3 space-y-2.5';
 
   return (
     <div className={shellClass}>
-      <div className="flex items-start gap-2">
-        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/15 flex-shrink-0">
-          <MessageSquareText className="h-3.5 w-3.5 text-blue-400" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-gray-200">
-            {zeroCredits ? 'Earn credits to keep testing' : 'Help improve your custom model'}
+      {panelPlacement === 'inline' ? (
+        <div className="border-b border-gray-700/60 pb-2">
+          <p className="text-sm font-medium text-gray-200">
+            {zeroCredits ? 'Earn credits to keep testing' : `Rate this result · earn ${refundAmount} credits back`}
           </p>
           <p className="text-[11px] text-gray-500 mt-0.5">
-            Share feedback on this test — we&apos;ll credit back {refundAmount} credits. We store the
-            feedback you submit, not your uploaded documents.
+            We store your feedback, not your uploaded documents. Previews stay on this device only.
           </p>
         </div>
-      </div>
+      ) : (
+        <div className="flex items-start gap-2">
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/15 flex-shrink-0">
+            <MessageSquareText className="h-3.5 w-3.5 text-blue-400" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-gray-200">
+              {zeroCredits ? 'Earn credits to keep testing' : 'Help improve your custom model'}
+            </p>
+            <p className="text-[11px] text-gray-500 mt-0.5">
+              Share feedback on this test — we&apos;ll credit back {refundAmount} credits. We store the
+              feedback you submit, not your uploaded documents.
+            </p>
+          </div>
+        </div>
+      )}
 
-      {thumbnails.length > 0 && (
+      {thumbnails.length > 0 && panelPlacement !== 'inline' && (
         <div className="space-y-1">
           <div className="flex gap-1.5 overflow-x-auto pb-0.5">
             {thumbnails.map((thumb, index) => (
@@ -162,13 +179,26 @@ export default function BetaFeedbackPanel({
         </div>
       )}
 
+      {thumbnails.length > 0 && panelPlacement === 'inline' && (
+        <div className="flex gap-1.5 overflow-x-auto">
+          {thumbnails.map((thumb, index) => (
+            <img
+              key={`${session.id}-${index}`}
+              src={thumb.startsWith('data:') ? thumb : `data:image/jpeg;base64,${thumb}`}
+              alt={`Test input ${index + 1}`}
+              className="h-10 w-10 flex-shrink-0 rounded border border-gray-700 object-cover bg-gray-900"
+            />
+          ))}
+        </div>
+      )}
+
       {session.failureMessage && (
         <div className="rounded border border-red-500/30 bg-red-950/20 px-2 py-1.5 text-[11px] text-red-300">
           {session.failureMessage}
         </div>
       )}
 
-      {hasActual && (
+      {hasActual && panelPlacement !== 'inline' && (
         <div className="rounded border border-gray-700/60 bg-gray-800/40 px-2 py-1.5 text-[11px] text-gray-400">
           Model returned:{' '}
           <span className="text-gray-200">
@@ -284,7 +314,7 @@ export default function BetaFeedbackPanel({
         </form>
       )}
 
-      {error && step === 'confirm' && <p className="text-[11px] text-red-400">{error}</p>}
+      {error && <p className="text-[11px] text-red-400">{error}</p>}
     </div>
   );
 }

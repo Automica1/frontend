@@ -1,5 +1,5 @@
 // components/TabbedResponseSection/index.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Solution, SolutionType } from '../../types/solution';
 import { TabType } from '../../types/tabTypes';
 import { TabNavigation } from './TabNavigation';
@@ -23,6 +23,8 @@ interface TabbedResponseSectionProps {
   onReset?: () => void;
   showBetaFeedbackNudge?: boolean;
   feedbackSlot?: React.ReactNode;
+  resultFooter?: React.ReactNode;
+  tabBadge?: Partial<Record<TabType, string>>;
   compact?: boolean;
 }
 
@@ -39,42 +41,36 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   onReset,
   showBetaFeedbackNudge = false,
   feedbackSlot,
+  resultFooter,
+  tabBadge,
   compact = false,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('processed-image');
   const { copiedBase64, copyBase64 } = useClipboard();
-  
-  // Determine if this is a verification solution type or QR extract
+  const resultFooterRef = useRef<HTMLDivElement>(null);
+  const hasScrolledToFeedbackRef = useRef(false);
+
   const isVerificationSolution = solutionType === 'face-verify' || solutionType === 'signature-verification';
   const isQrExtractSolution = solutionType === 'qr-extract';
 
-  // Detect file type based on various sources
   const detectFileType = (): 'image' | 'pdf' => {
-    // Check fileName extension
     if (fileName) {
       const extension = fileName.toLowerCase().split('.').pop();
       if (extension === 'pdf') return 'pdf';
       if (['png', 'jpg', 'jpeg'].includes(extension || '')) return 'image';
     }
 
-    // Check solution type - some solutions typically output PDFs
-    const pdfSolutionTypes: SolutionType[] = [
-      // Add solution types that typically output PDFs
-      // Example: 'pdf-extract', 'document-process', etc.
-    ];
+    const pdfSolutionTypes: SolutionType[] = [];
     if (pdfSolutionTypes.includes(solutionType)) return 'pdf';
 
-    // Check data response for mime type hints
     if (data?.mimeType) {
       if (data.mimeType.includes('pdf')) return 'pdf';
       if (data.mimeType.includes('image')) return 'image';
     }
 
-    // Check if base64 data starts with PDF header
     const base64Data = maskedBase64 || (data && data.result) || '';
     if (base64Data) {
       try {
-        // Decode first few bytes to check for PDF signature
         const decoded = atob(base64Data.substring(0, 20));
         if (decoded.startsWith('%PDF')) return 'pdf';
       } catch (e) {
@@ -82,14 +78,12 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
       }
     }
 
-    // Default to image for backward compatibility
     return 'image';
   };
 
   const fileType = detectFileType();
   const mimeType = fileType === 'pdf' ? 'application/pdf' : 'image/png';
 
-  // Set initial tab based on solution type
   useEffect(() => {
     if (isVerificationSolution || isQrExtractSolution) {
       setActiveTab('result');
@@ -98,29 +92,37 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
     }
   }, [isVerificationSolution, isQrExtractSolution]);
 
-  // REMOVED: Auto-switch to API response tab when error occurs
-  // The error will now be handled in the Result tab instead
+  useEffect(() => {
+    if (!resultFooter || loading) return;
+    if (hasScrolledToFeedbackRef.current) return;
+    hasScrolledToFeedbackRef.current = true;
+    requestAnimationFrame(() => {
+      resultFooterRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }, [resultFooter, loading]);
 
-  // Show processed image tab only for non-verification and non-QR extract solutions
+  useEffect(() => {
+    if (!resultFooter) {
+      hasScrolledToFeedbackRef.current = false;
+    }
+  }, [resultFooter]);
+
   const showProcessedImageTab = !isVerificationSolution && !isQrExtractSolution;
   const showResultTab = isVerificationSolution || isQrExtractSolution;
-  
-  // Check if we have processed image data - could be from maskedBase64 or from API response
+
   const hasProcessedImage = Boolean(
-    maskedBase64 && maskedBase64.length > 0 || 
+    maskedBase64 && maskedBase64.length > 0 ||
     (data && data.result && typeof data.result === 'string' && data.result.length > 0)
   );
-  
-  // Get the actual base64 data - prefer maskedBase64 prop, fallback to data.result
-  const imageBase64 = maskedBase64 || (data && data.result) || '';
 
-  // Don't disable tabs when there's an error - let users navigate freely
+  const imageBase64 = maskedBase64 || (data && data.result) || '';
   const isProcessedImageTabDisabled = false;
   const isResultTabDisabled = false;
+  const useResultFooter = Boolean(resultFooter);
+  const showFooterFeedbackSlot = Boolean(feedbackSlot) && !useResultFooter;
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden h-full flex flex-col">
-      {/* Tab Navigation */}
       <TabNavigation
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -129,10 +131,10 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         isProcessedImageTabDisabled={isProcessedImageTabDisabled}
         isResultTabDisabled={isResultTabDisabled}
         isQrExtractSolution={isQrExtractSolution}
-        fileType={fileType} // Pass file type to navigation for dynamic titles
+        fileType={fileType}
+        tabBadge={tabBadge}
       />
 
-      {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab === 'api-response' && (
           <ApiResponseTab
@@ -144,7 +146,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
             errorDetails={errorDetails}
           />
         )}
-        
+
         {activeTab === 'result' && (
           <div className={`${compact ? 'p-3' : 'p-6'} h-full overflow-auto`}>
             <ResultTab
@@ -155,9 +157,14 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
               error={error}
               errorDetails={errorDetails}
             />
+            {!loading && resultFooter && (
+              <div ref={resultFooterRef} className="mt-4">
+                {resultFooter}
+              </div>
+            )}
           </div>
         )}
-        
+
         {activeTab === 'processed-image' && (
           <div className="p-6 h-full overflow-hidden">
             <ProcessedImageTab
@@ -170,14 +177,14 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
               onCopyBase64={copyBase64}
               error={error}
               errorDetails={errorDetails}
-              fileType={fileType} // Pass detected file type
-              mimeType={mimeType} // Pass corresponding mime type
+              fileType={fileType}
+              mimeType={mimeType}
             />
           </div>
         )}
       </div>
 
-      {!loading && showBetaFeedbackNudge && !feedbackSlot && (
+      {!loading && showBetaFeedbackNudge && !showFooterFeedbackSlot && !useResultFooter && (
         <div className="flex-shrink-0 border-t border-blue-500/20 bg-blue-950/20 px-4 py-3">
           <p className="text-xs text-blue-200">
             Label your expected result to earn credits back on your last custom model test.
@@ -185,7 +192,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         </div>
       )}
 
-      {!loading && feedbackSlot && (
+      {!loading && showFooterFeedbackSlot && (
         <div className="flex-shrink-0 border-t border-gray-700/80 px-3 py-3 max-h-[220px] overflow-y-auto">
           {feedbackSlot}
         </div>

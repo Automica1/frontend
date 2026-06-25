@@ -71,7 +71,7 @@ export default function BetaAccessPanel({
         <span className="flex items-center justify-between gap-2">
           <span className="flex items-center gap-2 text-xs text-gray-300">
             <FlaskConical className="h-3.5 w-3.5 text-blue-400" />
-            Custom model (beta)
+            Use my custom model (beta)
           </span>
           <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
         </span>
@@ -94,7 +94,7 @@ export default function BetaAccessPanel({
             onChange={(e) => onEnabledChange(e.target.checked)}
             className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-0 focus:ring-offset-0 flex-shrink-0"
           />
-          <span className="truncate">Route to custom model (beta)</span>
+          <span className="truncate">Use my custom model (beta)</span>
         </label>
         <button
           type="button"
@@ -109,8 +109,8 @@ export default function BetaAccessPanel({
       {enabled && (
         <>
           <p className="text-[10px] text-gray-500 leading-snug">
-            Your test cases help calibrate your dedicated model. We store the feedback you share—not
-            your uploaded documents.
+            2 credits per test, refundable when you submit feedback. We store your feedback—not your
+            uploaded documents.
           </p>
           <input
             type="password"

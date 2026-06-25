@@ -15,6 +15,7 @@ interface ProcessingActionCardProps {
   deviceBanner?: React.ReactNode;
   feedbackSlot?: React.ReactNode;
   compact?: boolean;
+  validationMessage?: string;
 }
 
 export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
@@ -29,6 +30,7 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
   deviceBanner,
   feedbackSlot,
   compact = false,
+  validationMessage,
 }) => {
   const getButtonText = (type: SolutionType) => {
     switch (type) {
@@ -120,6 +122,10 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
               </p>
             </div>
           </div>
+
+          {betaControls && (
+            <div className="pb-1">{betaControls}</div>
+          )}
 
           {/* File Summary */}
           {files.length > 0 && (
@@ -215,13 +221,12 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
 
       {/* Fixed Process Button at bottom */}
       <div className={`flex-shrink-0 space-y-2 ${compact ? 'p-4 pt-3' : 'p-6 pt-4'}`}>
-        {feedbackSlot && (
-          <div className="max-h-[200px] overflow-y-auto border-t border-gray-700/80 pt-2 -mx-1 px-1">
-            {feedbackSlot}
-          </div>
-        )}
         {deviceBanner}
-        {betaControls}
+        {validationMessage && (
+          <p className="text-xs text-red-300 rounded-md border border-red-500/30 bg-red-950/20 px-3 py-2">
+            {validationMessage}
+          </p>
+        )}
         {submitBlocked && submitBlockedMessage && (
           <p className="text-xs text-amber-300/90 rounded-md border border-amber-500/30 bg-amber-950/20 px-3 py-2">
             {submitBlockedMessage}

@@ -38,6 +38,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const [betaKey, setBetaKey] = useState('');
   const [pendingSession, setPendingSession] = useState<BetaFeedbackSessionSummary | null>(null);
   const [pendingThumbnails, setPendingThumbnails] = useState<string[]>([]);
+  const [submitValidationError, setSubmitValidationError] = useState<string | null>(null);
   const solutionType = useSolutionType(solution);
   const currentApi = useSolutionApi(solutionType);
   const { credits, updateCredits } = useCredits();
@@ -98,9 +99,17 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
         thumbnails={pendingThumbnails}
         credits={credits}
         onSubmitted={handleFeedbackSubmitted}
-        embedded
+        placement={hasStartedProcessing ? 'inline' : 'footer'}
+        embedded={!hasStartedProcessing}
       />
     ) : null;
+
+  const feedbackTabBadge = canShowFeedbackForm && pendingSession
+    ? { result: `+${pendingSession.creditsCharged} credits` }
+    : undefined;
+
+  const showPendingFeedbackGate =
+    solution.hasBeta && !hasStartedProcessing && zeroCreditBetaGate && canShowFeedbackForm;
 
   const deviceBanner = showDeviceBanner ? <BetaFeedbackDeviceBanner compact /> : undefined;
 
@@ -115,6 +124,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     
     setFiles(uploadedFiles);
     currentApi.reset();
+    setSubmitValidationError(null);
     // Reset processing state when new files are uploaded
     setHasStartedProcessing(false);
     console.log('Files uploaded:', uploadedFiles);
@@ -124,15 +134,18 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     if (files.length === 0) return;
 
     if (solution.hasBeta && betaEnabled && !betaKey.trim()) {
-      alert('Please enter your beta key to use the beta version.');
+      setSubmitValidationError('Enter your beta key to use your custom model.');
       return;
     }
 
     if (betaRunBlocked) {
-      alert('Please submit expected results for your last custom model test before running another beta request.');
+      setSubmitValidationError(
+        'Submit feedback on your last test to earn credits back before running another beta request.'
+      );
       return;
     }
-    
+
+    setSubmitValidationError(null);
     // Set processing state to true to show results section
     setHasStartedProcessing(true);
     
@@ -238,6 +251,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const handleRetry = () => {
     currentApi.reset();
     setHasStartedProcessing(false);
+    setSubmitValidationError(null);
   };
 
   const handleReset = () => {
@@ -245,6 +259,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     setHasStartedProcessing(false);
     setUploadKey((key) => key + 1);
     currentApi.reset();
+    setSubmitValidationError(null);
   };
 
   // Get the masked base64 from response
@@ -345,7 +360,9 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const shouldUseFileUpload2 = solutionType === 'signature-verification' || solutionType === 'face-verify';
   
   // Determine height based on solution type
-  const containerHeight = 'h-[500px]';
+  const containerHeight = solution.hasBeta
+    ? 'min-h-[500px] max-h-[min(720px,82vh)] h-auto'
+    : 'h-[500px]';
   return (
     <div className="md:pt-24 pt-16 pb-16 px-4">
       <div className="max-w-6xl mx-auto">
@@ -377,7 +394,16 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
 
           {/* Right Column - integrated panel */}
           <div className={`${containerHeight} min-h-0`}>
-            {!hasStartedProcessing ? (
+            {showPendingFeedbackGate ? (
+              <div className="bg-gray-900 rounded-lg border border-gray-700 h-full flex flex-col overflow-hidden">
+                <div className="flex-shrink-0 border-b border-amber-500/20 bg-amber-950/20 px-3 py-2.5">
+                  <p className="text-xs text-amber-200">
+                    Rate your last test to earn credits back and continue testing.
+                  </p>
+                </div>
+                <div className="flex-1 overflow-y-auto p-3">{feedbackPanel}</div>
+              </div>
+            ) : !hasStartedProcessing ? (
               <ProcessingActionCard
                 solution={solution}
                 solutionType={solutionType}
@@ -393,7 +419,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                       : undefined
                 }
                 deviceBanner={deviceBanner}
-                feedbackSlot={!hasStartedProcessing ? feedbackPanel : undefined}
+                validationMessage={submitValidationError ?? undefined}
                 compact
                 betaControls={
                   solution.hasBeta && solution.slug ? (
@@ -421,7 +447,8 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                 onRetry={handleRetry}
                 onReset={handleReset}
                 compact
-                feedbackSlot={feedbackPanel}
+                resultFooter={solution.hasBeta ? feedbackPanel : undefined}
+                tabBadge={solution.hasBeta ? feedbackTabBadge : undefined}
               />
             )}
           </div>
