@@ -79,8 +79,8 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     }
   };
 
-  const betaRunBlocked = Boolean(solution.hasBeta && betaEnabled && pendingSession);
   const zeroCreditBetaGate = Boolean(solution.hasBeta && betaEnabled && credits === 0 && pendingSession);
+  const betaRunBlocked = zeroCreditBetaGate;
 
   const Icon = solution.IconComponent;
 
