@@ -20,6 +20,7 @@ interface TryAPIComponentProps {
 export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [hasStartedProcessing, setHasStartedProcessing] = useState(false);
+  const [uploadKey, setUploadKey] = useState(0);
   const [betaEnabled, setBetaEnabled] = useState(false);
   const [betaKey, setBetaKey] = useState('');
   const solutionType = useSolutionType(solution);
@@ -110,9 +111,15 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     }
   };
 
+  const handleRetry = () => {
+    currentApi.reset();
+    setHasStartedProcessing(false);
+  };
+
   const handleReset = () => {
     setFiles([]);
     setHasStartedProcessing(false);
+    setUploadKey((key) => key + 1);
     currentApi.reset();
   };
 
@@ -237,9 +244,9 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
             {/* Conditional FileUpload component usage with dynamic height */}
             <div className={`w-full max-w-4xl mx-auto min-h-96 ${containerHeight} border border-dashed bg-black border-neutral-800 rounded-lg`}>
               {shouldUseFileUpload2 ? (
-                <FileUpload2 onChange={handleFileUpload} />
+                <FileUpload2 key={uploadKey} onChange={handleFileUpload} />
               ) : (
-                <FileUpload onChange={handleFileUpload} />
+                <FileUpload key={uploadKey} onChange={handleFileUpload} />
               )}
             </div>
           </div>
@@ -278,6 +285,8 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                   errorDetails={currentApi.errorData}
                   maskedBase64={maskedBase64}
                   fileName={files[0]?.name}
+                  onRetry={handleRetry}
+                  onReset={handleReset}
                 />
               </div>
             )}

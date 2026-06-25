@@ -6,6 +6,7 @@ import { TabNavigation } from './TabNavigation';
 import { ApiResponseTab } from './ApiResponseTab';
 import { ProcessedImageTab } from './ProcessedImageTab';
 import { ResultTab } from './ResultTab';
+import { RotateCcw, Undo2 } from 'lucide-react';
 import { useClipboard } from '../../hooks/useClipboard';
 import '../terminal.css';
 
@@ -18,6 +19,8 @@ interface TabbedResponseSectionProps {
   errorDetails?: any | null;
   maskedBase64?: string;
   fileName?: string;
+  onRetry?: () => void;
+  onReset?: () => void;
 }
 
 export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
@@ -28,7 +31,9 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   error,
   errorDetails,
   maskedBase64,
-  fileName
+  fileName,
+  onRetry,
+  onReset,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('processed-image');
   const { copiedBase64, copyBase64 } = useClipboard();
@@ -165,6 +170,33 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
           </div>
         )}
       </div>
+
+      {!loading && (onRetry || onReset) && (
+        <div className="flex-shrink-0 border-t border-gray-700 p-4">
+          <div className="flex gap-3">
+            {onRetry && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800"
+              >
+                <RotateCcw className="h-4 w-4 text-gray-400" />
+                Retry
+              </button>
+            )}
+            {onReset && (
+              <button
+                type="button"
+                onClick={onReset}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800"
+              >
+                <Undo2 className="h-4 w-4 text-gray-400" />
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
