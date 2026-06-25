@@ -172,12 +172,10 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     }
   };
 
-  useEffect(() => {
-    const persistBetaSession = async () => {
-      if (!solution.hasBeta || !betaEnabled || !serviceSlug || !currentApi.data) return;
-
-      const sessionId = (currentApi.data as { beta_feedback_session_id?: string }).beta_feedback_session_id;
-      if (!sessionId || solutionType !== 'signature-verification' || files.length !== 2) return;
+  const cacheBetaSessionThumbnails = useCallback(
+    async (sessionId: string) => {
+      if (!solution.hasBeta || !betaEnabled || !serviceSlug) return;
+      if (solutionType !== 'signature-verification' || files.length !== 2) return;
 
       try {
         const base64Images = await filesToBase64(files);
@@ -193,18 +191,27 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
       } catch (error) {
         console.error('Failed to cache beta session thumbnails:', error);
       }
-    };
+    },
+    [betaEnabled, files, refreshPendingFeedback, serviceSlug, solution.hasBeta, solutionType]
+  );
 
-    persistBetaSession();
-  }, [
-    betaEnabled,
-    currentApi.data,
-    files,
-    refreshPendingFeedback,
-    serviceSlug,
-    solution.hasBeta,
-    solutionType,
-  ]);
+  useEffect(() => {
+    if (!currentApi.data) return;
+
+    const sessionId = (currentApi.data as { beta_feedback_session_id?: string }).beta_feedback_session_id;
+    if (!sessionId) return;
+
+    void cacheBetaSessionThumbnails(sessionId);
+  }, [cacheBetaSessionThumbnails, currentApi.data]);
+
+  useEffect(() => {
+    if (!currentApi.errorData) return;
+
+    const sessionId = currentApi.errorData.beta_feedback_session_id as string | undefined;
+    if (!sessionId) return;
+
+    void cacheBetaSessionThumbnails(sessionId);
+  }, [cacheBetaSessionThumbnails, currentApi.errorData]);
 
   const handleRetry = () => {
     currentApi.reset();
@@ -389,24 +396,33 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
               </div>
             ) : (
               /* Show Results Section after processing starts with matching height */
-              <div className={containerHeight}>
-                <TabbedResponseSection
-                  solution={solution}
-                  solutionType={solutionType}
-                  data={currentApi.data}
-                  loading={currentApi.loading}
-                  error={currentApi.error}
-                  errorDetails={currentApi.errorData}
-                  maskedBase64={maskedBase64}
-                  fileName={files[0]?.name}
-                  onRetry={handleRetry}
-                  onReset={handleReset}
-                  showBetaFeedbackNudge={Boolean(
-                    solution.hasBeta &&
-                      betaEnabled &&
-                      (currentApi.data as { beta_feedback_pending?: boolean })?.beta_feedback_pending
-                  )}
-                />
+              <div className="space-y-4 h-full flex flex-col">
+                <div className={`flex-1 min-h-0 ${containerHeight}`}>
+                  <TabbedResponseSection
+                    solution={solution}
+                    solutionType={solutionType}
+                    data={currentApi.data}
+                    loading={currentApi.loading}
+                    error={currentApi.error}
+                    errorDetails={currentApi.errorData}
+                    maskedBase64={maskedBase64}
+                    fileName={files[0]?.name}
+                    onRetry={handleRetry}
+                    onReset={handleReset}
+                    showBetaFeedbackNudge={Boolean(
+                      solution.hasBeta && betaEnabled && pendingSession
+                    )}
+                  />
+                </div>
+                {solution.hasBeta && pendingSession && (
+                  <BetaFeedbackPanel
+                    serviceSlug={serviceSlug}
+                    session={pendingSession}
+                    thumbnails={pendingThumbnails}
+                    credits={credits}
+                    onSubmitted={handleFeedbackSubmitted}
+                  />
+                )}
               </div>
             )}
           </div>

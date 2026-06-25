@@ -102,16 +102,35 @@ export default function BetaFeedbackPanel({
         </div>
       </div>
 
-      {!compact && thumbnails.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {thumbnails.map((thumb, index) => (
-            <img
-              key={`${session.id}-${index}`}
-              src={thumb.startsWith('data:') ? thumb : `data:image/jpeg;base64,${thumb}`}
-              alt={`Test input ${index + 1}`}
-              className="h-16 w-16 flex-shrink-0 rounded-md border border-gray-700 object-cover bg-gray-900"
-            />
-          ))}
+      {!compact && (
+        <div className="space-y-1.5">
+          {thumbnails.length > 0 ? (
+            <>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {thumbnails.map((thumb, index) => (
+                  <img
+                    key={`${session.id}-${index}`}
+                    src={thumb.startsWith('data:') ? thumb : `data:image/jpeg;base64,${thumb}`}
+                    alt={`Test input ${index + 1}`}
+                    className="h-16 w-16 flex-shrink-0 rounded-md border border-gray-700 object-cover bg-gray-900"
+                  />
+                ))}
+              </div>
+              <p className="text-[11px] text-gray-500">
+                Preview images are stored locally on this device for your reference. They are not loaded from our servers.
+              </p>
+            </>
+          ) : (
+            <p className="text-[11px] text-gray-500 italic">
+              Images from this test are only available on the device where you ran it.
+            </p>
+          )}
+        </div>
+      )}
+
+      {session.failureMessage && (
+        <div className="rounded-md border border-red-500/30 bg-red-950/20 px-2.5 py-2 text-xs text-red-300">
+          Model error: {session.failureMessage}
         </div>
       )}
 

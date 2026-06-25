@@ -87,6 +87,8 @@ interface BetaFeedbackSessionInfo {
   serviceName: string;
   reqId: string;
   status: string;
+  runOutcome?: 'completed' | 'failed';
+  failureMessage?: string;
   creditsCharged: number;
   creditsRefunded?: number;
   actualResult?: {
@@ -102,6 +104,15 @@ interface BetaFeedbackSessionInfo {
   createdAt: string;
   feedbackSubmittedAt?: string;
   refundedAt?: string;
+}
+
+interface BetaFeedbackSessionDetail extends BetaFeedbackSessionInfo {
+  inputs?: string[];
+}
+
+interface BetaFeedbackSessionDetailResponse {
+  message: string;
+  session: BetaFeedbackSessionDetail;
 }
 
 interface BetaFeedbackSessionListResponse {
@@ -1160,6 +1171,12 @@ class ApiService {
       `/admin/beta-feedback/sessions${query ? `?${query}` : ''}`
     );
   }
+
+  async getBetaFeedbackSession(sessionId: string): Promise<BetaFeedbackSessionDetailResponse> {
+    return this.makeAuthenticatedRequest<BetaFeedbackSessionDetailResponse>(
+      `/admin/beta-feedback/sessions/${encodeURIComponent(sessionId)}`
+    );
+  }
 }
 
 // Export singleton instance
@@ -1208,5 +1225,7 @@ export type {
   BetaKeyListResponse,
   BetaKeyRevokeResponse,
   BetaFeedbackSessionInfo,
+  BetaFeedbackSessionDetail,
+  BetaFeedbackSessionDetailResponse,
   BetaFeedbackSessionListResponse,
 };

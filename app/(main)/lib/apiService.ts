@@ -48,6 +48,8 @@ export interface BetaFeedbackSessionSummary {
   };
   createdAt: string;
   inputCount: number;
+  runOutcome?: string;
+  failureMessage?: string;
 }
 
 export interface BetaFeedbackPendingResponse {
@@ -255,6 +257,9 @@ class ApiService {
           headers: Object.fromEntries(response.headers.entries()),
           errorData,
         });
+
+        // Update credits from error payload when present (e.g. charged beta ML failure)
+        this.updateCreditsFromResponse(errorData);
 
         // Create enhanced error object
         const enhancedError = new Error(errorMessage);
