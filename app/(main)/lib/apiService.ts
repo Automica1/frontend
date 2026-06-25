@@ -16,6 +16,50 @@ interface QRExtractResponseWithCredits extends QRExtractResponse {
 interface SignatureVerificationResponseWithCredits extends SignatureVerificationResponse {
   remaining_credits?: number;
   userId?: string;
+  beta_feedback_session_id?: string;
+  beta_feedback_pending?: boolean;
+  verification_result?: {
+    req_id?: string;
+    success?: boolean;
+    status?: string;
+    message?: string;
+    data?: {
+      similarity_percentage?: number;
+      classification?: string;
+    };
+  };
+}
+
+export interface BetaFeedbackExpectedResult {
+  expectedClassification: string;
+  expectedSimilarityMin?: number;
+  expectedSimilarityMax?: number;
+  notes?: string;
+}
+
+export interface BetaFeedbackSessionSummary {
+  id: string;
+  serviceName: string;
+  reqId: string;
+  creditsCharged: number;
+  actualResult?: {
+    similarity_percentage?: number;
+    classification?: string;
+  };
+  createdAt: string;
+  inputCount: number;
+}
+
+export interface BetaFeedbackPendingResponse {
+  message: string;
+  session?: BetaFeedbackSessionSummary | null;
+}
+
+export interface SubmitBetaFeedbackResponse {
+  message: string;
+  sessionId: string;
+  creditsRefunded: number;
+  remainingCredits: number;
 }
 
 interface FaceDetectionResponseWithCredits extends FaceDetectionResponse {
@@ -586,6 +630,54 @@ class ApiService {
       return false;
     }
   }
+
+  async getPendingBetaFeedback(service: string): Promise<BetaFeedbackPendingResponse> {
+    return this.makeRequest<BetaFeedbackPendingResponse>(
+      `/beta-feedback/pending?service=${encodeURIComponent(service)}`
+    );
+  }
+
+  async submitBetaFeedback(
+    sessionId: string,
+    expectedResult: BetaFeedbackExpectedResult
+  ): Promise<SubmitBetaFeedbackResponse> {
+    return this.makeRequest<SubmitBetaFeedbackResponse>(`/beta-feedback/${sessionId}`, {
+      method: 'POST',
+      body: JSON.stringify({ expectedResult }),
+    });
+  }
+}
+
+export async function createThumbnail(base64: string, maxPx = 128): Promise<string> {
+  if (typeof window === 'undefined') {
+    return base64;
+  }
+
+  const dataUrl = base64.startsWith('data:') ? base64 : `data:image/jpeg;base64,${base64}`;
+
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const scale = Math.min(1, maxPx / Math.max(image.width, image.height));
+      const width = Math.max(1, Math.round(image.width * scale));
+      const height = Math.max(1, Math.round(image.height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const context = canvas.getContext('2d');
+      if (!context) {
+        resolve(dataUrl);
+        return;
+      }
+
+      context.drawImage(image, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.75));
+    };
+    image.onerror = () => reject(new Error('Failed to create thumbnail'));
+    image.src = dataUrl;
+  });
 }
 
 // Export singleton instance

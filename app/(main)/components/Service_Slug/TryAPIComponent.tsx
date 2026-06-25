@@ -1,9 +1,10 @@
 // Fixed TryAPIComponent.tsx with proper face verification support
 "use client";
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Solution, SolutionType } from '../../types/solution';
 import { useSolutionType } from '../../hooks/useSolutionType';
 import { useSolutionApi } from '../../hooks/useSolutionApi';
+import { useCredits } from '../../hooks/useCredits';
 // import { getFileRequirementText } from '../../../utils/solutionHelpers';
 import { fileToBase64, filesToBase64 } from '../../../utils/fileUtils';
 import { FileUpload2 } from '../ui/file-upload2';
@@ -12,6 +13,17 @@ import { FileUpload } from '../ui/file-upload';
 import {TabbedResponseSection} from '../TabbedResponse/index'
 import { ProcessingActionCard } from '../TabbedResponse/ProcessingActionCard';
 import BetaAccessPanel from './BetaAccessPanel';
+import BetaFeedbackPanel from './BetaFeedbackPanel';
+import {
+  apiService,
+  createThumbnail,
+  type BetaFeedbackSessionSummary,
+} from '../../lib/apiService';
+import {
+  clearBetaSessionCache,
+  loadBetaSessionCache,
+  saveBetaSessionCache,
+} from '../../lib/betaSessionCache';
 
 interface TryAPIComponentProps {
   solution: Solution;
@@ -23,8 +35,52 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const [uploadKey, setUploadKey] = useState(0);
   const [betaEnabled, setBetaEnabled] = useState(false);
   const [betaKey, setBetaKey] = useState('');
+  const [pendingSession, setPendingSession] = useState<BetaFeedbackSessionSummary | null>(null);
+  const [pendingThumbnails, setPendingThumbnails] = useState<string[]>([]);
   const solutionType = useSolutionType(solution);
   const currentApi = useSolutionApi(solutionType);
+  const { credits, updateCredits } = useCredits();
+
+  const serviceSlug = solution.slug || solutionType;
+
+  const refreshPendingFeedback = useCallback(async () => {
+    if (!solution.hasBeta || !serviceSlug) return;
+
+    try {
+      const response = await apiService.getPendingBetaFeedback(serviceSlug);
+      const session = response.session ?? null;
+      setPendingSession(session);
+
+      if (session) {
+        const cached = await loadBetaSessionCache(serviceSlug);
+        if (cached?.sessionId === session.id) {
+          setPendingThumbnails(cached.thumbnails);
+        } else {
+          setPendingThumbnails([]);
+        }
+      } else {
+        setPendingThumbnails([]);
+      }
+    } catch (error) {
+      console.error('Failed to load pending beta feedback:', error);
+    }
+  }, [solution.hasBeta, serviceSlug]);
+
+  useEffect(() => {
+    refreshPendingFeedback();
+  }, [refreshPendingFeedback]);
+
+  const handleFeedbackSubmitted = async (remainingCredits: number) => {
+    updateCredits(remainingCredits);
+    setPendingSession(null);
+    setPendingThumbnails([]);
+    if (serviceSlug) {
+      await clearBetaSessionCache(serviceSlug);
+    }
+  };
+
+  const betaRunBlocked = Boolean(solution.hasBeta && betaEnabled && pendingSession);
+  const zeroCreditBetaGate = Boolean(solution.hasBeta && betaEnabled && credits === 0 && pendingSession);
 
   const Icon = solution.IconComponent;
 
@@ -47,6 +103,11 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
 
     if (solution.hasBeta && betaEnabled && !betaKey.trim()) {
       alert('Please enter your beta key to use the beta version.');
+      return;
+    }
+
+    if (betaRunBlocked) {
+      alert('Please submit expected results for your last custom model test before running another beta request.');
       return;
     }
     
@@ -110,6 +171,40 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
       console.error('Submit error:', error);
     }
   };
+
+  useEffect(() => {
+    const persistBetaSession = async () => {
+      if (!solution.hasBeta || !betaEnabled || !serviceSlug || !currentApi.data) return;
+
+      const sessionId = (currentApi.data as { beta_feedback_session_id?: string }).beta_feedback_session_id;
+      if (!sessionId || solutionType !== 'signature-verification' || files.length !== 2) return;
+
+      try {
+        const base64Images = await filesToBase64(files);
+        const thumbnails = await Promise.all(base64Images.map((img) => createThumbnail(img)));
+        await saveBetaSessionCache(serviceSlug, {
+          sessionId,
+          thumbnails,
+          capturedAt: new Date().toISOString(),
+          creditsCharged: 2,
+        });
+        await refreshPendingFeedback();
+        setPendingThumbnails(thumbnails);
+      } catch (error) {
+        console.error('Failed to cache beta session thumbnails:', error);
+      }
+    };
+
+    persistBetaSession();
+  }, [
+    betaEnabled,
+    currentApi.data,
+    files,
+    refreshPendingFeedback,
+    serviceSlug,
+    solution.hasBeta,
+    solutionType,
+  ]);
 
   const handleRetry = () => {
     currentApi.reset();
@@ -255,24 +350,43 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
           <div className={`space-y-6 h-${containerHeight}`}>
             {!hasStartedProcessing ? (
               /* Show Processing Action Card before processing */
-              <ProcessingActionCard
-                solution={solution}
-                solutionType={solutionType}
-                files={files}
-                onSubmit={handleSubmit}
-                loading={currentApi.loading}
-                betaControls={
-                  solution.hasBeta && solution.slug ? (
-                    <BetaAccessPanel
-                      serviceSlug={solution.slug}
-                      enabled={betaEnabled}
-                      betaKey={betaKey}
-                      onEnabledChange={setBetaEnabled}
-                      onBetaKeyChange={setBetaKey}
-                    />
-                  ) : undefined
-                }
-              />
+              <div className="space-y-4 h-full flex flex-col">
+                {solution.hasBeta && pendingSession && (
+                  <BetaFeedbackPanel
+                    serviceSlug={serviceSlug}
+                    session={pendingSession}
+                    thumbnails={pendingThumbnails}
+                    credits={credits}
+                    onSubmitted={handleFeedbackSubmitted}
+                  />
+                )}
+                <div className="flex-1 min-h-0">
+                  <ProcessingActionCard
+                    solution={solution}
+                    solutionType={solutionType}
+                    files={files}
+                    onSubmit={handleSubmit}
+                    loading={currentApi.loading}
+                    submitBlocked={betaRunBlocked}
+                    submitBlockedMessage={
+                      zeroCreditBetaGate
+                        ? 'Submit feedback on your last test to earn credits back, or buy more credits to continue.'
+                        : 'Submit feedback on your last custom model test before running another beta request.'
+                    }
+                    betaControls={
+                      solution.hasBeta && solution.slug ? (
+                        <BetaAccessPanel
+                          serviceSlug={solution.slug}
+                          enabled={betaEnabled}
+                          betaKey={betaKey}
+                          onEnabledChange={setBetaEnabled}
+                          onBetaKeyChange={setBetaKey}
+                        />
+                      ) : undefined
+                    }
+                  />
+                </div>
+              </div>
             ) : (
               /* Show Results Section after processing starts with matching height */
               <div className={containerHeight}>
@@ -287,6 +401,11 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                   fileName={files[0]?.name}
                   onRetry={handleRetry}
                   onReset={handleReset}
+                  showBetaFeedbackNudge={Boolean(
+                    solution.hasBeta &&
+                      betaEnabled &&
+                      (currentApi.data as { beta_feedback_pending?: boolean })?.beta_feedback_pending
+                  )}
                 />
               </div>
             )}

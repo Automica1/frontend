@@ -21,6 +21,7 @@ interface TabbedResponseSectionProps {
   fileName?: string;
   onRetry?: () => void;
   onReset?: () => void;
+  showBetaFeedbackNudge?: boolean;
 }
 
 export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
@@ -34,6 +35,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   fileName,
   onRetry,
   onReset,
+  showBetaFeedbackNudge = false,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('processed-image');
   const { copiedBase64, copyBase64 } = useClipboard();
@@ -170,6 +172,14 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
           </div>
         )}
       </div>
+
+      {!loading && showBetaFeedbackNudge && (
+        <div className="flex-shrink-0 border-t border-blue-500/20 bg-blue-950/20 px-4 py-3">
+          <p className="text-xs text-blue-200">
+            Label your expected result to earn credits back on your last custom model test.
+          </p>
+        </div>
+      )}
 
       {!loading && (onRetry || onReset) && (
         <div className="flex-shrink-0 border-t border-gray-700 p-4">

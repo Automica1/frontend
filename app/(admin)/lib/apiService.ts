@@ -80,6 +80,36 @@ interface BetaKeyRevokeResponse {
   id: string;
 }
 
+interface BetaFeedbackSessionInfo {
+  id?: string;
+  userId: string;
+  email: string;
+  serviceName: string;
+  reqId: string;
+  status: string;
+  creditsCharged: number;
+  creditsRefunded?: number;
+  actualResult?: {
+    similarity_percentage?: number;
+    classification?: string;
+  };
+  expectedResult?: {
+    expectedClassification?: string;
+    expectedSimilarityMin?: number;
+    expectedSimilarityMax?: number;
+    notes?: string;
+  };
+  createdAt: string;
+  feedbackSubmittedAt?: string;
+  refundedAt?: string;
+}
+
+interface BetaFeedbackSessionListResponse {
+  message: string;
+  sessions: BetaFeedbackSessionInfo[];
+  total: number;
+}
+
 interface AuthResponse {
   accessToken: string;
   expiresIn: number;
@@ -1120,6 +1150,16 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+  async listBetaFeedbackSessions(service?: string, limit = 50): Promise<BetaFeedbackSessionListResponse> {
+    const params = new URLSearchParams();
+    if (service) params.set('service', service);
+    if (limit) params.set('limit', String(limit));
+    const query = params.toString();
+    return this.makeAuthenticatedRequest<BetaFeedbackSessionListResponse>(
+      `/admin/beta-feedback/sessions${query ? `?${query}` : ''}`
+    );
+  }
 }
 
 // Export singleton instance
@@ -1166,5 +1206,7 @@ export type {
   BetaKeyGenerateRequest,
   BetaKeyGenerateResponse,
   BetaKeyListResponse,
-  BetaKeyRevokeResponse
+  BetaKeyRevokeResponse,
+  BetaFeedbackSessionInfo,
+  BetaFeedbackSessionListResponse,
 };

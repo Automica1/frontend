@@ -10,6 +10,8 @@ interface ProcessingActionCardProps {
   onSubmit: () => void;
   loading: boolean;
   betaControls?: React.ReactNode;
+  submitBlocked?: boolean;
+  submitBlockedMessage?: string;
 }
 
 export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
@@ -19,6 +21,8 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
   onSubmit,
   loading,
   betaControls,
+  submitBlocked = false,
+  submitBlockedMessage,
 }) => {
   const getButtonText = (type: SolutionType) => {
     switch (type) {
@@ -85,6 +89,7 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
 
   const isDisabled = () => {
     if (loading) return true;
+    if (submitBlocked) return true;
     if (files.length === 0) return true;
     if ((solutionType === 'signature-verification' || solutionType === 'face-verify') && files.length !== 2) return true;
     return false;
@@ -208,6 +213,11 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
       {/* Fixed Process Button at bottom */}
       <div className="flex-shrink-0 p-6 pt-4 space-y-3">
         {betaControls}
+        {submitBlocked && submitBlockedMessage && (
+          <p className="text-xs text-amber-300/90 rounded-md border border-amber-500/30 bg-amber-950/20 px-3 py-2">
+            {submitBlockedMessage}
+          </p>
+        )}
         <button
           onClick={onSubmit}
           disabled={isDisabled()}

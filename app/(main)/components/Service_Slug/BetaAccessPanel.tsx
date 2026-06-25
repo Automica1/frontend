@@ -91,7 +91,7 @@ export default function BetaAccessPanel({
           </span>
           <div>
             <p className="text-sm font-medium text-blue-200">Beta access</p>
-            <p className="text-[11px] text-blue-300/70">Uses the beta model when enabled</p>
+            <p className="text-[11px] text-blue-300/70">Uses your dedicated custom AI model when enabled</p>
           </div>
         </div>
         <button
@@ -116,7 +116,11 @@ export default function BetaAccessPanel({
       </label>
 
       {enabled && (
-        <input
+        <>
+          <p className="text-[11px] text-gray-400 leading-relaxed">
+            Your test cases help calibrate your dedicated model. We store inputs from custom AI runs to improve accuracy.
+          </p>
+          <input
           type="password"
           value={betaKey}
           onChange={(e) => onBetaKeyChange(e.target.value.trim())}
@@ -124,6 +128,7 @@ export default function BetaAccessPanel({
           className="w-full rounded-md border border-gray-700 bg-gray-900/60 px-3 py-2 text-sm text-gray-200 placeholder:text-gray-500 focus:border-blue-500/40 focus:outline-none"
           autoComplete="off"
         />
+        </>
       )}
     </div>
   );

@@ -15,6 +15,7 @@ import {
   FileText,
   UserCircle2,
   FlaskConical,
+  MessageSquareText,
   LucideIcon,
 } from "lucide-react";
 
@@ -49,6 +50,11 @@ const navigationItems: NavItem[] = [
     name: 'Beta Keys',
     href: '/admin/beta-keys',
     icon: FlaskConical,
+  },
+  {
+    name: 'Beta Feedback',
+    href: '/admin/beta-feedback',
+    icon: MessageSquareText,
   },
   {
     name: 'Plans',
