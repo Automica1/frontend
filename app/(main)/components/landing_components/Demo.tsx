@@ -1,5 +1,6 @@
 // Demo.tsx 
 import React from "react";
+import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { CanvasRevealEffect } from "../ui/canvas-reveal-effect";
 import { getPopularSolutions, type Solution } from "../../lib/solutions";
@@ -100,9 +101,12 @@ const SolutionCard = ({
         {/* Image Section */}
         <div className="flex items-center justify-center p-8 pt-12 pb-4">
           <div className="relative w-full max-w-[180px]">
-            <img 
+            <Image
               src={solution.imageSrc || solution.heroImage}
               alt={solution.title}
+              width={180}
+              height={180}
+              loading="lazy"
               className="w-full h-auto object-contain transition-transform duration-300 hover:scale-105"
             />
           </div>

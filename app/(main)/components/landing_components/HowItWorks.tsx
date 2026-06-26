@@ -51,6 +51,7 @@ const EvervaultCard: React.FC<EvervaultCardProps> = ({ className, imageSrc, imag
                 src={imageSrc}
                 alt={imageAlt}
                 fill
+                loading="lazy"
                 className="object-cover rounded-full"
                 style={{
                   maskImage: 'radial-gradient(circle, rgba(0,0,0,1) 40%, rgba(0,0,0,0) 80%)',

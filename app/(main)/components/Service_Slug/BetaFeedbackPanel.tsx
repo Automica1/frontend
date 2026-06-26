@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import {
@@ -51,6 +51,13 @@ export default function BetaFeedbackPanel({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const correctFormRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (step === 'correct') {
+      correctFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [step]);
 
   const refundAmount = session.creditsCharged;
   const classificationOptions = getClassificationOptions(solutionType);
@@ -213,7 +220,7 @@ export default function BetaFeedbackPanel({
           </p>
         )}
 
-        {thumbnails.length > 0 && (
+        {thumbnails.length > 0 && step !== 'correct' && (
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-3">
               {thumbnails.map((thumb, index) => (
@@ -279,6 +286,7 @@ export default function BetaFeedbackPanel({
 
         {step === 'correct' && (
           <form
+            ref={correctFormRef}
             id={`feedback-correct-${session.id}`}
             onSubmit={(e) => void handleCorrectSubmit(e)}
             className={fillHeight ? 'flex flex-col flex-1 min-h-0' : 'space-y-3'}
@@ -332,7 +340,7 @@ export default function BetaFeedbackPanel({
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Anything else we should know?"
-                  rows={2}
+                  rows={1}
                   className={`${fieldClass} resize-none`}
                 />
               </div>
