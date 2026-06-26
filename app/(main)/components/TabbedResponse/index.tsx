@@ -21,11 +21,7 @@ interface TabbedResponseSectionProps {
   fileName?: string;
   onRetry?: () => void;
   onReset?: () => void;
-  showBetaFeedbackNudge?: boolean;
-  feedbackSlot?: React.ReactNode;
   resultFooter?: React.ReactNode;
-  tabBadge?: Partial<Record<TabType, string>>;
-  compact?: boolean;
 }
 
 export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
@@ -39,11 +35,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   fileName,
   onRetry,
   onReset,
-  showBetaFeedbackNudge = false,
-  feedbackSlot,
   resultFooter,
-  tabBadge,
-  compact = false,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('processed-image');
   const { copiedBase64, copyBase64 } = useClipboard();
@@ -102,7 +94,6 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   const isProcessedImageTabDisabled = false;
   const isResultTabDisabled = false;
   const useResultFooter = Boolean(resultFooter);
-  const showFooterFeedbackSlot = Boolean(feedbackSlot) && !useResultFooter;
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden h-full flex flex-col">
@@ -115,7 +106,6 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         isResultTabDisabled={isResultTabDisabled}
         isQrExtractSolution={isQrExtractSolution}
         fileType={fileType}
-        tabBadge={tabBadge}
       />
 
       <div className="flex-1 overflow-hidden">
@@ -132,11 +122,11 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
 
         {activeTab === 'result' && (
           <div
-            className={`${compact ? 'p-3' : 'p-6'} h-full ${
+            className={`p-4 h-full ${
               useResultFooter ? 'flex flex-col overflow-hidden gap-3' : 'overflow-auto'
             }`}
           >
-            <div className={useResultFooter ? 'flex-shrink-0' : undefined}>
+            <div className={useResultFooter ? 'flex-shrink-0 overflow-auto max-h-[55%]' : undefined}>
               <ResultTab
                 data={data}
                 solutionType={solutionType}
@@ -144,11 +134,10 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
                 solution={solution}
                 error={error}
                 errorDetails={errorDetails}
-                compactResult={useResultFooter}
               />
             </div>
             {!loading && resultFooter && (
-              <div className="flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-y-auto">
                 {resultFooter}
               </div>
             )}
@@ -174,22 +163,8 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         )}
       </div>
 
-      {!loading && showBetaFeedbackNudge && !showFooterFeedbackSlot && !useResultFooter && (
-        <div className="flex-shrink-0 border-t border-blue-500/20 bg-blue-950/20 px-4 py-3">
-          <p className="text-xs text-blue-200">
-            Label your expected result to earn credits back on your last custom model test.
-          </p>
-        </div>
-      )}
-
-      {!loading && showFooterFeedbackSlot && (
-        <div className="flex-shrink-0 border-t border-gray-700/80 px-3 py-3 max-h-[220px] overflow-y-auto">
-          {feedbackSlot}
-        </div>
-      )}
-
       {!loading && (onRetry || onReset) && (
-        <div className={`flex-shrink-0 border-t border-gray-700 ${compact ? 'p-3' : 'p-4'}`}>
+        <div className="flex-shrink-0 border-t border-gray-700 p-4">
           <div className="flex gap-3">
             {onRetry && (
               <button

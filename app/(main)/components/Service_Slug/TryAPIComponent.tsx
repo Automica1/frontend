@@ -5,16 +5,13 @@ import { Solution, SolutionType } from '../../types/solution';
 import { useSolutionType } from '../../hooks/useSolutionType';
 import { useSolutionApi } from '../../hooks/useSolutionApi';
 import { useCredits } from '../../hooks/useCredits';
-// import { getFileRequirementText } from '../../../utils/solutionHelpers';
 import { fileToBase64, filesToBase64 } from '../../../utils/fileUtils';
 import { FileUpload2 } from '../ui/file-upload2';
 import { FileUpload } from '../ui/file-upload';
-// import { TabbedResponseSection } from '../../TabbedResponseSection';
-import {TabbedResponseSection} from '../TabbedResponse/index'
+import { TabbedResponseSection } from '../TabbedResponse/index';
 import { ProcessingActionCard } from '../TabbedResponse/ProcessingActionCard';
 import BetaAccessPanel from './BetaAccessPanel';
 import BetaFeedbackPanel from './BetaFeedbackPanel';
-import BetaFeedbackDeviceBanner from './BetaFeedbackDeviceBanner';
 import {
   apiService,
   createThumbnail,
@@ -25,6 +22,8 @@ import {
   loadBetaSessionCache,
   saveBetaSessionCache,
 } from '../../lib/betaSessionCache';
+
+const BETA_RUN_COST = 2;
 
 interface TryAPIComponentProps {
   solution: Solution;
@@ -72,6 +71,12 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     refreshPendingFeedback();
   }, [refreshPendingFeedback]);
 
+  useEffect(() => {
+    if (betaEnabled) {
+      void refreshPendingFeedback();
+    }
+  }, [betaEnabled, refreshPendingFeedback]);
+
   const handleFeedbackSubmitted = async (remainingCredits: number) => {
     updateCredits(remainingCredits);
     setPendingSession(null);
@@ -81,53 +86,39 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     }
   };
 
-  const zeroCreditBetaGate = Boolean(solution.hasBeta && betaEnabled && credits === 0 && pendingSession);
-  const betaRunBlocked = zeroCreditBetaGate;
-  const canShowFeedbackForm = Boolean(
-    solution.hasBeta && pendingSession && pendingThumbnails.length > 0
-  );
-  const showDeviceBanner = Boolean(
-    solution.hasBeta && pendingSession && pendingThumbnails.length === 0
+  const insufficientCredits = credits !== null && credits < BETA_RUN_COST;
+  const canShowFeedback = Boolean(
+    solution.hasBeta && betaEnabled && pendingSession && pendingThumbnails.length > 0
   );
 
   const feedbackPanel =
-    canShowFeedbackForm && pendingSession ? (
+    canShowFeedback && pendingSession ? (
       <BetaFeedbackPanel
         serviceSlug={serviceSlug}
         solutionType={solutionType}
         session={pendingSession}
         thumbnails={pendingThumbnails}
-        credits={credits}
+        insufficientCredits={insufficientCredits}
         onSubmitted={handleFeedbackSubmitted}
         placement="inline"
-        embedded={!hasStartedProcessing}
       />
     ) : null;
 
-  const feedbackTabBadge = canShowFeedbackForm && pendingSession
-    ? { result: `+${pendingSession.creditsCharged} credits` }
-    : undefined;
-
-  const showPendingFeedbackGate =
-    solution.hasBeta && !hasStartedProcessing && zeroCreditBetaGate && canShowFeedbackForm;
-
-  const deviceBanner = showDeviceBanner ? <BetaFeedbackDeviceBanner compact /> : undefined;
-
-  const Icon = solution.IconComponent;
+  const submitBlockedMessage =
+    insufficientCredits && canShowFeedback && pendingSession
+      ? `Not enough credits to run again. Rate your last test below to earn up to ${pendingSession.creditsCharged} credits back.`
+      : undefined;
 
   const handleFileUpload = (uploadedFiles: File[]) => {
-    // For signature verification and face verification, limit to 2 files
     if ((solutionType === 'signature-verification' || solutionType === 'face-verify') && uploadedFiles.length > 2) {
       alert(`Please upload only 2 images for ${solutionType === 'signature-verification' ? 'signature verification' : 'face verification'}`);
       return;
     }
-    
+
     setFiles(uploadedFiles);
     currentApi.reset();
     setSubmitValidationError(null);
-    // Reset processing state when new files are uploaded
     setHasStartedProcessing(false);
-    console.log('Files uploaded:', uploadedFiles);
   };
 
   const handleSubmit = async () => {
@@ -138,19 +129,9 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
       return;
     }
 
-    if (betaRunBlocked) {
-      setSubmitValidationError(
-        'Submit feedback on your last test to earn credits back before running another beta request.'
-      );
-      return;
-    }
-
     setSubmitValidationError(null);
-    // Set processing state to true to show results section
     setHasStartedProcessing(true);
-    
-    console.log('Submitting with solution type:', solutionType);
-    
+
     try {
       switch (solutionType) {
         case 'signature-verification':
@@ -158,48 +139,41 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
             throw new Error('Please upload exactly 2 signature images');
           }
           const base64Images = await filesToBase64(files);
-          console.log('Calling signature verification API');
           await currentApi.execute(
             base64Images,
             solution.hasBeta && betaEnabled ? { betaKey: betaKey.trim() } : undefined
           );
           break;
-          
+
         case 'face-verify':
           if (files.length !== 2) {
             throw new Error('Please upload exactly 2 face images for verification');
           }
           const faceBase64Images = await filesToBase64(files);
-          console.log('Calling face verify API with 2 images');
           await currentApi.execute(faceBase64Images[0], faceBase64Images[1]);
           break;
-          
+
         case 'qr-extract':
           const qrBase64 = await fileToBase64(files[0]);
-          console.log('Calling QR extract API');
           await currentApi.execute(qrBase64);
           break;
-          
+
         case 'qr-mask':
           const qrMaskBase64 = await fileToBase64(files[0]);
-          console.log('Calling QR mask API');
           await currentApi.execute(qrMaskBase64);
           break;
-          
+
         case 'id-crop':
           const idBase64 = await fileToBase64(files[0]);
-          console.log('Calling ID crop API');
           await currentApi.execute(idBase64);
           break;
-          
+
         case 'face-cropping':
           const faceCropBase64 = await fileToBase64(files[0]);
-          console.log('Calling face crop API');
           await currentApi.execute(faceCropBase64);
           break;
-          
+
         default:
-          console.error('Unknown solution type in handleSubmit:', solutionType);
           throw new Error(`Unsupported solution type: ${solutionType}`);
       }
     } catch (error) {
@@ -219,7 +193,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
           sessionId,
           thumbnails,
           capturedAt: new Date().toISOString(),
-          creditsCharged: 2,
+          creditsCharged: BETA_RUN_COST,
         });
         await refreshPendingFeedback();
         setPendingThumbnails(thumbnails);
@@ -262,23 +236,17 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     setSubmitValidationError(null);
   };
 
-  // Get the masked base64 from response
   const getMaskedBase64 = () => {
     const data = currentApi.data;
-    console.log('Getting masked base64 for solution type:', solutionType);
-    console.log('Current data:', data);
-    
-    // For face detection/verification, check faceResult.data[0]
+
     if (solutionType === 'face-verify' || solutionType === 'face-cropping') {
       if (data && typeof data === 'object' && 'faceResult' in data) {
         const faceResult = (data as any).faceResult;
         if (faceResult && typeof faceResult === 'object' && 'data' in faceResult && Array.isArray(faceResult.data) && faceResult.data.length > 0) {
-          console.log('Found face result data:', faceResult.data[0]);
           return faceResult.data[0];
         }
       }
-      
-      // Fallback to other possible properties
+
       if (data && typeof data === 'object') {
         if ('processed_image' in data && typeof (data as any).processed_image === 'string') {
           return (data as any).processed_image;
@@ -292,34 +260,29 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
       }
       return undefined;
     }
-    
-    // Type guard for cropResult property
+
     const hasCropResult = (obj: any): obj is { cropResult: { result?: string } } =>
       obj && typeof obj === 'object' && 'cropResult' in obj;
-    
+
     if (solutionType === 'qr-extract') {
-      // Type guard for masked_base64 property
       if (data && typeof data === 'object' && 'masked_base64' in data) {
         return (data as any).masked_base64;
       }
       return undefined;
     }
-    
+
     if (solutionType === 'qr-mask') {
-      // For qr-mask, get masked_base64 from qrResult
       if (data && typeof data === 'object' && 'qrResult' in data) {
         const qrResult = (data as any).qrResult;
         if (qrResult && typeof qrResult === 'object' && 'masked_base64' in qrResult) {
           return qrResult.masked_base64;
         }
       }
-      
-      // Fallback to direct masked_base64 property
+
       if (data && typeof data === 'object' && 'masked_base64' in data) {
         return (data as any).masked_base64;
       }
-      
-      // Also check for other possible response properties
+
       if (data && typeof data === 'object' && 'result' in data) {
         return (data as any).result;
       }
@@ -328,17 +291,15 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
       }
       return undefined;
     }
-    
+
     if (solutionType === 'id-crop') {
       if (hasCropResult(data) && data.cropResult?.result) {
         return data.cropResult.result;
       }
-      // Only return processed_image if it exists on the data object
       return (data && 'result' in data && data.result)
         || (data && 'processed_image' in data && (data as any).processed_image);
     }
-    
-    // Generic fallback for other solution types
+
     if (data && typeof data === 'object') {
       if ('processed_image' in data && typeof (data as any).processed_image === 'string') {
         return (data as any).processed_image;
@@ -354,32 +315,21 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   };
 
   const maskedBase64 = getMaskedBase64();
-  console.log('Final masked base64 length:', maskedBase64 ? maskedBase64.length : 0);
-
-  // Determine which file upload component to use
   const shouldUseFileUpload2 = solutionType === 'signature-verification' || solutionType === 'face-verify';
-  
-  // Determine height based on solution type — beta: fixed equal columns, no page scroll
-  const containerHeight = solution.hasBeta
-    ? 'h-[min(720px,calc(100vh-10rem))]'
-    : 'h-[500px]';
-  const uploadShellClass = solution.hasBeta
-    ? `w-full max-w-4xl mx-auto ${containerHeight}`
-    : `w-full max-w-4xl mx-auto min-h-96 ${containerHeight}`;
+  const containerHeight = 'h-[500px]';
+  const uploadShellClass = `w-full max-w-4xl mx-auto ${containerHeight}`;
 
   return (
     <div className="md:pt-24 pt-16 pb-16 px-4">
       <div className="max-w-6xl mx-auto">
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:items-stretch">
-          {/* Left Column - File Upload */}
           <div className="flex flex-col min-h-0">
             <div className={`${uploadShellClass} border border-dashed bg-black border-neutral-800 rounded-lg overflow-hidden`}>
               {shouldUseFileUpload2 ? (
                 <FileUpload2
                   key={uploadKey}
                   onChange={handleFileUpload}
-                  className={solution.hasBeta ? 'h-full max-h-none' : undefined}
+                  compactPanel={solution.hasBeta}
                 />
               ) : (
                 <FileUpload key={uploadKey} onChange={handleFileUpload} />
@@ -387,36 +337,18 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
             </div>
           </div>
 
-          {/* Right Column - integrated panel */}
           <div className={`${containerHeight} min-h-0 flex flex-col`}>
-            {showPendingFeedbackGate ? (
-              <div className="bg-gray-900 rounded-lg border border-gray-700 h-full flex flex-col overflow-hidden">
-                <div className="flex-shrink-0 border-b border-amber-500/20 bg-amber-950/20 px-3 py-2.5">
-                  <p className="text-xs text-amber-200">
-                    Rate your last test to earn credits back and continue testing.
-                  </p>
-                </div>
-                <div className="flex-1 min-h-0 overflow-hidden p-3">{feedbackPanel}</div>
-              </div>
-            ) : !hasStartedProcessing ? (
+            {!hasStartedProcessing ? (
               <ProcessingActionCard
                 solution={solution}
                 solutionType={solutionType}
                 files={files}
                 onSubmit={handleSubmit}
                 loading={currentApi.loading}
-                submitBlocked={betaRunBlocked}
-                submitBlockedMessage={
-                  zeroCreditBetaGate
-                    ? 'Submit feedback on your last test to earn credits back, or buy more credits to continue.'
-                    : showDeviceBanner
-                      ? 'Complete pending feedback on the device where you ran your last test.'
-                      : undefined
-                }
-                deviceBanner={deviceBanner}
+                submitBlocked={insufficientCredits}
+                submitBlockedMessage={submitBlockedMessage}
                 validationMessage={submitValidationError ?? undefined}
-                fitPanel={solution.hasBeta}
-                compact
+                feedbackSlot={solution.hasBeta ? feedbackPanel : undefined}
                 betaControls={
                   solution.hasBeta && solution.slug ? (
                     <BetaAccessPanel
@@ -425,7 +357,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                       betaKey={betaKey}
                       onEnabledChange={setBetaEnabled}
                       onBetaKeyChange={setBetaKey}
-                      variant="inline"
+                      variant="embedded"
                     />
                   ) : undefined
                 }
@@ -442,9 +374,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                 fileName={files[0]?.name}
                 onRetry={handleRetry}
                 onReset={handleReset}
-                compact
-                resultFooter={solution.hasBeta ? feedbackPanel : undefined}
-                tabBadge={solution.hasBeta ? feedbackTabBadge : undefined}
+                resultFooter={solution.hasBeta && betaEnabled ? feedbackPanel : undefined}
               />
             )}
           </div>

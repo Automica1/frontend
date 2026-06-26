@@ -42,10 +42,12 @@ export const FileUpload2 = ({
   onChange,
   maxFiles = 2,
   className = "",
+  compactPanel = false,
 }: {
   onChange?: (files: File[]) => void;
   maxFiles?: number;
   className?: string;
+  compactPanel?: boolean;
 }) => {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -273,9 +275,12 @@ export const FileUpload2 = ({
     return null;
   };
 
+  const previewMaxHeight = compactPanel ? 'max-h-[120px]' : 'max-h-[200px]';
+  const emptyIconSize = compactPanel ? 'h-24 w-24' : 'h-32 w-32';
+
   return (
     <div 
-      className={cn("w-full h-full flex flex-col max-h-[600px]", className)}
+      className={cn("w-full h-full flex flex-col", compactPanel ? 'max-h-full' : 'max-h-[600px]', className)}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -372,7 +377,10 @@ export const FileUpload2 = ({
                       stiffness: 300,
                       damping: 20,
                     }}
-                    className="relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center h-32 w-32 rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
+                    className={cn(
+                      "relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]",
+                      emptyIconSize
+                    )}
                   >
                     {!isAuthenticated ? (
                       <Lock className="h-8 w-8 text-neutral-400" />
@@ -393,7 +401,8 @@ export const FileUpload2 = ({
                   <motion.div
                     variants={secondaryVariant}
                     className={cn(
-                      "absolute opacity-0 border border-dashed inset-0 z-30 bg-transparent flex items-center justify-center h-32 w-32 rounded-md",
+                      "absolute opacity-0 border border-dashed inset-0 z-30 bg-transparent flex items-center justify-center rounded-md",
+                      emptyIconSize,
                       isAuthenticated ? "border-sky-400" : "border-amber-400"
                     )}
                   ></motion.div>
@@ -451,7 +460,7 @@ export const FileUpload2 = ({
 
                         {/* File preview */}
                         <div className="p-4 pt-12 flex-1 flex flex-col min-h-0">
-                          <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center min-h-0 max-h-[200px] cursor-pointer hover:bg-neutral-700 transition-colors duration-200"
+                          <div className={cn("flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center min-h-0 cursor-pointer hover:bg-neutral-700 transition-colors duration-200", previewMaxHeight)}
                                onClick={() => files[0].preview && setPreviewImage(files[0].preview)}>
                             {files[0].preview ? (
                               <motion.img
@@ -549,7 +558,7 @@ export const FileUpload2 = ({
 
                         {/* File preview */}
                         <div className="p-4 pt-12 flex-1 flex flex-col min-h-0">
-                          <div className="flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center min-h-0 max-h-[150px] cursor-pointer hover:bg-neutral-700 transition-colors duration-200"
+                          <div className={cn("flex-1 bg-neutral-800 rounded-lg overflow-hidden mb-2 flex items-center justify-center min-h-0 cursor-pointer hover:bg-neutral-700 transition-colors duration-200", compactPanel ? 'max-h-[100px]' : 'max-h-[150px]')}
                                onClick={() => file.preview && setPreviewImage(file.preview)}>
                             {file.preview ? (
                               <motion.img
