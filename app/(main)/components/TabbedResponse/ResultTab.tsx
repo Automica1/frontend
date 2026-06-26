@@ -13,6 +13,7 @@ interface ResultTabProps {
   solution: Solution;
   error?: string | null;
   errorDetails?: any | null;
+  compactResult?: boolean;
 }
 
 export const ResultTab: React.FC<ResultTabProps> = ({
@@ -21,7 +22,8 @@ export const ResultTab: React.FC<ResultTabProps> = ({
   loading,
   solution,
   error,
-  errorDetails
+  errorDetails,
+  compactResult = false,
 }) => {
   // Determine if this is a verification solution type or QR extract
   const isVerificationSolution = solutionType === 'face-verify' || solutionType === 'signature-verification';
@@ -101,7 +103,13 @@ export const ResultTab: React.FC<ResultTabProps> = ({
   }
 
   if (isVerificationSolution) {
-    return <VerificationResult solutionType={solutionType} data={data} />;
+    return (
+      <VerificationResult
+        solutionType={solutionType}
+        data={data}
+        compact={compactResult}
+      />
+    );
   }
 
   return (

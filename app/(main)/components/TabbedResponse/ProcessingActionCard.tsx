@@ -16,6 +16,7 @@ interface ProcessingActionCardProps {
   feedbackSlot?: React.ReactNode;
   compact?: boolean;
   validationMessage?: string;
+  fitPanel?: boolean;
 }
 
 export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
@@ -31,6 +32,7 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
   feedbackSlot,
   compact = false,
   validationMessage,
+  fitPanel = false,
 }) => {
   const getButtonText = (type: SolutionType) => {
     switch (type) {
@@ -107,7 +109,9 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-700 h-full flex flex-col overflow-hidden">
-      <div className={`flex-1 min-h-0 overflow-y-auto ${compact ? 'p-4 pb-0' : 'p-6 pb-0'}`}>
+      <div
+        className={`flex-1 min-h-0 ${fitPanel ? 'overflow-hidden' : 'overflow-y-auto'} ${compact ? 'p-4 pb-0' : 'p-6 pb-0'}`}
+      >
         <div className={compact ? 'space-y-3' : 'space-y-4'}>
           <div className="flex items-center space-x-3">
             <div className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br ${solution.gradient} rounded-lg flex items-center justify-center flex-shrink-0`}>

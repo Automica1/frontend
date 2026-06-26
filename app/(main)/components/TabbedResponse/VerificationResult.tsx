@@ -6,11 +6,13 @@ import { SolutionType } from '../../types/solution';
 interface VerificationResultProps {
   data: any;
   solutionType: SolutionType;
+  compact?: boolean;
 }
 
 export const VerificationResult: React.FC<VerificationResultProps> = ({
   data,
-  solutionType
+  solutionType,
+  compact = false,
 }) => {
   // Extract verification data for face-verify and signature-verification
   let verificationData = null;
@@ -50,6 +52,37 @@ export const VerificationResult: React.FC<VerificationResultProps> = ({
     }
     return <AlertCircle className="w-5 h-5 text-yellow-400" />;
   };
+
+  if (compact) {
+    const classification = String(verificationData.classification ?? 'Unknown');
+    const scoreKey = Object.keys(verificationData).find((k) =>
+      k.toLowerCase().includes('similarity') || k.toLowerCase().includes('percentage')
+    );
+    const score = scoreKey ? verificationData[scoreKey] : null;
+
+    return (
+      <div className="rounded-lg border border-gray-700 bg-gray-800 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            {getStatusIcon(classification)}
+            <div className="min-w-0">
+              <p className={`text-sm font-semibold truncate ${getStatusColor(classification)}`}>
+                {classification}
+              </p>
+              <p className="text-[11px] text-gray-500">
+                {solutionType === 'signature-verification' ? 'Signature verification' : 'Face verification'}
+              </p>
+            </div>
+          </div>
+          {score !== null && score !== undefined && (
+            <p className="text-lg font-semibold text-blue-400 tabular-nums flex-shrink-0">
+              {typeof score === 'number' ? score : String(score)}%
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 h-full flex flex-col">

@@ -128,7 +128,7 @@ export default function BetaFeedbackPanel({
 
   const shellClass =
     panelPlacement === 'inline'
-      ? 'rounded-lg border border-gray-700 bg-gray-800/40 px-3 py-3 space-y-3'
+      ? 'rounded-lg border border-gray-700 bg-gray-800/40 px-3 py-2 h-full flex flex-col space-y-2 overflow-hidden'
       : panelPlacement === 'footer'
         ? 'space-y-2.5'
         : 'rounded-lg border border-gray-700/80 bg-gray-900/40 px-3 py-3 space-y-2.5';
@@ -136,12 +136,11 @@ export default function BetaFeedbackPanel({
   return (
     <div className={shellClass}>
       {panelPlacement === 'inline' ? (
-        <div className="border-b border-gray-700/60 pb-2">
-          <p className="text-sm font-medium text-gray-200">
-            {zeroCredits ? 'Earn credits to keep testing' : `Rate this result · earn ${refundAmount} credits back`}
-          </p>
-          <p className="text-[11px] text-gray-500 mt-0.5">
-            We store your feedback, not your uploaded documents. Previews stay on this device only.
+        <div className="flex-shrink-0 border-b border-gray-700/60 pb-1.5">
+          <p className="text-xs font-medium text-gray-200">
+            {zeroCredits
+              ? 'Earn credits to keep testing'
+              : `Rate this result · earn ${refundAmount} credits back`}
           </p>
         </div>
       ) : (
@@ -179,19 +178,6 @@ export default function BetaFeedbackPanel({
         </div>
       )}
 
-      {thumbnails.length > 0 && panelPlacement === 'inline' && (
-        <div className="flex gap-1.5 overflow-x-auto">
-          {thumbnails.map((thumb, index) => (
-            <img
-              key={`${session.id}-${index}`}
-              src={thumb.startsWith('data:') ? thumb : `data:image/jpeg;base64,${thumb}`}
-              alt={`Test input ${index + 1}`}
-              className="h-10 w-10 flex-shrink-0 rounded border border-gray-700 object-cover bg-gray-900"
-            />
-          ))}
-        </div>
-      )}
-
       {session.failureMessage && (
         <div className="rounded border border-red-500/30 bg-red-950/20 px-2 py-1.5 text-[11px] text-red-300">
           {session.failureMessage}
@@ -209,7 +195,7 @@ export default function BetaFeedbackPanel({
       )}
 
       {step === 'confirm' && (
-        <div className="space-y-2">
+        <div className={`space-y-1.5 ${panelPlacement === 'inline' ? 'flex-1 min-h-0' : ''}`}>
           <p className="text-xs text-gray-300">
             {isFailedRun
               ? 'Was this error or outcome expected?'
@@ -237,7 +223,10 @@ export default function BetaFeedbackPanel({
       )}
 
       {step === 'correct' && (
-        <form onSubmit={(e) => void handleCorrectSubmit(e)} className="space-y-2">
+        <form
+          onSubmit={(e) => void handleCorrectSubmit(e)}
+          className={`space-y-1.5 ${panelPlacement === 'inline' ? 'flex-1 min-h-0 overflow-y-auto pr-0.5' : 'space-y-2'}`}
+        >
           <fieldset>
             <legend className="text-[11px] font-medium text-gray-400 mb-1">Expected classification</legend>
             <div className="flex flex-wrap gap-1.5">
@@ -286,7 +275,7 @@ export default function BetaFeedbackPanel({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Anything else we should know?"
-              rows={2}
+              rows={panelPlacement === 'inline' ? 1 : 2}
               className="w-full rounded-md border border-gray-700 bg-gray-900/60 px-2.5 py-1.5 text-xs text-gray-200 placeholder:text-gray-500 focus:border-blue-500/40 focus:outline-none resize-none"
             />
           </div>

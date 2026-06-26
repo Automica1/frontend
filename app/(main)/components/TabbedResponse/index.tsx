@@ -1,5 +1,5 @@
 // components/TabbedResponseSection/index.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Solution, SolutionType } from '../../types/solution';
 import { TabType } from '../../types/tabTypes';
 import { TabNavigation } from './TabNavigation';
@@ -47,8 +47,6 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('processed-image');
   const { copiedBase64, copyBase64 } = useClipboard();
-  const resultFooterRef = useRef<HTMLDivElement>(null);
-  const hasScrolledToFeedbackRef = useRef(false);
 
   const isVerificationSolution = solutionType === 'face-verify' || solutionType === 'signature-verification';
   const isQrExtractSolution = solutionType === 'qr-extract';
@@ -92,21 +90,6 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
     }
   }, [isVerificationSolution, isQrExtractSolution]);
 
-  useEffect(() => {
-    if (!resultFooter || loading) return;
-    if (hasScrolledToFeedbackRef.current) return;
-    hasScrolledToFeedbackRef.current = true;
-    requestAnimationFrame(() => {
-      resultFooterRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    });
-  }, [resultFooter, loading]);
-
-  useEffect(() => {
-    if (!resultFooter) {
-      hasScrolledToFeedbackRef.current = false;
-    }
-  }, [resultFooter]);
-
   const showProcessedImageTab = !isVerificationSolution && !isQrExtractSolution;
   const showResultTab = isVerificationSolution || isQrExtractSolution;
 
@@ -148,17 +131,24 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         )}
 
         {activeTab === 'result' && (
-          <div className={`${compact ? 'p-3' : 'p-6'} h-full overflow-auto`}>
-            <ResultTab
-              data={data}
-              solutionType={solutionType}
-              loading={loading}
-              solution={solution}
-              error={error}
-              errorDetails={errorDetails}
-            />
+          <div
+            className={`${compact ? 'p-3' : 'p-6'} h-full ${
+              useResultFooter ? 'flex flex-col overflow-hidden gap-3' : 'overflow-auto'
+            }`}
+          >
+            <div className={useResultFooter ? 'flex-shrink-0' : undefined}>
+              <ResultTab
+                data={data}
+                solutionType={solutionType}
+                loading={loading}
+                solution={solution}
+                error={error}
+                errorDetails={errorDetails}
+                compactResult={useResultFooter}
+              />
+            </div>
             {!loading && resultFooter && (
-              <div ref={resultFooterRef} className="mt-4">
+              <div className="flex-1 min-h-0 overflow-hidden">
                 {resultFooter}
               </div>
             )}

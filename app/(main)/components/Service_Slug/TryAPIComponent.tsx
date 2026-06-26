@@ -99,7 +99,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
         thumbnails={pendingThumbnails}
         credits={credits}
         onSubmitted={handleFeedbackSubmitted}
-        placement={hasStartedProcessing ? 'inline' : 'footer'}
+        placement="inline"
         embedded={!hasStartedProcessing}
       />
     ) : null;
@@ -359,33 +359,28 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   // Determine which file upload component to use
   const shouldUseFileUpload2 = solutionType === 'signature-verification' || solutionType === 'face-verify';
   
-  // Determine height based on solution type
+  // Determine height based on solution type — beta: fixed equal columns, no page scroll
   const containerHeight = solution.hasBeta
-    ? 'min-h-[500px] max-h-[min(720px,82vh)] h-auto'
+    ? 'h-[min(720px,calc(100vh-10rem))]'
     : 'h-[500px]';
+  const uploadShellClass = solution.hasBeta
+    ? `w-full max-w-4xl mx-auto ${containerHeight}`
+    : `w-full max-w-4xl mx-auto min-h-96 ${containerHeight}`;
+
   return (
     <div className="md:pt-24 pt-16 pb-16 px-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        {/* <div className="text-center mb-12">
-          <div className="flex items-center justify-center space-x-4 mb-6">
-            <div className={`w-12 h-12 bg-gradient-to-br ${solution.gradient} rounded-xl flex items-center justify-center`}>
-              <Icon className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              Try {solution.title}
-            </h1>
-          </div>
-        </div> */}
-
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:items-stretch">
           {/* Left Column - File Upload */}
-          <div className="space-y-6">
-            {/* Conditional FileUpload component usage with dynamic height */}
-            <div className={`w-full max-w-4xl mx-auto min-h-96 ${containerHeight} border border-dashed bg-black border-neutral-800 rounded-lg`}>
+          <div className="flex flex-col min-h-0">
+            <div className={`${uploadShellClass} border border-dashed bg-black border-neutral-800 rounded-lg overflow-hidden`}>
               {shouldUseFileUpload2 ? (
-                <FileUpload2 key={uploadKey} onChange={handleFileUpload} />
+                <FileUpload2
+                  key={uploadKey}
+                  onChange={handleFileUpload}
+                  className={solution.hasBeta ? 'h-full max-h-none' : undefined}
+                />
               ) : (
                 <FileUpload key={uploadKey} onChange={handleFileUpload} />
               )}
@@ -393,7 +388,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
           </div>
 
           {/* Right Column - integrated panel */}
-          <div className={`${containerHeight} min-h-0`}>
+          <div className={`${containerHeight} min-h-0 flex flex-col`}>
             {showPendingFeedbackGate ? (
               <div className="bg-gray-900 rounded-lg border border-gray-700 h-full flex flex-col overflow-hidden">
                 <div className="flex-shrink-0 border-b border-amber-500/20 bg-amber-950/20 px-3 py-2.5">
@@ -401,7 +396,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                     Rate your last test to earn credits back and continue testing.
                   </p>
                 </div>
-                <div className="flex-1 overflow-y-auto p-3">{feedbackPanel}</div>
+                <div className="flex-1 min-h-0 overflow-hidden p-3">{feedbackPanel}</div>
               </div>
             ) : !hasStartedProcessing ? (
               <ProcessingActionCard
@@ -420,6 +415,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                 }
                 deviceBanner={deviceBanner}
                 validationMessage={submitValidationError ?? undefined}
+                fitPanel={solution.hasBeta}
                 compact
                 betaControls={
                   solution.hasBeta && solution.slug ? (
