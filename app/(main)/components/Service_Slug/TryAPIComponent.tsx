@@ -136,9 +136,6 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
         insufficientCredits={insufficientCredits}
         onSubmitted={handleFeedbackSubmitted}
         context={panelContext}
-        onRetry={panelContext === 'post-run' ? handleRetry : undefined}
-        onReset={panelContext === 'post-run' ? handleReset : undefined}
-        showRetry={!(canShowFeedback && insufficientCredits)}
         fillHeight={panelContext === 'post-run'}
       />
     ) : null;

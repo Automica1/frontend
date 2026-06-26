@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle, XCircle, AlertCircle, RotateCcw, Undo2 } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import {
   apiService,
   type BetaFeedbackExpectedResult,
@@ -23,9 +23,6 @@ interface BetaFeedbackPanelProps {
   insufficientCredits: boolean;
   onSubmitted: (remainingCredits: number) => void;
   context?: 'setup' | 'post-run';
-  onRetry?: () => void;
-  onReset?: () => void;
-  showRetry?: boolean;
   fillHeight?: boolean;
 }
 
@@ -45,9 +42,6 @@ export default function BetaFeedbackPanel({
   insufficientCredits,
   onSubmitted,
   context = 'post-run',
-  onRetry,
-  onReset,
-  showRetry = true,
   fillHeight = false,
 }: BetaFeedbackPanelProps) {
   const [step, setStep] = useState<WizardStep>('confirm');
@@ -170,31 +164,10 @@ export default function BetaFeedbackPanel({
     );
   }
 
-  const runActions =
-    context === 'post-run' && (onRetry || onReset) ? (
-      <div className="flex gap-3 pt-3 border-t border-gray-700/80">
-        {showRetry && onRetry && (
-          <button
-            type="button"
-            onClick={onRetry}
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800"
-          >
-            <RotateCcw className="h-4 w-4 text-gray-400" />
-            Retry
-          </button>
-        )}
-        {onReset && (
-          <button
-            type="button"
-            onClick={onReset}
-            className={`${showRetry && onRetry ? 'flex-1' : 'w-full'} inline-flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800`}
-          >
-            <Undo2 className="h-4 w-4 text-gray-400" />
-            Reset
-          </button>
-        )}
-      </div>
-    ) : null;
+  const thumbnailCaption =
+    context === 'setup'
+      ? 'Previews from your last test — saved on this device only. Documents are not stored on our servers.'
+      : 'Input previews from this test — kept on this device only, not on our servers.';
 
   const correctSubmitBar = (
     <div className={`flex items-center justify-between gap-2 ${fillHeight ? '' : 'pt-2'}`}>
@@ -230,6 +203,10 @@ export default function BetaFeedbackPanel({
           </div>
         )}
 
+        {context === 'setup' && (
+          <p className="text-sm font-medium text-gray-300">Your last test</p>
+        )}
+
         {!insufficientCredits && context === 'setup' && (
           <p className="text-sm text-gray-400">
             Rate your previous test · earn {refundAmount} credits back.
@@ -237,19 +214,22 @@ export default function BetaFeedbackPanel({
         )}
 
         {thumbnails.length > 0 && (
-          <div className="grid grid-cols-2 gap-3">
-            {thumbnails.map((thumb, index) => (
-              <div
-                key={`${session.id}-${index}`}
-                className="rounded-lg border border-gray-700 bg-gray-800/50 overflow-hidden"
-              >
-                <img
-                  src={thumb.startsWith('data:') ? thumb : `data:image/jpeg;base64,${thumb}`}
-                  alt={`Test input ${index + 1}`}
-                  className="w-full h-28 object-contain bg-gray-900"
-                />
-              </div>
-            ))}
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-3">
+              {thumbnails.map((thumb, index) => (
+                <div
+                  key={`${session.id}-${index}`}
+                  className="rounded-lg border border-gray-700 bg-gray-800/50 overflow-hidden"
+                >
+                  <img
+                    src={thumb.startsWith('data:') ? thumb : `data:image/jpeg;base64,${thumb}`}
+                    alt={`Test input ${index + 1}`}
+                    className="w-full h-28 object-contain bg-gray-900"
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">{thumbnailCaption}</p>
           </div>
         )}
 
@@ -364,8 +344,6 @@ export default function BetaFeedbackPanel({
         )}
 
         {step === 'confirm' && error && <p className="text-sm text-red-400">{error}</p>}
-
-        {step === 'confirm' && runActions}
     </>
   );
 

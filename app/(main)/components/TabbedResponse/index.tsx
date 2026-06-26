@@ -115,7 +115,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   const imageBase64 = maskedBase64 || (data && data.result) || '';
   const isProcessedImageTabDisabled = false;
   const isResultTabDisabled = false;
-  const showRetry = Boolean(onRetry && !hideRetry && activeTab !== 'feedback');
+  const showRetry = Boolean(onRetry && !hideRetry);
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden h-full flex flex-col">
@@ -180,7 +180,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         )}
       </div>
 
-      {!loading && activeTab !== 'feedback' && (showRetry || onReset) && (
+      {!loading && (showRetry || onReset) && (
         <div className="flex-shrink-0 border-t border-gray-700 p-4">
           <div className="flex gap-3">
             {showRetry && onRetry && (
