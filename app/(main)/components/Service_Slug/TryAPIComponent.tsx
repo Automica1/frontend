@@ -10,6 +10,7 @@ import { FileUpload2 } from '../ui/file-upload2';
 import { FileUpload } from '../ui/file-upload';
 import { TabbedResponseSection } from '../TabbedResponse/index';
 import { ProcessingActionCard } from '../TabbedResponse/ProcessingActionCard';
+import { loadBetaKeyPrefs, storeBetaKeyPrefs } from '../../lib/betaKeyStorage';
 import BetaAccessPanel from './BetaAccessPanel';
 import TryAPISetupPanel from './TryAPISetupPanel';
 import BetaFeedbackPanel from './BetaFeedbackPanel';
@@ -45,6 +46,22 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const { credits, updateCredits } = useCredits();
 
   const serviceSlug = solution.slug || solutionType;
+
+  useEffect(() => {
+    const prefs = loadBetaKeyPrefs(serviceSlug);
+    setBetaKey(prefs.key);
+    setBetaEnabled(prefs.enabled);
+  }, [serviceSlug]);
+
+  const handleBetaEnabledChange = (enabled: boolean) => {
+    setBetaEnabled(enabled);
+    storeBetaKeyPrefs(serviceSlug, { key: betaKey, enabled });
+  };
+
+  const handleBetaKeyChange = (key: string) => {
+    setBetaKey(key);
+    storeBetaKeyPrefs(serviceSlug, { key, enabled: betaEnabled });
+  };
 
   const refreshPendingFeedback = useCallback(async () => {
     if (!solution.hasBeta || !serviceSlug) return;
@@ -122,8 +139,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   }, [currentApi.data, currentApi.errorData, pendingSession, solutionType]);
 
   const feedbackBadge = pendingSession ? `+${pendingSession.creditsCharged}` : undefined;
-  const setupDefaultTab =
-    insufficientCredits || files.length === 0 ? 'feedback' : 'setup';
+  const setupDefaultTab = insufficientCredits && canShowFeedback ? 'feedback' : 'setup';
 
   const feedbackPanel = (panelContext: 'setup' | 'post-run') =>
     canShowFeedback && feedbackSession ? (
@@ -384,11 +400,10 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
       betaControls={
         solution.hasBeta && solution.slug ? (
           <BetaAccessPanel
-            serviceSlug={solution.slug}
             enabled={betaEnabled}
             betaKey={betaKey}
-            onEnabledChange={setBetaEnabled}
-            onBetaKeyChange={setBetaKey}
+            onEnabledChange={handleBetaEnabledChange}
+            onBetaKeyChange={handleBetaKeyChange}
             variant="embedded"
           />
         ) : undefined
@@ -416,17 +431,14 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
 
           <div className={`${containerHeight} min-h-0 flex flex-col`}>
             {!hasStartedProcessing ? (
-              canShowFeedback ? (
-                <TryAPISetupPanel
-                  setupContent={setupCard}
-                  feedbackContent={feedbackPanel('setup')}
-                  feedbackBadge={feedbackBadge}
-                  defaultTab={setupDefaultTab}
-                  insufficientCredits={insufficientCredits}
-                />
-              ) : (
-                setupCard
-              )
+              <TryAPISetupPanel
+                showFeedbackTab={canShowFeedback}
+                setupContent={setupCard}
+                feedbackContent={feedbackPanel('setup')}
+                feedbackBadge={feedbackBadge}
+                defaultTab={setupDefaultTab}
+                insufficientCredits={insufficientCredits}
+              />
             ) : (
               <TabbedResponseSection
                 solution={solution}

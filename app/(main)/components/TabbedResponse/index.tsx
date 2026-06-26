@@ -67,7 +67,12 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   }, [loading]);
 
   useEffect(() => {
-    if (!loading && showFeedbackTab && !prevShowFeedbackRef.current) {
+    if (!showFeedbackTab) {
+      setActiveTab((tab) => (tab === 'feedback' ? 'result' : tab));
+      prevShowFeedbackRef.current = false;
+      return;
+    }
+    if (!loading && !prevShowFeedbackRef.current) {
       setActiveTab('feedback');
     }
     prevShowFeedbackRef.current = showFeedbackTab;

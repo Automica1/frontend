@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, FlaskConical } from 'lucide-react';
 
 interface BetaAccessPanelProps {
-  serviceSlug: string;
   enabled: boolean;
   betaKey: string;
   onEnabledChange: (enabled: boolean) => void;
@@ -12,24 +11,7 @@ interface BetaAccessPanelProps {
   variant?: 'card' | 'inline' | 'embedded';
 }
 
-const storageKey = (slug: string) => `automica-beta-key:${slug}`;
-
-export function loadStoredBetaKey(serviceSlug: string): string {
-  if (typeof window === 'undefined') return '';
-  return sessionStorage.getItem(storageKey(serviceSlug)) || '';
-}
-
-export function storeBetaKey(serviceSlug: string, key: string) {
-  if (typeof window === 'undefined') return;
-  if (key) {
-    sessionStorage.setItem(storageKey(serviceSlug), key);
-  } else {
-    sessionStorage.removeItem(storageKey(serviceSlug));
-  }
-}
-
 export default function BetaAccessPanel({
-  serviceSlug,
   enabled,
   betaKey,
   onEnabledChange,
@@ -37,22 +19,6 @@ export default function BetaAccessPanel({
   variant = 'inline',
 }: BetaAccessPanelProps) {
   const [open, setOpen] = useState(variant === 'embedded');
-  const [initialized, setInitialized] = useState(false);
-
-  useEffect(() => {
-    const stored = loadStoredBetaKey(serviceSlug);
-    if (stored) {
-      onBetaKeyChange(stored);
-      onEnabledChange(true);
-      setOpen(true);
-    }
-    setInitialized(true);
-  }, [serviceSlug, onBetaKeyChange, onEnabledChange]);
-
-  useEffect(() => {
-    if (!initialized) return;
-    storeBetaKey(serviceSlug, betaKey);
-  }, [serviceSlug, betaKey, initialized]);
 
   if (variant === 'embedded') {
     if (!open) {

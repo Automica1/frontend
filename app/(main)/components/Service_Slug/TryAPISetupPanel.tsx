@@ -7,6 +7,7 @@ import type { SetupPanelTab } from '../../types/tabTypes';
 interface TryAPISetupPanelProps {
   setupContent: React.ReactNode;
   feedbackContent: React.ReactNode;
+  showFeedbackTab?: boolean;
   feedbackBadge?: string;
   defaultTab?: SetupPanelTab;
   insufficientCredits?: boolean;
@@ -15,17 +16,30 @@ interface TryAPISetupPanelProps {
 export default function TryAPISetupPanel({
   setupContent,
   feedbackContent,
+  showFeedbackTab = false,
   feedbackBadge,
-  defaultTab = 'feedback',
+  defaultTab = 'setup',
   insufficientCredits = false,
 }: TryAPISetupPanelProps) {
   const [activeTab, setActiveTab] = useState<SetupPanelTab>(defaultTab);
 
   useEffect(() => {
+    if (!showFeedbackTab) {
+      setActiveTab('setup');
+      return;
+    }
     if (insufficientCredits) {
       setActiveTab('feedback');
     }
-  }, [insufficientCredits]);
+  }, [showFeedbackTab, insufficientCredits]);
+
+  if (!showFeedbackTab) {
+    return (
+      <div className="bg-gray-900 rounded-lg border border-gray-700 h-full flex flex-col overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4">{setupContent}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-700 h-full flex flex-col overflow-hidden">
