@@ -24,6 +24,8 @@ interface TabbedResponseSectionProps {
   feedbackTab?: React.ReactNode;
   showFeedbackTab?: boolean;
   feedbackTabBadge?: string;
+  defaultTab?: TabType;
+  hideRetry?: boolean;
 }
 
 export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
@@ -40,12 +42,33 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   feedbackTab,
   showFeedbackTab = false,
   feedbackTabBadge,
+  defaultTab,
+  hideRetry = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('processed-image');
-  const { copiedBase64, copyBase64 } = useClipboard();
-
   const isVerificationSolution = solutionType === 'face-verify' || solutionType === 'signature-verification';
   const isQrExtractSolution = solutionType === 'qr-extract';
+
+  const resolveInitialTab = (): TabType => {
+    if (defaultTab) return defaultTab;
+    if (showFeedbackTab) return 'feedback';
+    if (isVerificationSolution || isQrExtractSolution) return 'result';
+    return 'processed-image';
+  };
+
+  const [activeTab, setActiveTab] = useState<TabType>(resolveInitialTab);
+  const { copiedBase64, copyBase64 } = useClipboard();
+
+  useEffect(() => {
+    if (!loading && defaultTab) {
+      setActiveTab(defaultTab);
+    }
+  }, [defaultTab, loading]);
+
+  useEffect(() => {
+    if (showFeedbackTab && !loading) {
+      setActiveTab('feedback');
+    }
+  }, [showFeedbackTab, loading]);
 
   const detectFileType = (): 'image' | 'pdf' => {
     if (fileName) {
@@ -78,14 +101,6 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   const fileType = detectFileType();
   const mimeType = fileType === 'pdf' ? 'application/pdf' : 'image/png';
 
-  useEffect(() => {
-    if (isVerificationSolution || isQrExtractSolution) {
-      setActiveTab('result');
-    } else {
-      setActiveTab('processed-image');
-    }
-  }, [isVerificationSolution, isQrExtractSolution]);
-
   const showProcessedImageTab = !isVerificationSolution && !isQrExtractSolution;
   const showResultTab = isVerificationSolution || isQrExtractSolution;
 
@@ -97,6 +112,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   const imageBase64 = maskedBase64 || (data && data.result) || '';
   const isProcessedImageTabDisabled = false;
   const isResultTabDisabled = false;
+  const showRetry = Boolean(onRetry && !hideRetry);
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden h-full flex flex-col">
@@ -161,10 +177,10 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         )}
       </div>
 
-      {!loading && (onRetry || onReset) && (
+      {!loading && (showRetry || onReset) && (
         <div className="flex-shrink-0 border-t border-gray-700 p-4">
-          <div className="flex gap-3">
-            {onRetry && (
+          <div className={`flex gap-3 ${showRetry && onReset ? '' : ''}`}>
+            {showRetry && (
               <button
                 type="button"
                 onClick={onRetry}
@@ -178,7 +194,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
               <button
                 type="button"
                 onClick={onReset}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800"
+                className={`${showRetry ? 'flex-1' : 'w-full'} inline-flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800`}
               >
                 <Undo2 className="h-4 w-4 text-gray-400" />
                 Reset

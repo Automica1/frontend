@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
+import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import {
   apiService,
   type BetaFeedbackExpectedResult,
@@ -21,13 +23,15 @@ interface BetaFeedbackPanelProps {
   insufficientCredits: boolean;
   onSubmitted: (remainingCredits: number) => void;
   context?: 'setup' | 'post-run';
-  placement?: 'footer' | 'inline' | 'tab';
 }
 
 type WizardStep = 'confirm' | 'correct';
 
 const actionButtonClass =
-  'rounded-lg border border-gray-700 bg-gray-800/70 px-3 py-2 text-xs font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800 disabled:opacity-50';
+  'rounded-lg border border-gray-700 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800 disabled:opacity-50';
+
+const fieldClass =
+  'w-full rounded-lg border border-gray-700 bg-gray-800/60 px-3 py-2 text-sm text-gray-200 placeholder:text-gray-500 focus:border-gray-600 focus:outline-none';
 
 export default function BetaFeedbackPanel({
   serviceSlug,
@@ -37,7 +41,6 @@ export default function BetaFeedbackPanel({
   insufficientCredits,
   onSubmitted,
   context = 'post-run',
-  placement = 'tab',
 }: BetaFeedbackPanelProps) {
   const [step, setStep] = useState<WizardStep>('confirm');
   const [expectedClassification, setExpectedClassification] = useState('');
@@ -47,8 +50,6 @@ export default function BetaFeedbackPanel({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const isTab = placement === 'tab';
-  const isInline = placement === 'inline';
   const refundAmount = session.creditsCharged;
   const classificationOptions = getClassificationOptions(solutionType);
   const hasActual = Boolean(session.actualResult?.classification);
@@ -62,6 +63,20 @@ export default function BetaFeedbackPanel({
       ? session.actualResult.similarity_percentage
       : null;
 
+  const getStatusColor = (classification: string) => {
+    const lower = classification?.toLowerCase();
+    if (lower === 'genuine' || lower === 'match') return 'text-green-400';
+    if (lower === 'fake' || lower === 'forged' || lower === 'no match') return 'text-red-400';
+    return 'text-yellow-400';
+  };
+
+  const getStatusIcon = (classification: string) => {
+    const lower = classification?.toLowerCase();
+    if (lower === 'genuine' || lower === 'match') return <CheckCircle className="w-5 h-5 text-green-400" />;
+    if (lower === 'fake' || lower === 'forged' || lower === 'no match') return <XCircle className="w-5 h-5 text-red-400" />;
+    return <AlertCircle className="w-5 h-5 text-yellow-400" />;
+  };
+
   const submitFeedback = async (payload: BetaFeedbackExpectedResult) => {
     try {
       setSubmitting(true);
@@ -69,9 +84,7 @@ export default function BetaFeedbackPanel({
       const response = await apiService.submitBetaFeedback(session.id, payload);
 
       if (response.creditsRefunded === 0) {
-        setSuccessMessage(
-          'Feedback submitted. Monthly refund cap reached — no credits were added this time.'
-        );
+        setSuccessMessage('Feedback saved. Monthly refund limit reached — no credits were added.');
       } else {
         setSuccessMessage(
           `Feedback submitted — ${response.creditsRefunded} credit${response.creditsRefunded === 1 ? '' : 's'} added.`
@@ -80,7 +93,7 @@ export default function BetaFeedbackPanel({
 
       window.setTimeout(() => {
         onSubmitted(response.remainingCredits);
-      }, 1800);
+      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit feedback');
       setSubmitting(false);
@@ -143,81 +156,77 @@ export default function BetaFeedbackPanel({
 
   if (successMessage) {
     return (
-      <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-3">
-        <p className="text-sm text-blue-200">{successMessage}</p>
+      <div className="rounded-lg border border-gray-700 bg-gray-800 p-4">
+        <p className="text-sm text-gray-200">{successMessage}</p>
       </div>
     );
   }
 
-  const shellClass = isTab
-    ? 'bg-blue-900/20 border border-blue-500 rounded-lg p-3 space-y-3'
-    : isInline
-      ? 'bg-blue-900/20 border border-blue-500 rounded-lg p-3 h-full flex flex-col space-y-2 overflow-hidden'
-      : 'bg-blue-900/20 border border-blue-500 rounded-lg p-3 space-y-2.5';
-
-  const headerText = insufficientCredits
-    ? context === 'post-run'
-      ? `Not enough credits to run again. Rate this result to earn up to ${refundAmount} credits back.`
-      : `Not enough credits to run again. Rate your previous test to earn up to ${refundAmount} credits back.`
-    : context === 'post-run'
-      ? `Rate this result · earn ${refundAmount} credits back`
-      : `Rate your previous test · earn ${refundAmount} credits back`;
-
   return (
-    <div className={shellClass}>
-      <div className="flex-shrink-0">
-        <div className="flex items-center space-x-2 mb-1">
-          <div className="w-3 h-3 bg-blue-500 rounded-full" />
-          <h4 className="text-sm font-semibold text-blue-400">Feedback</h4>
-        </div>
-        <p className="text-xs text-blue-300">{headerText}</p>
-      </div>
-
-      {thumbnails.length > 0 && (
-        <div className="flex-shrink-0 space-y-1">
-          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
-            {thumbnails.map((thumb, index) => (
-              <img
-                key={`${session.id}-${index}`}
-                src={thumb.startsWith('data:') ? thumb : `data:image/jpeg;base64,${thumb}`}
-                alt={`Test input ${index + 1}`}
-                className="h-10 w-10 flex-shrink-0 rounded border border-blue-500/40 object-cover bg-gray-900"
-              />
-            ))}
-          </div>
-          <p className="text-[10px] text-blue-300/70">
-            Previews kept only on this device.
+    <div className="space-y-4">
+      {insufficientCredits && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-950/20 px-4 py-3">
+          <p className="text-sm text-amber-100">
+            You have <span className="font-semibold">0 credits</span>.{' '}
+            <Link href="/credits" className="text-amber-200 underline hover:text-white">
+              Buy credits
+            </Link>{' '}
+            or submit feedback below to earn up to {refundAmount} credits back.
           </p>
+        </div>
+      )}
+
+      {!insufficientCredits && context === 'setup' && (
+        <p className="text-sm text-gray-400">
+          Rate your previous test · earn {refundAmount} credits back.
+        </p>
+      )}
+
+      {context === 'post-run' && hasActual && actualLabel && (
+        <div className="rounded-lg border border-gray-700 bg-gray-800 p-4">
+          <p className="text-xs text-gray-500 mb-2">Model result</p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              {getStatusIcon(actualLabel)}
+              <span className={`text-base font-semibold ${getStatusColor(actualLabel)}`}>{actualLabel}</span>
+            </div>
+            {actualScore !== null && (
+              <span className="text-lg font-semibold text-blue-400 tabular-nums">{actualScore.toFixed(1)}%</span>
+            )}
+          </div>
         </div>
       )}
 
       {session.failureMessage && (
-        <div className="rounded border border-red-500/30 bg-red-950/20 px-2 py-1.5 text-[11px] text-red-300">
+        <div className="rounded-lg border border-red-500/30 bg-red-950/20 px-3 py-2 text-sm text-red-300">
           {session.failureMessage}
         </div>
       )}
 
-      {hasActual && (
-        <div className="rounded border border-blue-500/30 bg-blue-950/20 px-2 py-1.5 text-[11px] text-blue-200/80">
-          Model returned:{' '}
-          <span className="text-blue-100">
-            {actualLabel}
-            {actualScore !== null ? ` · ${actualScore.toFixed(1)}%` : ''}
-          </span>
+      {thumbnails.length > 0 && context === 'setup' && (
+        <div className="flex gap-2">
+          {thumbnails.map((thumb, index) => (
+            <img
+              key={`${session.id}-${index}`}
+              src={thumb.startsWith('data:') ? thumb : `data:image/jpeg;base64,${thumb}`}
+              alt={`Test input ${index + 1}`}
+              className="h-12 w-12 rounded-lg border border-gray-700 object-cover bg-gray-900"
+            />
+          ))}
         </div>
       )}
 
       {step === 'confirm' && (
-        <div className={`space-y-1.5 ${isInline ? 'flex-1 min-h-0' : ''}`}>
-          <p className="text-xs text-blue-200">
-            {isFailedRun ? 'Was this error or outcome expected?' : 'Was this API result correct?'}
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-white">
+            {isFailedRun ? 'Was this error or outcome expected?' : 'Was this result correct?'}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <button
               type="button"
               disabled={submitting}
               onClick={() => void handleConfirmYes()}
-              className={actionButtonClass}
+              className={`${actionButtonClass} sm:flex-1`}
             >
               {submitting ? 'Submitting…' : 'Yes, as expected'}
             </button>
@@ -225,7 +234,7 @@ export default function BetaFeedbackPanel({
               type="button"
               disabled={submitting}
               onClick={handleConfirmNo}
-              className={actionButtonClass}
+              className={`${actionButtonClass} sm:flex-1`}
             >
               No, I expected something else
             </button>
@@ -234,20 +243,17 @@ export default function BetaFeedbackPanel({
       )}
 
       {step === 'correct' && (
-        <form
-          onSubmit={(e) => void handleCorrectSubmit(e)}
-          className={`space-y-1.5 ${isInline ? 'flex-1 min-h-0 overflow-y-auto pr-0.5' : 'space-y-2'}`}
-        >
+        <form onSubmit={(e) => void handleCorrectSubmit(e)} className="space-y-3">
           <fieldset>
-            <legend className="text-[11px] font-medium text-blue-300/80 mb-1">Expected classification</legend>
-            <div className="flex flex-wrap gap-1.5">
+            <legend className="text-sm font-medium text-gray-300 mb-2">Expected classification</legend>
+            <div className="flex flex-wrap gap-2">
               {classificationOptions.map((option) => (
                 <label
                   key={option.value}
-                  className={`inline-flex items-center rounded border px-2 py-1 text-[11px] cursor-pointer ${
+                  className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-sm cursor-pointer ${
                     expectedClassification === option.value
-                      ? 'border-blue-500/50 bg-blue-500/15 text-blue-200'
-                      : 'border-blue-500/30 bg-blue-950/20 text-blue-200/80'
+                      ? 'border-gray-500 bg-gray-700 text-white'
+                      : 'border-gray-700 bg-gray-800/60 text-gray-300'
                   }`}
                 >
                   <input
@@ -265,7 +271,7 @@ export default function BetaFeedbackPanel({
           </fieldset>
 
           <div>
-            <label className="text-[11px] font-medium text-blue-300/80 block mb-1">
+            <label className="text-sm font-medium text-gray-300 block mb-1.5">
               Expected similarity % <span className="text-red-400">*</span>
             </label>
             <input
@@ -276,18 +282,18 @@ export default function BetaFeedbackPanel({
               value={expectedScore}
               onChange={(e) => setExpectedScore(e.target.value)}
               placeholder="0–100"
-              className="w-full rounded-md border border-blue-500/30 bg-gray-900/60 px-2.5 py-1.5 text-xs text-gray-200 placeholder:text-gray-500 focus:border-blue-500/40 focus:outline-none"
+              className={fieldClass}
             />
           </div>
 
           <div>
-            <label className="text-[11px] font-medium text-blue-300/80 block mb-1">Notes (optional)</label>
+            <label className="text-sm font-medium text-gray-300 block mb-1.5">Notes (optional)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Anything else we should know?"
-              rows={isInline ? 1 : 2}
-              className="w-full rounded-md border border-blue-500/30 bg-gray-900/60 px-2.5 py-1.5 text-xs text-gray-200 placeholder:text-gray-500 focus:border-blue-500/40 focus:outline-none resize-none"
+              rows={2}
+              className={`${fieldClass} resize-none`}
             />
           </div>
 
@@ -295,14 +301,14 @@ export default function BetaFeedbackPanel({
             <button
               type="button"
               onClick={() => setStep('confirm')}
-              className="text-[11px] text-blue-300/70 hover:text-blue-200"
+              className="text-sm text-gray-500 hover:text-gray-300"
             >
               Back
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className={`rounded-lg px-3 py-2 text-xs font-medium transition-colors disabled:opacity-50 bg-gradient-to-r from-blue-600 to-blue-500 text-white hover:from-blue-500 hover:to-blue-400`}
+              className="rounded-lg px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-500 hover:to-blue-500 disabled:opacity-50"
             >
               {submitting ? 'Submitting…' : `Submit & earn ${refundAmount} credits`}
             </button>
@@ -310,7 +316,7 @@ export default function BetaFeedbackPanel({
         </form>
       )}
 
-      {error && <p className="text-[11px] text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   );
 }

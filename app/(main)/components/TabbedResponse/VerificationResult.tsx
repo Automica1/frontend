@@ -1,6 +1,6 @@
 // components/TabbedResponseSection/VerificationResult.tsx
 import React from 'react';
-import { CheckCircle, XCircle, AlertCircle, Shield } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { SolutionType } from '../../types/solution';
 
 interface VerificationResultProps {
@@ -121,23 +121,6 @@ export const VerificationResult: React.FC<VerificationResultProps> = ({
           })}
         </div>
       </div>
-
-      {/* Status Summary */}
-      <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-        <div className="flex items-center justify-center space-x-3">
-          <Shield className="w-5 h-5 text-purple-400" />
-          <span className="text-gray-300">
-            Verification Status: 
-            <span className={`ml-2 font-semibold ${
-              verificationData.classification ? getStatusColor(verificationData.classification) : 'text-white'
-            }`}>
-              {verificationData.classification || 'Completed'}
-            </span>
-          </span>
-        </div>
-      </div>
-
-      
     </div>
   );
 };

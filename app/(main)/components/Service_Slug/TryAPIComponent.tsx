@@ -82,6 +82,8 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     updateCredits(remainingCredits);
     setPendingSession(null);
     setPendingThumbnails([]);
+    setHasStartedProcessing(false);
+    currentApi.reset();
     if (serviceSlug) {
       await clearBetaSessionCache(serviceSlug);
     }
@@ -91,8 +93,9 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const canShowFeedback = Boolean(
     solution.hasBeta && betaEnabled && pendingSession && pendingThumbnails.length > 0
   );
-  const showSetupFeedbackTab = canShowFeedback && files.length === 0;
   const feedbackBadge = pendingSession ? `+${pendingSession.creditsCharged}` : undefined;
+  const setupDefaultTab =
+    insufficientCredits || files.length === 0 ? 'feedback' : 'setup';
 
   const feedbackPanel = (panelContext: 'setup' | 'post-run') =>
     canShowFeedback && pendingSession ? (
@@ -104,16 +107,15 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
         insufficientCredits={insufficientCredits}
         onSubmitted={handleFeedbackSubmitted}
         context={panelContext}
-        placement="tab"
       />
     ) : null;
 
   const submitBlockedMessage =
     insufficientCredits && canShowFeedback && pendingSession
-      ? showSetupFeedbackTab
-        ? `Not enough credits to run again. Open the Feedback tab to earn up to ${pendingSession.creditsCharged} credits back.`
-        : `Not enough credits to run again. Rate this result in the Feedback tab after your run.`
-      : undefined;
+      ? `Not enough credits to run again. Submit feedback to earn up to ${pendingSession.creditsCharged} credits back, or buy more credits.`
+      : insufficientCredits
+        ? 'Not enough credits to run this test.'
+        : undefined;
 
   const handleFileUpload = (uploadedFiles: File[]) => {
     if ((solutionType === 'signature-verification' || solutionType === 'face-verify') && uploadedFiles.length > 2) {
@@ -132,6 +134,18 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
 
     if (solution.hasBeta && betaEnabled && !betaKey.trim()) {
       setSubmitValidationError('Enter your beta key to use your custom model.');
+      return;
+    }
+
+    if (insufficientCredits && canShowFeedback) {
+      setSubmitValidationError(
+        `Not enough credits. Submit feedback to earn up to ${pendingSession?.creditsCharged ?? BETA_RUN_COST} credits back.`
+      );
+      return;
+    }
+
+    if (insufficientCredits) {
+      setSubmitValidationError('Not enough credits to run this test.');
       return;
     }
 
@@ -335,7 +349,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
       submitBlocked={insufficientCredits}
       submitBlockedMessage={submitBlockedMessage}
       validationMessage={submitValidationError ?? undefined}
-      embedded={showSetupFeedbackTab}
+      embedded={canShowFeedback}
       betaControls={
         solution.hasBeta && solution.slug ? (
           <BetaAccessPanel
@@ -371,12 +385,12 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
 
           <div className={`${containerHeight} min-h-0 flex flex-col`}>
             {!hasStartedProcessing ? (
-              showSetupFeedbackTab ? (
+              canShowFeedback ? (
                 <TryAPISetupPanel
                   setupContent={setupCard}
                   feedbackContent={feedbackPanel('setup')}
                   feedbackBadge={feedbackBadge}
-                  defaultTab={insufficientCredits ? 'feedback' : 'setup'}
+                  defaultTab={setupDefaultTab}
                 />
               ) : (
                 setupCard
@@ -396,6 +410,8 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                 showFeedbackTab={Boolean(solution.hasBeta && betaEnabled && canShowFeedback)}
                 feedbackTab={feedbackPanel('post-run')}
                 feedbackTabBadge={feedbackBadge}
+                defaultTab={canShowFeedback ? 'feedback' : 'result'}
+                hideRetry={Boolean(canShowFeedback && insufficientCredits)}
               />
             )}
           </div>
