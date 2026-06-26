@@ -1,5 +1,5 @@
 // components/TabbedResponseSection/index.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Solution, SolutionType } from '../../types/solution';
 import { TabType } from '../../types/tabTypes';
 import { TabNavigation } from './TabNavigation';
@@ -49,6 +49,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   const isQrExtractSolution = solutionType === 'qr-extract';
 
   const resolveInitialTab = (): TabType => {
+    if (loading) return 'result';
     if (defaultTab) return defaultTab;
     if (showFeedbackTab) return 'feedback';
     if (isVerificationSolution || isQrExtractSolution) return 'result';
@@ -57,17 +58,19 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
 
   const [activeTab, setActiveTab] = useState<TabType>(resolveInitialTab);
   const { copiedBase64, copyBase64 } = useClipboard();
+  const prevShowFeedbackRef = useRef(showFeedbackTab);
 
   useEffect(() => {
-    if (!loading && defaultTab) {
-      setActiveTab(defaultTab);
+    if (loading) {
+      setActiveTab('result');
     }
-  }, [defaultTab, loading]);
+  }, [loading]);
 
   useEffect(() => {
-    if (showFeedbackTab && !loading) {
+    if (!loading && showFeedbackTab && !prevShowFeedbackRef.current) {
       setActiveTab('feedback');
     }
+    prevShowFeedbackRef.current = showFeedbackTab;
   }, [showFeedbackTab, loading]);
 
   const detectFileType = (): 'image' | 'pdf' => {
@@ -112,7 +115,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   const imageBase64 = maskedBase64 || (data && data.result) || '';
   const isProcessedImageTabDisabled = false;
   const isResultTabDisabled = false;
-  const showRetry = Boolean(onRetry && !hideRetry);
+  const showRetry = Boolean(onRetry && !hideRetry && activeTab !== 'feedback');
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden h-full flex flex-col">
@@ -121,7 +124,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         setActiveTab={setActiveTab}
         showProcessedImageTab={showProcessedImageTab}
         showResultTab={showResultTab}
-        showFeedbackTab={showFeedbackTab}
+        showFeedbackTab={showFeedbackTab && !loading}
         isProcessedImageTabDisabled={isProcessedImageTabDisabled}
         isResultTabDisabled={isResultTabDisabled}
         isQrExtractSolution={isQrExtractSolution}
@@ -155,7 +158,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         )}
 
         {activeTab === 'feedback' && feedbackTab && (
-          <div className="p-4 h-full overflow-y-auto">{feedbackTab}</div>
+          <div className="h-full min-h-0 flex flex-col p-4">{feedbackTab}</div>
         )}
 
         {activeTab === 'processed-image' && (
@@ -177,10 +180,10 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         )}
       </div>
 
-      {!loading && (showRetry || onReset) && (
+      {!loading && activeTab !== 'feedback' && (showRetry || onReset) && (
         <div className="flex-shrink-0 border-t border-gray-700 p-4">
-          <div className={`flex gap-3 ${showRetry && onReset ? '' : ''}`}>
-            {showRetry && (
+          <div className="flex gap-3">
+            {showRetry && onRetry && (
               <button
                 type="button"
                 onClick={onRetry}
@@ -194,7 +197,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
               <button
                 type="button"
                 onClick={onReset}
-                className={`${showRetry ? 'flex-1' : 'w-full'} inline-flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800`}
+                className={`${showRetry && onRetry ? 'flex-1' : 'w-full'} inline-flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800`}
               >
                 <Undo2 className="h-4 w-4 text-gray-400" />
                 Reset

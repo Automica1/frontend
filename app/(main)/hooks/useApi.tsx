@@ -24,6 +24,7 @@ export function useApi<T = ApiResponse>(
 
   const execute = useCallback(async (...args: any[]) => {
     setLoading(true);
+    setData(null);
     setError(null);
     setErrorData(null);
     setLastArgs(args);

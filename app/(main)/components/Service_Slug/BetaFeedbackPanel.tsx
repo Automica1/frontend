@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, RotateCcw, Undo2 } from 'lucide-react';
 import {
   apiService,
   type BetaFeedbackExpectedResult,
@@ -23,6 +23,10 @@ interface BetaFeedbackPanelProps {
   insufficientCredits: boolean;
   onSubmitted: (remainingCredits: number) => void;
   context?: 'setup' | 'post-run';
+  onRetry?: () => void;
+  onReset?: () => void;
+  showRetry?: boolean;
+  fillHeight?: boolean;
 }
 
 type WizardStep = 'confirm' | 'correct';
@@ -41,6 +45,10 @@ export default function BetaFeedbackPanel({
   insufficientCredits,
   onSubmitted,
   context = 'post-run',
+  onRetry,
+  onReset,
+  showRetry = true,
+  fillHeight = false,
 }: BetaFeedbackPanelProps) {
   const [step, setStep] = useState<WizardStep>('confirm');
   const [expectedClassification, setExpectedClassification] = useState('');
@@ -162,30 +170,91 @@ export default function BetaFeedbackPanel({
     );
   }
 
-  return (
-    <div className="space-y-4">
+  const runActions =
+    context === 'post-run' && (onRetry || onReset) ? (
+      <div className="flex gap-3 pt-3 border-t border-gray-700/80">
+        {showRetry && onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800"
+          >
+            <RotateCcw className="h-4 w-4 text-gray-400" />
+            Retry
+          </button>
+        )}
+        {onReset && (
+          <button
+            type="button"
+            onClick={onReset}
+            className={`${showRetry && onRetry ? 'flex-1' : 'w-full'} inline-flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800/70 px-4 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800`}
+          >
+            <Undo2 className="h-4 w-4 text-gray-400" />
+            Reset
+          </button>
+        )}
+      </div>
+    ) : null;
+
+  const correctSubmitBar = (
+    <div className={`flex items-center justify-between gap-2 ${fillHeight ? '' : 'pt-2'}`}>
+      <button
+        type="button"
+        onClick={() => setStep('confirm')}
+        className="text-sm text-gray-500 hover:text-gray-300 px-1"
+      >
+        Back
+      </button>
+      <button
+        type="submit"
+        form={`feedback-correct-${session.id}`}
+        disabled={submitting}
+        className="rounded-lg px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-500 hover:to-blue-500 disabled:opacity-50"
+      >
+        {submitting ? 'Submitting…' : `Submit & earn ${refundAmount} credits`}
+      </button>
+    </div>
+  );
+
+  const body = (
+    <>
       {insufficientCredits && (
-        <div className="rounded-lg border border-amber-500/40 bg-amber-950/20 px-4 py-3">
-          <p className="text-sm text-amber-100">
-            You have <span className="font-semibold">0 credits</span>.{' '}
-            <Link href="/credits" className="text-amber-200 underline hover:text-white">
-              Buy credits
-            </Link>{' '}
-            or submit feedback below to earn up to {refundAmount} credits back.
+          <div className="rounded-lg border border-amber-500/40 bg-amber-950/20 px-4 py-3">
+            <p className="text-sm text-amber-100">
+              You have <span className="font-semibold">0 credits</span>.{' '}
+              <Link href="/credits" className="text-amber-200 underline hover:text-white">
+                Buy credits
+              </Link>{' '}
+              or submit feedback below to earn up to {refundAmount} credits back.
+            </p>
+          </div>
+        )}
+
+        {!insufficientCredits && context === 'setup' && (
+          <p className="text-sm text-gray-400">
+            Rate your previous test · earn {refundAmount} credits back.
           </p>
-        </div>
-      )}
+        )}
 
-      {!insufficientCredits && context === 'setup' && (
-        <p className="text-sm text-gray-400">
-          Rate your previous test · earn {refundAmount} credits back.
-        </p>
-      )}
+        {thumbnails.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            {thumbnails.map((thumb, index) => (
+              <div
+                key={`${session.id}-${index}`}
+                className="rounded-lg border border-gray-700 bg-gray-800/50 overflow-hidden"
+              >
+                <img
+                  src={thumb.startsWith('data:') ? thumb : `data:image/jpeg;base64,${thumb}`}
+                  alt={`Test input ${index + 1}`}
+                  className="w-full h-28 object-contain bg-gray-900"
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
-      {context === 'post-run' && hasActual && actualLabel && (
-        <div className="rounded-lg border border-gray-700 bg-gray-800 p-4">
-          <p className="text-xs text-gray-500 mb-2">Model result</p>
-          <div className="flex items-center justify-between gap-3">
+        {hasActual && actualLabel && (
+          <div className="flex items-center justify-between gap-3 border-b border-gray-700/80 pb-3">
             <div className="flex items-center gap-2 min-w-0">
               {getStatusIcon(actualLabel)}
               <span className={`text-base font-semibold ${getStatusColor(actualLabel)}`}>{actualLabel}</span>
@@ -194,129 +263,124 @@ export default function BetaFeedbackPanel({
               <span className="text-lg font-semibold text-blue-400 tabular-nums">{actualScore.toFixed(1)}%</span>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {session.failureMessage && (
-        <div className="rounded-lg border border-red-500/30 bg-red-950/20 px-3 py-2 text-sm text-red-300">
-          {session.failureMessage}
-        </div>
-      )}
-
-      {thumbnails.length > 0 && context === 'setup' && (
-        <div className="flex gap-2">
-          {thumbnails.map((thumb, index) => (
-            <img
-              key={`${session.id}-${index}`}
-              src={thumb.startsWith('data:') ? thumb : `data:image/jpeg;base64,${thumb}`}
-              alt={`Test input ${index + 1}`}
-              className="h-12 w-12 rounded-lg border border-gray-700 object-cover bg-gray-900"
-            />
-          ))}
-        </div>
-      )}
-
-      {step === 'confirm' && (
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-white">
-            {isFailedRun ? 'Was this error or outcome expected?' : 'Was this result correct?'}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={() => void handleConfirmYes()}
-              className={`${actionButtonClass} sm:flex-1`}
-            >
-              {submitting ? 'Submitting…' : 'Yes, as expected'}
-            </button>
-            <button
-              type="button"
-              disabled={submitting}
-              onClick={handleConfirmNo}
-              className={`${actionButtonClass} sm:flex-1`}
-            >
-              No, I expected something else
-            </button>
+        {session.failureMessage && (
+          <div className="rounded-lg border border-red-500/30 bg-red-950/20 px-3 py-2 text-sm text-red-300">
+            {session.failureMessage}
           </div>
-        </div>
-      )}
+        )}
 
-      {step === 'correct' && (
-        <form onSubmit={(e) => void handleCorrectSubmit(e)} className="space-y-3">
-          <fieldset>
-            <legend className="text-sm font-medium text-gray-300 mb-2">Expected classification</legend>
-            <div className="flex flex-wrap gap-2">
-              {classificationOptions.map((option) => (
-                <label
-                  key={option.value}
-                  className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-sm cursor-pointer ${
-                    expectedClassification === option.value
-                      ? 'border-gray-500 bg-gray-700 text-white'
-                      : 'border-gray-700 bg-gray-800/60 text-gray-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name={`expected-${serviceSlug}`}
-                    value={option.value}
-                    checked={expectedClassification === option.value}
-                    onChange={() => setExpectedClassification(option.value)}
-                    className="sr-only"
-                  />
-                  {option.label}
-                </label>
-              ))}
+        {step === 'confirm' && (
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-white">
+              {isFailedRun ? 'Was this error or outcome expected?' : 'Was this result correct?'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => void handleConfirmYes()}
+                className={`${actionButtonClass} sm:flex-1`}
+              >
+                {submitting ? 'Submitting…' : 'Yes, as expected'}
+              </button>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={handleConfirmNo}
+                className={`${actionButtonClass} sm:flex-1`}
+              >
+                No, I expected something else
+              </button>
             </div>
-          </fieldset>
-
-          <div>
-            <label className="text-sm font-medium text-gray-300 block mb-1.5">
-              Expected similarity % <span className="text-red-400">*</span>
-            </label>
-            <input
-              type="number"
-              min={0}
-              max={100}
-              step={0.1}
-              value={expectedScore}
-              onChange={(e) => setExpectedScore(e.target.value)}
-              placeholder="0–100"
-              className={fieldClass}
-            />
           </div>
+        )}
 
-          <div>
-            <label className="text-sm font-medium text-gray-300 block mb-1.5">Notes (optional)</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Anything else we should know?"
-              rows={2}
-              className={`${fieldClass} resize-none`}
-            />
-          </div>
+        {step === 'correct' && (
+          <form
+            id={`feedback-correct-${session.id}`}
+            onSubmit={(e) => void handleCorrectSubmit(e)}
+            className={fillHeight ? 'flex flex-col flex-1 min-h-0' : 'space-y-3'}
+          >
+            <div className="space-y-3 pb-2">
+              <fieldset>
+                <legend className="text-sm font-medium text-gray-300 mb-2">Expected classification</legend>
+                <div className="flex flex-wrap gap-2">
+                  {classificationOptions.map((option) => (
+                    <label
+                      key={option.value}
+                      className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-sm cursor-pointer ${
+                        expectedClassification === option.value
+                          ? 'border-gray-500 bg-gray-700 text-white'
+                          : 'border-gray-700 bg-gray-800/60 text-gray-300'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`expected-${serviceSlug}`}
+                        value={option.value}
+                        checked={expectedClassification === option.value}
+                        onChange={() => setExpectedClassification(option.value)}
+                        className="sr-only"
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
 
-          <div className="flex items-center justify-between gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setStep('confirm')}
-              className="text-sm text-gray-500 hover:text-gray-300"
-            >
-              Back
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-lg px-4 py-2.5 text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-500 hover:to-blue-500 disabled:opacity-50"
-            >
-              {submitting ? 'Submitting…' : `Submit & earn ${refundAmount} credits`}
-            </button>
-          </div>
-        </form>
+              <div>
+                <label className="text-sm font-medium text-gray-300 block mb-1.5">
+                  Expected similarity % <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  value={expectedScore}
+                  onChange={(e) => setExpectedScore(e.target.value)}
+                  placeholder="0–100"
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-300 block mb-1.5">Notes (optional)</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Anything else we should know?"
+                  rows={2}
+                  className={`${fieldClass} resize-none`}
+                />
+              </div>
+
+              {error && <p className="text-sm text-red-400">{error}</p>}
+            </div>
+            {!fillHeight && correctSubmitBar}
+          </form>
+        )}
+
+        {step === 'confirm' && error && <p className="text-sm text-red-400">{error}</p>}
+
+        {step === 'confirm' && runActions}
+    </>
+  );
+
+  if (!fillHeight) {
+    return <div className="space-y-4">{body}</div>;
+  }
+
+  return (
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">{body}</div>
+      {step === 'correct' && (
+        <div className="flex-shrink-0 border-t border-gray-700 bg-gray-900 pt-3 mt-2">
+          {correctSubmitBar}
+        </div>
       )}
-
-      {error && <p className="text-sm text-red-400">{error}</p>}
     </div>
   );
 }

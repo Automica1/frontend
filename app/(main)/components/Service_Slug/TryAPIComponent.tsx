@@ -1,6 +1,6 @@
 // Fixed TryAPIComponent.tsx with proper face verification support
 "use client";
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Solution, SolutionType } from '../../types/solution';
 import { useSolutionType } from '../../hooks/useSolutionType';
 import { useSolutionApi } from '../../hooks/useSolutionApi';
@@ -23,6 +23,7 @@ import {
   loadBetaSessionCache,
   saveBetaSessionCache,
 } from '../../lib/betaSessionCache';
+import { extractVerificationFromApiResponse } from '../../lib/betaFeedbackConfig';
 
 const BETA_RUN_COST = 2;
 
@@ -93,20 +94,52 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const canShowFeedback = Boolean(
     solution.hasBeta && betaEnabled && pendingSession && pendingThumbnails.length > 0
   );
+  const postRunShowFeedback = Boolean(canShowFeedback && !currentApi.loading);
+
+  const feedbackSession = useMemo(() => {
+    if (!pendingSession) return null;
+
+    const responseSessionId =
+      (currentApi.data as { beta_feedback_session_id?: string } | null)?.beta_feedback_session_id ??
+      (currentApi.errorData?.beta_feedback_session_id as string | undefined);
+
+    if (!responseSessionId || responseSessionId !== pendingSession.id) {
+      return pendingSession;
+    }
+
+    const liveResult = extractVerificationFromApiResponse(currentApi.data, solutionType);
+    if (!liveResult?.classification) {
+      return pendingSession;
+    }
+
+    return {
+      ...pendingSession,
+      actualResult: {
+        classification: liveResult.classification,
+        similarity_percentage: liveResult.similarity_percentage ?? pendingSession.actualResult?.similarity_percentage,
+      },
+    };
+  }, [currentApi.data, currentApi.errorData, pendingSession, solutionType]);
+
   const feedbackBadge = pendingSession ? `+${pendingSession.creditsCharged}` : undefined;
   const setupDefaultTab =
     insufficientCredits || files.length === 0 ? 'feedback' : 'setup';
 
   const feedbackPanel = (panelContext: 'setup' | 'post-run') =>
-    canShowFeedback && pendingSession ? (
+    canShowFeedback && feedbackSession ? (
       <BetaFeedbackPanel
+        key={feedbackSession.id}
         serviceSlug={serviceSlug}
         solutionType={solutionType}
-        session={pendingSession}
+        session={feedbackSession}
         thumbnails={pendingThumbnails}
         insufficientCredits={insufficientCredits}
         onSubmitted={handleFeedbackSubmitted}
         context={panelContext}
+        onRetry={panelContext === 'post-run' ? handleRetry : undefined}
+        onReset={panelContext === 'post-run' ? handleReset : undefined}
+        showRetry={!(canShowFeedback && insufficientCredits)}
+        fillHeight={panelContext === 'post-run'}
       />
     ) : null;
 
@@ -150,6 +183,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     }
 
     setSubmitValidationError(null);
+    setPendingThumbnails([]);
     setHasStartedProcessing(true);
 
     try {
@@ -391,6 +425,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                   feedbackContent={feedbackPanel('setup')}
                   feedbackBadge={feedbackBadge}
                   defaultTab={setupDefaultTab}
+                  insufficientCredits={insufficientCredits}
                 />
               ) : (
                 setupCard
@@ -407,11 +442,11 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                 fileName={files[0]?.name}
                 onRetry={handleRetry}
                 onReset={handleReset}
-                showFeedbackTab={Boolean(solution.hasBeta && betaEnabled && canShowFeedback)}
+                hideRetry={Boolean(canShowFeedback && insufficientCredits)}
+                showFeedbackTab={Boolean(solution.hasBeta && betaEnabled && postRunShowFeedback)}
                 feedbackTab={feedbackPanel('post-run')}
                 feedbackTabBadge={feedbackBadge}
-                defaultTab={canShowFeedback ? 'feedback' : 'result'}
-                hideRetry={Boolean(canShowFeedback && insufficientCredits)}
+                defaultTab={postRunShowFeedback ? 'feedback' : 'result'}
               />
             )}
           </div>

@@ -9,6 +9,7 @@ interface TryAPISetupPanelProps {
   feedbackContent: React.ReactNode;
   feedbackBadge?: string;
   defaultTab?: SetupPanelTab;
+  insufficientCredits?: boolean;
 }
 
 export default function TryAPISetupPanel({
@@ -16,12 +17,15 @@ export default function TryAPISetupPanel({
   feedbackContent,
   feedbackBadge,
   defaultTab = 'feedback',
+  insufficientCredits = false,
 }: TryAPISetupPanelProps) {
   const [activeTab, setActiveTab] = useState<SetupPanelTab>(defaultTab);
 
   useEffect(() => {
-    setActiveTab(defaultTab);
-  }, [defaultTab]);
+    if (insufficientCredits) {
+      setActiveTab('feedback');
+    }
+  }, [insufficientCredits]);
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-700 h-full flex flex-col overflow-hidden">
@@ -58,7 +62,9 @@ export default function TryAPISetupPanel({
       </div>
 
       <div className="flex-1 min-h-0 overflow-hidden">
-        {activeTab === 'feedback' ? feedbackContent : setupContent}
+        <div className="h-full min-h-0 overflow-y-auto p-4">
+          {activeTab === 'feedback' ? feedbackContent : setupContent}
+        </div>
       </div>
     </div>
   );
