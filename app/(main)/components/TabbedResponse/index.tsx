@@ -21,7 +21,9 @@ interface TabbedResponseSectionProps {
   fileName?: string;
   onRetry?: () => void;
   onReset?: () => void;
-  resultFooter?: React.ReactNode;
+  feedbackTab?: React.ReactNode;
+  showFeedbackTab?: boolean;
+  feedbackTabBadge?: string;
 }
 
 export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
@@ -35,7 +37,9 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   fileName,
   onRetry,
   onReset,
-  resultFooter,
+  feedbackTab,
+  showFeedbackTab = false,
+  feedbackTabBadge,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('processed-image');
   const { copiedBase64, copyBase64 } = useClipboard();
@@ -93,7 +97,6 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   const imageBase64 = maskedBase64 || (data && data.result) || '';
   const isProcessedImageTabDisabled = false;
   const isResultTabDisabled = false;
-  const useResultFooter = Boolean(resultFooter);
 
   return (
     <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden h-full flex flex-col">
@@ -102,13 +105,15 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         setActiveTab={setActiveTab}
         showProcessedImageTab={showProcessedImageTab}
         showResultTab={showResultTab}
+        showFeedbackTab={showFeedbackTab}
         isProcessedImageTabDisabled={isProcessedImageTabDisabled}
         isResultTabDisabled={isResultTabDisabled}
         isQrExtractSolution={isQrExtractSolution}
         fileType={fileType}
+        tabBadge={feedbackTabBadge ? { feedback: feedbackTabBadge } : undefined}
       />
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0 overflow-hidden">
         {activeTab === 'api-response' && (
           <ApiResponseTab
             solution={solution}
@@ -121,27 +126,20 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
         )}
 
         {activeTab === 'result' && (
-          <div
-            className={`p-4 h-full ${
-              useResultFooter ? 'flex flex-col overflow-hidden gap-3' : 'overflow-auto'
-            }`}
-          >
-            <div className={useResultFooter ? 'flex-shrink-0 overflow-auto max-h-[55%]' : undefined}>
-              <ResultTab
-                data={data}
-                solutionType={solutionType}
-                loading={loading}
-                solution={solution}
-                error={error}
-                errorDetails={errorDetails}
-              />
-            </div>
-            {!loading && resultFooter && (
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                {resultFooter}
-              </div>
-            )}
+          <div className="p-4 h-full overflow-y-auto">
+            <ResultTab
+              data={data}
+              solutionType={solutionType}
+              loading={loading}
+              solution={solution}
+              error={error}
+              errorDetails={errorDetails}
+            />
           </div>
+        )}
+
+        {activeTab === 'feedback' && feedbackTab && (
+          <div className="p-4 h-full overflow-y-auto">{feedbackTab}</div>
         )}
 
         {activeTab === 'processed-image' && (

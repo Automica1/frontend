@@ -20,7 +20,8 @@ interface BetaFeedbackPanelProps {
   thumbnails: string[];
   insufficientCredits: boolean;
   onSubmitted: (remainingCredits: number) => void;
-  placement?: 'footer' | 'inline';
+  context?: 'setup' | 'post-run';
+  placement?: 'footer' | 'inline' | 'tab';
 }
 
 type WizardStep = 'confirm' | 'correct';
@@ -35,7 +36,8 @@ export default function BetaFeedbackPanel({
   thumbnails,
   insufficientCredits,
   onSubmitted,
-  placement = 'footer',
+  context = 'post-run',
+  placement = 'tab',
 }: BetaFeedbackPanelProps) {
   const [step, setStep] = useState<WizardStep>('confirm');
   const [expectedClassification, setExpectedClassification] = useState('');
@@ -45,6 +47,7 @@ export default function BetaFeedbackPanel({
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const isTab = placement === 'tab';
   const isInline = placement === 'inline';
   const refundAmount = session.creditsCharged;
   const classificationOptions = getClassificationOptions(solutionType);
@@ -146,13 +149,19 @@ export default function BetaFeedbackPanel({
     );
   }
 
-  const shellClass = isInline
-    ? 'bg-blue-900/20 border border-blue-500 rounded-lg p-3 h-full flex flex-col space-y-2 overflow-hidden'
-    : 'bg-blue-900/20 border border-blue-500 rounded-lg p-3 space-y-2.5';
+  const shellClass = isTab
+    ? 'bg-blue-900/20 border border-blue-500 rounded-lg p-3 space-y-3'
+    : isInline
+      ? 'bg-blue-900/20 border border-blue-500 rounded-lg p-3 h-full flex flex-col space-y-2 overflow-hidden'
+      : 'bg-blue-900/20 border border-blue-500 rounded-lg p-3 space-y-2.5';
 
   const headerText = insufficientCredits
-    ? `Not enough credits to run again. Rate your last test to earn up to ${refundAmount} credits back.`
-    : `Rate your last test · earn ${refundAmount} credits back`;
+    ? context === 'post-run'
+      ? `Not enough credits to run again. Rate this result to earn up to ${refundAmount} credits back.`
+      : `Not enough credits to run again. Rate your previous test to earn up to ${refundAmount} credits back.`
+    : context === 'post-run'
+      ? `Rate this result · earn ${refundAmount} credits back`
+      : `Rate your previous test · earn ${refundAmount} credits back`;
 
   return (
     <div className={shellClass}>

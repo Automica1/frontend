@@ -11,6 +11,7 @@ import { FileUpload } from '../ui/file-upload';
 import { TabbedResponseSection } from '../TabbedResponse/index';
 import { ProcessingActionCard } from '../TabbedResponse/ProcessingActionCard';
 import BetaAccessPanel from './BetaAccessPanel';
+import TryAPISetupPanel from './TryAPISetupPanel';
 import BetaFeedbackPanel from './BetaFeedbackPanel';
 import {
   apiService,
@@ -90,8 +91,10 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const canShowFeedback = Boolean(
     solution.hasBeta && betaEnabled && pendingSession && pendingThumbnails.length > 0
   );
+  const showSetupFeedbackTab = canShowFeedback && files.length === 0;
+  const feedbackBadge = pendingSession ? `+${pendingSession.creditsCharged}` : undefined;
 
-  const feedbackPanel =
+  const feedbackPanel = (panelContext: 'setup' | 'post-run') =>
     canShowFeedback && pendingSession ? (
       <BetaFeedbackPanel
         serviceSlug={serviceSlug}
@@ -100,13 +103,16 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
         thumbnails={pendingThumbnails}
         insufficientCredits={insufficientCredits}
         onSubmitted={handleFeedbackSubmitted}
-        placement="inline"
+        context={panelContext}
+        placement="tab"
       />
     ) : null;
 
   const submitBlockedMessage =
     insufficientCredits && canShowFeedback && pendingSession
-      ? `Not enough credits to run again. Rate your last test below to earn up to ${pendingSession.creditsCharged} credits back.`
+      ? showSetupFeedbackTab
+        ? `Not enough credits to run again. Open the Feedback tab to earn up to ${pendingSession.creditsCharged} credits back.`
+        : `Not enough credits to run again. Rate this result in the Feedback tab after your run.`
       : undefined;
 
   const handleFileUpload = (uploadedFiles: File[]) => {
@@ -319,6 +325,32 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const containerHeight = 'h-[500px]';
   const uploadShellClass = `w-full max-w-4xl mx-auto ${containerHeight}`;
 
+  const setupCard = (
+    <ProcessingActionCard
+      solution={solution}
+      solutionType={solutionType}
+      files={files}
+      onSubmit={handleSubmit}
+      loading={currentApi.loading}
+      submitBlocked={insufficientCredits}
+      submitBlockedMessage={submitBlockedMessage}
+      validationMessage={submitValidationError ?? undefined}
+      embedded={showSetupFeedbackTab}
+      betaControls={
+        solution.hasBeta && solution.slug ? (
+          <BetaAccessPanel
+            serviceSlug={solution.slug}
+            enabled={betaEnabled}
+            betaKey={betaKey}
+            onEnabledChange={setBetaEnabled}
+            onBetaKeyChange={setBetaKey}
+            variant="embedded"
+          />
+        ) : undefined
+      }
+    />
+  );
+
   return (
     <div className="md:pt-24 pt-16 pb-16 px-4">
       <div className="max-w-6xl mx-auto">
@@ -339,29 +371,16 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
 
           <div className={`${containerHeight} min-h-0 flex flex-col`}>
             {!hasStartedProcessing ? (
-              <ProcessingActionCard
-                solution={solution}
-                solutionType={solutionType}
-                files={files}
-                onSubmit={handleSubmit}
-                loading={currentApi.loading}
-                submitBlocked={insufficientCredits}
-                submitBlockedMessage={submitBlockedMessage}
-                validationMessage={submitValidationError ?? undefined}
-                feedbackSlot={solution.hasBeta ? feedbackPanel : undefined}
-                betaControls={
-                  solution.hasBeta && solution.slug ? (
-                    <BetaAccessPanel
-                      serviceSlug={solution.slug}
-                      enabled={betaEnabled}
-                      betaKey={betaKey}
-                      onEnabledChange={setBetaEnabled}
-                      onBetaKeyChange={setBetaKey}
-                      variant="embedded"
-                    />
-                  ) : undefined
-                }
-              />
+              showSetupFeedbackTab ? (
+                <TryAPISetupPanel
+                  setupContent={setupCard}
+                  feedbackContent={feedbackPanel('setup')}
+                  feedbackBadge={feedbackBadge}
+                  defaultTab={insufficientCredits ? 'feedback' : 'setup'}
+                />
+              ) : (
+                setupCard
+              )
             ) : (
               <TabbedResponseSection
                 solution={solution}
@@ -374,7 +393,9 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                 fileName={files[0]?.name}
                 onRetry={handleRetry}
                 onReset={handleReset}
-                resultFooter={solution.hasBeta && betaEnabled ? feedbackPanel : undefined}
+                showFeedbackTab={Boolean(solution.hasBeta && betaEnabled && canShowFeedback)}
+                feedbackTab={feedbackPanel('post-run')}
+                feedbackTabBadge={feedbackBadge}
               />
             )}
           </div>

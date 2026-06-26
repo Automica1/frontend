@@ -1,6 +1,6 @@
 // components/TabbedResponseSection/TabNavigation.tsx
 import React from 'react';
-import { ImageIcon, Code, Shield, QrCode } from 'lucide-react';
+import { ImageIcon, Code, Shield, QrCode, MessageSquareText } from 'lucide-react';
 import { TabType } from '../../types/tabTypes';
 
 interface TabNavigationProps {
@@ -8,6 +8,7 @@ interface TabNavigationProps {
   setActiveTab: (tab: TabType) => void;
   showProcessedImageTab: boolean;
   showResultTab: boolean;
+  showFeedbackTab?: boolean;
   isProcessedImageTabDisabled: boolean;
   isResultTabDisabled: boolean;
   isQrExtractSolution: boolean;
@@ -20,6 +21,7 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
   setActiveTab,
   showProcessedImageTab,
   showResultTab,
+  showFeedbackTab = false,
   isProcessedImageTabDisabled,
   isResultTabDisabled,
   isQrExtractSolution,
@@ -27,12 +29,11 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
 }) => {
   return (
     <div className="flex border-b border-gray-700 flex-shrink-0">
-      {/* Result Tab for Verification Solutions and QR Extract */}
       {showResultTab && (
         <button
           onClick={() => !isResultTabDisabled && setActiveTab('result')}
           disabled={isResultTabDisabled}
-          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 font-medium transition-colors duration-200 ${
+          className={`flex-1 flex items-center justify-center space-x-2 px-3 py-3 text-sm font-medium transition-colors duration-200 ${
             activeTab === 'result'
               ? 'bg-purple-600 text-white border-b-2 border-purple-400'
               : isResultTabDisabled
@@ -46,20 +47,14 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
             <Shield className={`w-4 h-4 ${isResultTabDisabled ? 'text-gray-600' : ''}`} />
           )}
           <span>Result</span>
-          {tabBadge?.result && activeTab !== 'result' && (
-            <span className="ml-1 rounded bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300">
-              {tabBadge.result}
-            </span>
-          )}
         </button>
       )}
 
-      {/* Processed Image Tab for Non-Verification and Non-QR Extract Solutions */}
       {showProcessedImageTab && (
         <button
           onClick={() => !isProcessedImageTabDisabled && setActiveTab('processed-image')}
           disabled={isProcessedImageTabDisabled}
-          className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 font-medium transition-colors duration-200 ${
+          className={`flex-1 flex items-center justify-center space-x-2 px-3 py-3 text-sm font-medium transition-colors duration-200 ${
             activeTab === 'processed-image'
               ? 'bg-purple-600 text-white border-b-2 border-purple-400'
               : isProcessedImageTabDisabled
@@ -68,22 +63,42 @@ export const TabNavigation: React.FC<TabNavigationProps> = ({
           }`}
         >
           <ImageIcon className={`w-4 h-4 ${isProcessedImageTabDisabled ? 'text-gray-600' : ''}`} />
-          <span>Processed Image</span>
+          <span className="hidden sm:inline">Processed</span>
+          <span className="sm:hidden">Image</span>
         </button>
       )}
 
-      {/* API Response Tab */}
       <button
         onClick={() => setActiveTab('api-response')}
-        className={`flex-1 flex items-center justify-center space-x-2 px-4 py-3 font-medium transition-colors duration-200 ${
+        className={`flex-1 flex items-center justify-center space-x-2 px-3 py-3 text-sm font-medium transition-colors duration-200 ${
           activeTab === 'api-response'
             ? 'bg-purple-600 text-white border-b-2 border-purple-400'
             : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800'
         }`}
       >
         <Code className="w-4 h-4" />
-        <span>API Response</span>
+        <span className="hidden sm:inline">API Response</span>
+        <span className="sm:hidden">API</span>
       </button>
+
+      {showFeedbackTab && (
+        <button
+          onClick={() => setActiveTab('feedback')}
+          className={`flex-1 flex items-center justify-center space-x-2 px-3 py-3 text-sm font-medium transition-colors duration-200 ${
+            activeTab === 'feedback'
+              ? 'bg-purple-600 text-white border-b-2 border-purple-400'
+              : 'text-gray-400 hover:text-gray-300 hover:bg-gray-800'
+          }`}
+        >
+          <MessageSquareText className="w-4 h-4" />
+          <span>Feedback</span>
+          {tabBadge?.feedback && activeTab !== 'feedback' && (
+            <span className="rounded bg-blue-500/20 px-1.5 py-0.5 text-[10px] font-medium text-blue-300">
+              {tabBadge.feedback}
+            </span>
+          )}
+        </button>
+      )}
     </div>
   );
 };
