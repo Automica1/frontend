@@ -106,8 +106,7 @@ const PricingCards = () => {
               <PricingCardUI
                 key={plan.planId}
                 name={plan.name}
-                price={isEnterprise ? 'Custom' : formatPlanPrice(plan.price, billingCurrency)}
-                period={isEnterprise ? '' : '/ month'}
+                price={isEnterprise ? 'Custom' : `${formatPlanPrice(plan.price, billingCurrency)} / month`}
                 description={plan.description || 'The perfect plan to accelerate your business with Automica AI'}
                 icon={getPlanIcon(plan.name)}
                 features={[
