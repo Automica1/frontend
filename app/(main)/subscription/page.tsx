@@ -10,8 +10,11 @@ import PricingFAQ from '../components/pricing/PricingFAQ';
 import { Spotlight } from "../components/ui/spotlight-new";
 import Link from 'next/link';
 import { Check, CreditCard, RefreshCw, Lock } from 'lucide-react';
+import { useKindeAuth } from '@kinde-oss/kinde-auth-nextjs';
+import { buildLoginPath } from '../lib/authPaths';
 
 export default function SubscriptionPage() {
+    const { isAuthenticated, isLoading: authLoading } = useKindeAuth();
     const { credits, subscription, loading, refreshCredits } = useCredits();
 
     useEffect(() => {
@@ -57,6 +60,14 @@ export default function SubscriptionPage() {
                     <p className="text-xl lg:text-2xl text-gray-300 font-light leading-relaxed opacity-90 mx-auto">
                         Manage your credits and subscription plan
                     </p>
+                    {!authLoading && !isAuthenticated && (
+                        <p className="mt-4 text-sm text-amber-200/90">
+                            <Link href={buildLoginPath('/subscription')} className="underline hover:text-amber-100">
+                                Sign in
+                            </Link>
+                            {' '}to subscribe or manage billing.
+                        </p>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">

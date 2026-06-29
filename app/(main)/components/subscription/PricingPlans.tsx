@@ -6,7 +6,9 @@ import { motion } from 'framer-motion';
 import { PricingCardUI } from '../pricing/PricingCardUI';
 import { BillingCurrencyToggle } from './BillingCurrencyToggle';
 import { useDualCurrencyPlans } from '../../hooks/useDualCurrencyPlans';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { BillingCurrency, formatCheckoutAmount, formatPlanPrice } from '../../lib/billingCurrency';
+import { buildLoginPath } from '../../lib/authPaths';
 
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
@@ -23,7 +25,9 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
     onPaymentSuccess: () => void,
     currentSubscription?: any
 }) {
-    const { isAuthenticated, user } = useKindeAuth();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { isAuthenticated, user, isLoading: authLoading } = useKindeAuth();
     const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
     const [razorpayKeyId, setRazorpayKeyId] = useState<string | null>(RAZORPAY_KEY_ID || null);
 
@@ -86,6 +90,13 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
     };
 
     const handleSubscribe = async (plan: Plan) => {
+        if (!authLoading && !isAuthenticated) {
+            const currency = searchParams?.get('currency') || billingCurrency;
+            const redirectPath = currency ? `/subscription?currency=${currency}` : '/subscription';
+            router.push(buildLoginPath(redirectPath));
+            return;
+        }
+
         const keyId = razorpayKeyId;
         if (!keyId) {
             alert('Payment configuration is missing. Please contact support.');
@@ -186,6 +197,11 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
     };
 
     const handleDowngrade = async (plan: Plan) => {
+        if (!authLoading && !isAuthenticated) {
+            router.push(buildLoginPath('/subscription'));
+            return;
+        }
+
         if (!confirm(`Are you sure you want to downgrade to ${plan.name}? The change will take effect at the end of your current billing cycle.`)) {
             return;
         }

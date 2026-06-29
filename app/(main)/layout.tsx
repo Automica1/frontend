@@ -7,6 +7,7 @@ import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import Script from 'next/script'
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || 'G-CG19BVRCRK';
+const SITE_URL = process.env.NEXT_PUBLIC_KINDE_SITE_URL || 'https://automica.ai';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -37,22 +38,22 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://automica.ai'),
+  metadataBase: new URL(SITE_URL),
   alternates: {
-    canonical: 'https://automica.ai/', // ✅ FIXED: Full absolute URL instead of relative path
+    canonical: '/',
     languages: {
-      'en-US': 'https://automica.ai/en-US',
-      'en': 'https://automica.ai/en',
+      'en-US': '/en-US',
+      'en': '/en',
     },
   },
   openGraph: {
     title: "Automica AI - Plug and Play AI Automation Platform",
     description: "Transform your business with Automica AI's plug and play automation platform. Build intelligent workflows, automate tasks, and boost productivity with our AI-powered solutions.",
-    url: 'https://automica.ai',
+    url: SITE_URL,
     siteName: 'Automica AI',
     images: [
       {
-        url: 'https://automica.ai/og-image.png', // ✅ FIXED: Full absolute URL
+        url: '/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Automica AI - AI Automation Platform',
@@ -65,7 +66,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "Automica AI - Plug and Play AI Automation Platform",
     description: "Transform your business with Automica AI's plug and play automation platform. Build intelligent workflows, automate tasks, and boost productivity.",
-    images: ['https://automica.ai/twitter-image.png'], // ✅ FIXED: Full absolute URL
+    images: [`${SITE_URL}/twitter-image.png`],
     creator: '@AutomicaAI',
   },
   robots: {

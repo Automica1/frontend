@@ -7,9 +7,11 @@ import Link from 'next/link';
 import { PricingCardUI } from './PricingCardUI';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { useKindeAuth } from '@kinde-oss/kinde-auth-nextjs';
 import { useDualCurrencyPlans } from '../../hooks/useDualCurrencyPlans';
-import { formatPlanPrice } from '../../lib/billingCurrency';
+import { formatPlanPrice, persistBillingCurrency } from '../../lib/billingCurrency';
 import { BillingCurrencyToggle } from '../subscription/BillingCurrencyToggle';
+import { buildLoginPath } from '../../lib/authPaths';
 
 const getPlanIcon = (name: string) => {
   switch (name.toLowerCase()) {
@@ -28,6 +30,7 @@ const getPlanIcon = (name: string) => {
 
 const PricingCards = () => {
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useKindeAuth();
   const {
     plans,
     billingCurrency,
@@ -36,6 +39,16 @@ const PricingCards = () => {
     regionConfidence,
     showCurrencyToggle,
   } = useDualCurrencyPlans();
+
+  const goToSubscription = (currency: typeof billingCurrency) => {
+    persistBillingCurrency(currency, true);
+    const target = `/subscription?currency=${currency}`;
+    if (!authLoading && !isAuthenticated) {
+      router.push(buildLoginPath(target));
+      return;
+    }
+    router.push(target);
+  };
 
   return (
     <div className="relative py-20 px-4">
@@ -101,7 +114,7 @@ const PricingCards = () => {
                   if (isEnterprise) {
                     router.push('/contact');
                   } else {
-                    router.push(`/subscription?currency=${billingCurrency}`);
+                    goToSubscription(billingCurrency);
                   }
                 }}
                 buttonText={isEnterprise ? 'Contact Support' : 'Get Started'}
