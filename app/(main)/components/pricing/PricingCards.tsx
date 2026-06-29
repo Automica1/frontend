@@ -33,7 +33,7 @@ const PricingCards = () => {
     billingCurrency,
     setCurrency,
     loading,
-    likelyIndian,
+    regionConfidence,
     showCurrencyToggle,
   } = useDualCurrencyPlans();
 
@@ -60,7 +60,7 @@ const PricingCards = () => {
               <BillingCurrencyToggle
                 value={billingCurrency}
                 onChange={setCurrency}
-                likelyIndian={likelyIndian}
+                regionConfidence={regionConfidence}
               />
             </div>
           )}

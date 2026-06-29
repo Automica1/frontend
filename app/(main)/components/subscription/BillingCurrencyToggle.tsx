@@ -4,6 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import {
   BillingCurrency,
+  BillingRegionConfidence,
   SUPPORTED_CURRENCIES,
   currencyLabel,
   currencyToggleHint,
@@ -12,42 +13,22 @@ import {
 type BillingCurrencyToggleProps = {
   value: BillingCurrency;
   onChange: (currency: BillingCurrency) => void;
-  likelyIndian?: boolean;
+  regionConfidence?: BillingRegionConfidence;
   lockedCurrency?: BillingCurrency | null;
 };
 
-export function BillingCurrencyToggle({
+function CurrencyPillToggle({
   value,
   onChange,
-  likelyIndian = false,
-  lockedCurrency = null,
-}: BillingCurrencyToggleProps) {
-  if (lockedCurrency) {
-    return (
-      <p className="text-xs text-gray-500 text-center">
-        Billed in {currencyLabel(lockedCurrency)} — currency is locked to your subscription.
-      </p>
-    );
-  }
-
-  if (likelyIndian && value === 'INR') {
-    return (
-      <div className="flex flex-col items-center gap-2">
-        <p className="text-xs text-gray-500">{currencyToggleHint(true, value)}</p>
-        <button
-          type="button"
-          onClick={() => onChange('USD')}
-          className="text-xs text-purple-300/80 hover:text-purple-200 underline-offset-4 hover:underline transition-colors"
-        >
-          Pay in USD instead
-        </button>
-      </div>
-    );
-  }
-
+  regionConfidence,
+}: {
+  value: BillingCurrency;
+  onChange: (currency: BillingCurrency) => void;
+  regionConfidence: BillingRegionConfidence;
+}) {
   return (
     <div className="flex flex-col items-center gap-2">
-      <p className="text-xs text-gray-500">{currencyToggleHint(likelyIndian, value)}</p>
+      <p className="text-xs text-gray-500">{currencyToggleHint(regionConfidence, value)}</p>
       <div
         className="relative inline-grid grid-cols-2 rounded-full border border-white/10 bg-white/5 p-1"
         role="group"
@@ -77,6 +58,61 @@ export function BillingCurrencyToggle({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+export function BillingCurrencyToggle({
+  value,
+  onChange,
+  regionConfidence = 'non_india',
+  lockedCurrency = null,
+}: BillingCurrencyToggleProps) {
+  if (lockedCurrency) {
+    return (
+      <p className="text-xs text-gray-500 text-center">
+        Billed in {currencyLabel(lockedCurrency)} — currency is locked to your subscription.
+      </p>
+    );
+  }
+
+  if (regionConfidence === 'ambiguous') {
+    return <CurrencyPillToggle value={value} onChange={onChange} regionConfidence={regionConfidence} />;
+  }
+
+  if (regionConfidence === 'india' && value === 'USD') {
+    return <CurrencyPillToggle value={value} onChange={onChange} regionConfidence={regionConfidence} />;
+  }
+
+  if (regionConfidence === 'non_india' && value === 'INR') {
+    return <CurrencyPillToggle value={value} onChange={onChange} regionConfidence={regionConfidence} />;
+  }
+
+  if (regionConfidence === 'india' && value === 'INR') {
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <p className="text-xs text-gray-500">{currencyToggleHint('india', value)}</p>
+        <button
+          type="button"
+          onClick={() => onChange('USD')}
+          className="text-xs text-purple-300/80 hover:text-purple-200 underline-offset-4 hover:underline transition-colors"
+        >
+          Pay in USD instead
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <p className="text-xs text-gray-500">{currencyToggleHint('non_india', value)}</p>
+      <button
+        type="button"
+        onClick={() => onChange('INR')}
+        className="text-xs text-purple-300/80 hover:text-purple-200 underline-offset-4 hover:underline transition-colors"
+      >
+        Billing in India? Pay in INR
+      </button>
     </div>
   );
 }

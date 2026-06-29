@@ -37,7 +37,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
         setCurrency,
         loading,
         isLocked,
-        likelyIndian,
+        regionConfidence,
         showCurrencyToggle,
     } = useDualCurrencyPlans({
         phone: userPhone,
@@ -218,7 +218,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
                 <BillingCurrencyToggle
                     value={billingCurrency}
                     onChange={setCurrency}
-                    likelyIndian={likelyIndian}
+                    regionConfidence={regionConfidence}
                     lockedCurrency={lockedCurrency}
                 />
             )}

@@ -5,8 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { apiService, Plan } from '../lib/apiService';
 import {
   BillingCurrency,
+  BillingRegionConfidence,
   detectBillingCurrency,
-  isLikelyIndianUser,
+  getBillingRegionConfidence,
   normalizeBillingCurrency,
   persistBillingCurrency,
   resolvePlanForCurrency,
@@ -34,8 +35,8 @@ export function useDualCurrencyPlans(options: UseDualCurrencyPlansOptions = {}) 
   const [rawPlans, setRawPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const likelyIndian = useMemo(
-    () => isLikelyIndianUser({ phone: options.phone }),
+  const regionConfidence = useMemo<BillingRegionConfidence>(
+    () => getBillingRegionConfidence({ phone: options.phone }),
     [options.phone]
   );
 
@@ -97,7 +98,7 @@ export function useDualCurrencyPlans(options: UseDualCurrencyPlansOptions = {}) 
     setCurrency,
     loading,
     isLocked,
-    likelyIndian,
+    regionConfidence,
     showCurrencyToggle: !isLocked,
   };
 }

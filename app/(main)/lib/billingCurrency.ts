@@ -65,6 +65,24 @@ export function isLikelyIndianUser(options?: { phone?: string | null }): boolean
   return isIndianPhone(options?.phone) || isIndianLocale() || isIndianTimezone();
 }
 
+export type BillingRegionConfidence = 'india' | 'non_india' | 'ambiguous';
+
+/** How confident we are in India vs international default for currency UI. */
+export function getBillingRegionConfidence(options?: { phone?: string | null }): BillingRegionConfidence {
+  const phone = isIndianPhone(options?.phone);
+  const locale = isIndianLocale();
+  const timezone = isIndianTimezone();
+  const signalCount = [phone, locale, timezone].filter(Boolean).length;
+
+  if (signalCount === 0) {
+    return 'non_india';
+  }
+  if (signalCount >= 2 || phone) {
+    return 'india';
+  }
+  return 'ambiguous';
+}
+
 export function detectBillingCurrency(options?: {
   phone?: string | null;
   subscriptionCurrency?: string | null;
@@ -135,11 +153,14 @@ export function currencyLabel(currency: BillingCurrency): string {
   return currency === 'INR' ? '₹ INR' : '$ USD';
 }
 
-export function currencyToggleHint(likelyIndian: boolean, currency: BillingCurrency): string {
-  if (likelyIndian && currency === 'INR') {
+export function currencyToggleHint(
+  regionConfidence: BillingRegionConfidence,
+  currency: BillingCurrency
+): string {
+  if (regionConfidence === 'india' && currency === 'INR') {
     return 'Prices in INR for India';
   }
-  if (!likelyIndian && currency === 'USD') {
+  if (regionConfidence === 'non_india' && currency === 'USD') {
     return 'Prices in USD';
   }
   return 'Switch billing currency';
