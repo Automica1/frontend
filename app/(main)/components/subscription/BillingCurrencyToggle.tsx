@@ -30,6 +30,21 @@ export function BillingCurrencyToggle({
     );
   }
 
+  if (likelyIndian && value === 'INR') {
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <p className="text-xs text-gray-500">{currencyToggleHint(true, value)}</p>
+        <button
+          type="button"
+          onClick={() => onChange('USD')}
+          className="text-xs text-purple-300/80 hover:text-purple-200 underline-offset-4 hover:underline transition-colors"
+        >
+          Pay in USD instead
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center gap-2">
       <p className="text-xs text-gray-500">{currencyToggleHint(likelyIndian, value)}</p>

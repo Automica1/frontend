@@ -1,7 +1,7 @@
 // app/(main)/subscription/page.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { subscriptionApi } from '../lib/subscriptionApi';
 import { useCredits } from '../hooks/useCredits';
 import SubscriptionCard from '../components/subscription/SubscriptionCard';
@@ -123,7 +123,13 @@ export default function SubscriptionPage() {
                                 : 'Get 1,000 credits instantly upon subscription'}
                         </p>
                     </div>
-                    <PricingPlans onPaymentSuccess={handlePaymentSuccess} currentSubscription={subscription} />
+                    <Suspense fallback={
+                        <div className="flex flex-col items-center justify-center py-20 gap-4">
+                            <p className="text-gray-400 font-light">Loading premium plans...</p>
+                        </div>
+                    }>
+                        <PricingPlans onPaymentSuccess={handlePaymentSuccess} currentSubscription={subscription} />
+                    </Suspense>
                 </div>
 
                 {/* How it works */}

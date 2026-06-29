@@ -101,7 +101,7 @@ const PricingCards = () => {
                   if (isEnterprise) {
                     router.push('/contact');
                   } else {
-                    router.push('/subscription');
+                    router.push(`/subscription?currency=${billingCurrency}`);
                   }
                 }}
                 buttonText={isEnterprise ? 'Contact Support' : 'Get Started'}

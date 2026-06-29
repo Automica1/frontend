@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { apiService, Plan } from '../lib/apiService';
 import {
   BillingCurrency,
@@ -17,13 +18,17 @@ type UseDualCurrencyPlansOptions = {
 };
 
 export function useDualCurrencyPlans(options: UseDualCurrencyPlansOptions = {}) {
+  const searchParams = useSearchParams();
+  const queryCurrency = searchParams?.get('currency') ?? null;
+
   const lockedCurrency = normalizeBillingCurrency(options.subscriptionCurrency);
-  const isLocked = Boolean(lockedCurrency);
+  const isLocked = Boolean(options.subscriptionCurrency);
 
   const [billingCurrency, setBillingCurrency] = useState<BillingCurrency>(() =>
     detectBillingCurrency({
       phone: options.phone,
       subscriptionCurrency: options.subscriptionCurrency,
+      queryCurrency,
     })
   );
   const [rawPlans, setRawPlans] = useState<Plan[]>([]);
@@ -39,9 +44,10 @@ export function useDualCurrencyPlans(options: UseDualCurrencyPlansOptions = {}) 
       detectBillingCurrency({
         phone: options.phone,
         subscriptionCurrency: options.subscriptionCurrency,
+        queryCurrency,
       })
     );
-  }, [options.phone, options.subscriptionCurrency]);
+  }, [options.phone, options.subscriptionCurrency, queryCurrency]);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,7 +76,7 @@ export function useDualCurrencyPlans(options: UseDualCurrencyPlansOptions = {}) 
     };
   }, []);
 
-  const activeCurrency = lockedCurrency ?? billingCurrency;
+  const activeCurrency: BillingCurrency = (isLocked ? lockedCurrency : billingCurrency) ?? billingCurrency;
 
   const plans = useMemo(() => {
     return rawPlans
@@ -82,7 +88,7 @@ export function useDualCurrencyPlans(options: UseDualCurrencyPlansOptions = {}) 
   const setCurrency = (currency: BillingCurrency) => {
     if (isLocked) return;
     setBillingCurrency(currency);
-    persistBillingCurrency(currency);
+    persistBillingCurrency(currency, true);
   };
 
   return {

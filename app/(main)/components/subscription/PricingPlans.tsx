@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { PricingCardUI } from '../pricing/PricingCardUI';
 import { BillingCurrencyToggle } from './BillingCurrencyToggle';
 import { useDualCurrencyPlans } from '../../hooks/useDualCurrencyPlans';
-import { BillingCurrency, formatPlanPrice } from '../../lib/billingCurrency';
+import { BillingCurrency, formatCheckoutAmount, formatPlanPrice } from '../../lib/billingCurrency';
 
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
@@ -44,7 +44,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
         subscriptionCurrency: currentSubscription?.currency,
     });
 
-    const lockedCurrency = isLocked ? (billingCurrency as BillingCurrency) : null;
+    const lockedCurrency = isLocked ? billingCurrency : null;
 
     useEffect(() => {
         if (razorpayKeyId) {
@@ -103,7 +103,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
         }
 
         try {
-            const checkoutCurrency = billingCurrency;
+            const checkoutCurrency = billingCurrency as BillingCurrency;
             const isUpgrade = currentSubscription
                 && currentSubscription.status === 'active'
                 && currentSubscription.currency === checkoutCurrency
@@ -114,6 +114,14 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
                 order = await apiService.createUpgradeOrder(plan.planId);
             } else {
                 order = await apiService.createOrder(plan.planId, checkoutCurrency);
+            }
+
+            const confirmed = window.confirm(
+                `You will be charged ${formatCheckoutAmount(order.amount, (order.currency as BillingCurrency) || checkoutCurrency)}. Continue to secure checkout?`
+            );
+            if (!confirmed) {
+                setLoadingPlanId(null);
+                return;
             }
 
             const orderData = order as any;

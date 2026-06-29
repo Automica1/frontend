@@ -335,10 +335,11 @@ class ApiService {
   }
 
   async createOrder(planId: string, currency?: string): Promise<{ subscriptionId: string; orderId?: string; keyId: string; amount: number; currency: string }> {
-    // Attempt to get Kinde user data via /api/auth endpoint to include customer info for server-side customer creation
     let name = '';
     let email = '';
     let contact = '';
+    let locale = '';
+    let timezone = '';
 
     try {
       const authRes = await fetch('/api/auth', { credentials: 'include' });
@@ -352,9 +353,18 @@ class ApiService {
       console.warn('Could not fetch /api/auth for prefill:', e);
     }
 
+    if (typeof navigator !== 'undefined') {
+      locale = navigator.language || '';
+      try {
+        timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+      } catch {
+        timezone = '';
+      }
+    }
+
     return this.makeRequest('/subscription/create-order', {
       method: 'POST',
-      body: JSON.stringify({ planId, currency, name, email, contact }),
+      body: JSON.stringify({ planId, currency, name, email, contact, locale, timezone }),
     });
   }
 

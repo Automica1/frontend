@@ -3,12 +3,14 @@ import { Plan } from './apiService';
 export type BillingCurrency = 'USD' | 'INR';
 
 export const SUPPORTED_CURRENCIES: BillingCurrency[] = ['USD', 'INR'];
-export const BILLING_CURRENCY_STORAGE_KEY = 'automica_billing_currency';
+export const BILLING_CURRENCY_STORAGE_KEY = 'automica_billing_currency_pref';
 
-const INDIAN_TIMEZONES = new Set([
-  'Asia/Kolkata',
-  'Asia/Calcutta',
-]);
+const INDIAN_TIMEZONES = new Set(['Asia/Kolkata', 'Asia/Calcutta']);
+
+export type StoredBillingPreference = {
+  currency: BillingCurrency;
+  explicit: boolean;
+};
 
 export function normalizeBillingCurrency(value?: string | null): BillingCurrency | null {
   const upper = (value || '').trim().toUpperCase();
@@ -16,6 +18,22 @@ export function normalizeBillingCurrency(value?: string | null): BillingCurrency
     return upper;
   }
   return null;
+}
+
+export function readStoredBillingPreference(): StoredBillingPreference | null {
+  if (typeof window === 'undefined') return null;
+  const raw = localStorage.getItem(BILLING_CURRENCY_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as StoredBillingPreference;
+    const currency = normalizeBillingCurrency(parsed.currency);
+    if (!currency) return null;
+    return { currency, explicit: Boolean(parsed.explicit) };
+  } catch {
+    const legacy = normalizeBillingCurrency(raw);
+    if (!legacy) return null;
+    return { currency: legacy, explicit: true };
+  }
 }
 
 export function isIndianPhone(contact?: string | null): boolean {
@@ -43,7 +61,6 @@ export function isIndianTimezone(): boolean {
   }
 }
 
-/** Heuristic: user is likely in India (not an explicit currency choice). */
 export function isLikelyIndianUser(options?: { phone?: string | null }): boolean {
   return isIndianPhone(options?.phone) || isIndianLocale() || isIndianTimezone();
 }
@@ -51,29 +68,30 @@ export function isLikelyIndianUser(options?: { phone?: string | null }): boolean
 export function detectBillingCurrency(options?: {
   phone?: string | null;
   subscriptionCurrency?: string | null;
-  savedCurrency?: string | null;
+  queryCurrency?: string | null;
 }): BillingCurrency {
   const locked = normalizeBillingCurrency(options?.subscriptionCurrency);
   if (locked) return locked;
 
-  const saved = normalizeBillingCurrency(options?.savedCurrency);
-  if (saved) return saved;
+  const query = normalizeBillingCurrency(options?.queryCurrency);
+  if (query) return query;
 
-  if (typeof window !== 'undefined') {
-    const stored = normalizeBillingCurrency(localStorage.getItem(BILLING_CURRENCY_STORAGE_KEY));
-    if (stored) return stored;
-  }
+  const stored = readStoredBillingPreference();
+  if (stored?.explicit) return stored.currency;
 
   if (isLikelyIndianUser({ phone: options?.phone })) {
     return 'INR';
   }
 
+  if (stored?.currency) return stored.currency;
+
   return 'USD';
 }
 
-export function persistBillingCurrency(currency: BillingCurrency) {
+export function persistBillingCurrency(currency: BillingCurrency, explicit = true) {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(BILLING_CURRENCY_STORAGE_KEY, currency);
+  const payload: StoredBillingPreference = { currency, explicit };
+  localStorage.setItem(BILLING_CURRENCY_STORAGE_KEY, JSON.stringify(payload));
 }
 
 export function resolvePlanForCurrency(plan: Plan, currency: BillingCurrency): Plan | null {
@@ -109,6 +127,10 @@ export function formatPlanPrice(amountMinor: number, currency: BillingCurrency):
   })}`;
 }
 
+export function formatCheckoutAmount(amountMinor: number, currency: BillingCurrency): string {
+  return `${formatPlanPrice(amountMinor, currency)} / month`;
+}
+
 export function currencyLabel(currency: BillingCurrency): string {
   return currency === 'INR' ? '₹ INR' : '$ USD';
 }
@@ -121,4 +143,14 @@ export function currencyToggleHint(likelyIndian: boolean, currency: BillingCurre
     return 'Prices in USD';
   }
   return 'Switch billing currency';
+}
+
+export function getClientBillingHints() {
+  if (typeof window === 'undefined') {
+    return { locale: '', timezone: '' };
+  }
+  return {
+    locale: navigator.language || '',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+  };
 }
