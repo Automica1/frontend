@@ -1,67 +1,68 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Star, Zap, Crown } from 'lucide-react';
 import { HoverBorderGradient } from '../ui/hover-border-gradient';
 import Link from 'next/link';
 import { PricingCardUI } from './PricingCardUI';
 import { useRouter } from 'next/navigation';
+import { apiService, Plan } from '../../lib/apiService';
+import {
+  BillingCurrency,
+  SUPPORTED_CURRENCIES,
+  currencyLabel,
+  detectBillingCurrency,
+  formatPlanPrice,
+  persistBillingCurrency,
+} from '../../lib/billingCurrency';
+
+const getPlanIcon = (name: string) => {
+  switch (name.toLowerCase()) {
+    case 'starter':
+      return <Zap className="w-6 h-6" />;
+    case 'professional':
+    case 'pro':
+    case 'pro plan':
+      return <Star className="w-6 h-6" />;
+    case 'enterprise':
+      return <Crown className="w-6 h-6" />;
+    default:
+      return <Zap className="w-6 h-6" />;
+  }
+};
 
 const PricingCards = () => {
   const router = useRouter();
-  const plans = [
-    {
-      name: "Starter",
-      price: "$12",
-      period: "/ month",
-      description: "Everything you need to start integrating AI into your projects",
-      icon: <Zap className="w-6 h-6" />,
-      features: [
-        "1000 AI credits included",
-        "Use with any API",
-        "Email support (24 hr response)",
-        "Secure key management & audit logs"
-      ],
-      popular: false
-    },
-    {
-      name: "Professional",
-      price: "$99",
-      period: "/ month",
-      description: "Advanced tools and support for growing teams",
-      icon: <Star className="w-6 h-6" />,
-      features: [
-        "9000 AI credits included",
-        "Advanced features for growing teams",
-        "Use with any API (higher limits)",
-        "Priority support",
-        "Advanced analytics & reports",
-        "Custom integrations & webhooks (limited)",
-        "Secure key management & audit logs"
-      ],
-      popular: true
-    },
-    {
-      name: "Enterprise",
-      price: "Custom",
-      period: "",
-      description: "Comprehensive AI solutions tailored for large organizations",
-      icon: <Crown className="w-6 h-6" />,
-      features: [
-        "Unlimited AI credits (volume-based)",
-        "Tailored for large organizations",
-        "Dedicated SLA & 24/7 support",
-        "Custom integrations & deployment options",
-        "Secure key management & audit logs"
-      ],
-      popular: false
-    }
-  ];
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [billingCurrency, setBillingCurrency] = useState<BillingCurrency>('USD');
+
+  useEffect(() => {
+    const currency = detectBillingCurrency();
+    setBillingCurrency(currency);
+  }, []);
+
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const data = await apiService.getActivePlans(billingCurrency);
+        setPlans(data);
+      } catch (error) {
+        console.error('Failed to load pricing plans', error);
+      }
+    };
+    void loadPlans();
+  }, [billingCurrency]);
+
+  const handleCurrencyChange = (currency: BillingCurrency) => {
+    setBillingCurrency(currency);
+    persistBillingCurrency(currency);
+  };
+
+  const sortedPlans = [...plans].sort((a, b) => a.price - b.price);
 
   return (
     <div className="relative py-20 px-4">
       <div className="relative max-w-7xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-16">
           <div className="inline-block mb-8">
             <span className="text-sm font-medium text-purple-400 tracking-widest uppercase">
@@ -76,31 +77,63 @@ const PricingCards = () => {
           <p className="text-xl text-gray-300 max-w-2xl mx-auto font-light leading-relaxed">
             Scale your automation journey with flexible pricing designed for teams of all sizes
           </p>
+
+          <div className="flex flex-col items-center gap-3 mt-8">
+            <p className="text-xs uppercase tracking-widest text-gray-500">Billing currency</p>
+            <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
+              {SUPPORTED_CURRENCIES.map((currency) => (
+                <button
+                  key={currency}
+                  type="button"
+                  onClick={() => handleCurrencyChange(currency)}
+                  className={`px-4 py-2 text-sm rounded-full transition-colors ${
+                    billingCurrency === currency
+                      ? 'bg-purple-500/20 text-purple-200'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {currencyLabel(currency)}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Pricing Cards */}
         <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-          {plans.map((plan, index) => (
-            <PricingCardUI
-              key={plan.name}
-              {...plan}
-              index={index}
-              onButtonClick={() => {
-                if (plan.name === "Enterprise") {
-                  router.push("/contact");
-                } else {
-                  router.push("/subscription");
-                }
-              }}
-              buttonText={plan.name === "Enterprise" ? "Contact Support" : "Get Started"}
-            />
-          ))}
+          {sortedPlans.map((plan, index) => {
+            const isEnterprise = plan.name.toLowerCase() === 'enterprise';
+            return (
+              <PricingCardUI
+                key={plan.planId}
+                name={plan.name}
+                price={isEnterprise ? 'Custom' : formatPlanPrice(plan.price, billingCurrency)}
+                period={isEnterprise ? '' : '/ month'}
+                description={plan.description || 'The perfect plan to accelerate your business with Automica AI'}
+                icon={getPlanIcon(plan.name)}
+                features={[
+                  `${plan.credits.toLocaleString()} AI credits included`,
+                  'Use with any API',
+                  'Email support (24 hr response)',
+                  'Secure key management & audit logs',
+                ]}
+                popular={plan.name.toLowerCase() === 'professional' || plan.name.toLowerCase() === 'pro'}
+                index={index}
+                onButtonClick={() => {
+                  if (isEnterprise) {
+                    router.push('/contact');
+                  } else {
+                    router.push('/subscription');
+                  }
+                }}
+                buttonText={isEnterprise ? 'Contact Support' : 'Get Started'}
+              />
+            );
+          })}
         </div>
 
-        {/* Bottom CTA */}
         <div className="text-center mt-16">
           <p className="text-gray-400 mb-6 font-light">
-            Need a custom solution? We've got you covered.
+            Need a custom solution? We&apos;ve got you covered.
           </p>
 
           <div className="flex justify-center text-center">

@@ -2,11 +2,13 @@
 'use client';
 import React, { useState } from 'react';
 import { subscriptionApi } from '../../lib/subscriptionApi';
+import { BillingCurrency, formatPlanPrice, normalizeBillingCurrency } from '../../lib/billingCurrency';
 
 interface Subscription {
     status: string;
     currentPeriodEnd: string;
     amount: number;
+    currency?: string;
     planId: string;
     subscriptionId?: string;
     cancelAtCycleEnd?: boolean;
@@ -64,6 +66,8 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
     };
     const statusLabel = isCancellationScheduled ? 'scheduled' : subscription.status;
     const statusText = isCancellationScheduled ? 'cancellation scheduled' : subscription.status;
+    const billingCurrency = (normalizeBillingCurrency(subscription.currency) || 'USD') as BillingCurrency;
+    const formattedPrice = formatPlanPrice(subscription.amount, billingCurrency);
 
     return (
         <div className="relative overflow-hidden rounded-3xl border border-white/10 backdrop-blur-2xl p-8 shadow-2xl group hover:border-purple-500/30 transition-all duration-500"
@@ -96,7 +100,7 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                     <div className="flex justify-between items-center text-sm border-t border-white/5 pt-4">
                         <span className="text-gray-400 font-light">Price</span>
                         <span className="text-white font-semibold">
-                            ${(subscription.amount / 100).toFixed(2)} 
+                            {formattedPrice}
                             <span className="text-gray-500 font-light ml-1">/ month</span>
                         </span>
                     </div>

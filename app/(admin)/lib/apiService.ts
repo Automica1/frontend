@@ -389,6 +389,11 @@ interface AdminSearchResponse {
 }
 
 // Plan types
+interface PlanCurrencyPricing {
+  amount: number;
+  razorpayPlanId: string;
+}
+
 interface Plan {
   id: string;
   planId: string;
@@ -398,18 +403,23 @@ interface Plan {
   price: number;
   credits: number;
   isActive: boolean;
+  pricing?: Record<string, PlanCurrencyPricing>;
   createdAt: string;
   updatedAt: string;
 }
 
 interface CreatePlanRequest {
   planId: string;
-  razorpayPlanId: string;
+  razorpayPlanId?: string;
   name: string;
   description: string;
-  price: number;
+  price?: number;
   credits: number;
   isActive: boolean;
+  priceUsd?: number;
+  priceInr?: number;
+  razorpayPlanIdUsd?: string;
+  razorpayPlanIdInr?: string;
 }
 
 interface UpdatePlanRequest {
@@ -419,6 +429,10 @@ interface UpdatePlanRequest {
   price?: number;
   credits?: number;
   isActive?: boolean;
+  priceUsd?: number;
+  priceInr?: number;
+  razorpayPlanIdUsd?: string;
+  razorpayPlanIdInr?: string;
 }
 
 // Query parameters interface for usage endpoints

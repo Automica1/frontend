@@ -30,13 +30,18 @@ export default function AdminPlansPage() {
     // Form state
     const [formData, setFormData] = useState({
         planId: "",
-        razorpayPlanId: "",
         name: "",
         description: "",
-        price: 0,
+        priceUsd: 0,
+        priceInr: 0,
+        razorpayPlanIdUsd: "",
+        razorpayPlanIdInr: "",
         credits: 0,
         isActive: true
     });
+
+    const getPlanUsdAmount = (plan: Plan) => plan.pricing?.USD?.amount ?? plan.price;
+    const getPlanInrAmount = (plan: Plan) => plan.pricing?.INR?.amount ?? 0;
 
     useEffect(() => {
         fetchPlans();
@@ -59,10 +64,12 @@ export default function AdminPlansPage() {
             setEditingPlan(plan);
             setFormData({
                 planId: plan.planId,
-                razorpayPlanId: plan.razorpayPlanId || "",
                 name: plan.name,
                 description: plan.description,
-                price: plan.price / 100, // convert cents to dollars
+                priceUsd: getPlanUsdAmount(plan) / 100,
+                priceInr: getPlanInrAmount(plan) / 100,
+                razorpayPlanIdUsd: plan.pricing?.USD?.razorpayPlanId || plan.razorpayPlanId || "",
+                razorpayPlanIdInr: plan.pricing?.INR?.razorpayPlanId || "",
                 credits: plan.credits,
                 isActive: plan.isActive
             });
@@ -70,10 +77,12 @@ export default function AdminPlansPage() {
             setEditingPlan(null);
             setFormData({
                 planId: "",
-                razorpayPlanId: "",
                 name: "",
                 description: "",
-                price: 0,
+                priceUsd: 0,
+                priceInr: 0,
+                razorpayPlanIdUsd: "",
+                razorpayPlanIdInr: "",
                 credits: 0,
                 isActive: true
             });
@@ -88,8 +97,15 @@ export default function AdminPlansPage() {
 
         try {
             const payload = {
-                ...formData,
-                price: formData.price * 100 // convert dollars to cents
+                planId: formData.planId,
+                name: formData.name,
+                description: formData.description,
+                credits: formData.credits,
+                isActive: formData.isActive,
+                priceUsd: Math.round(formData.priceUsd * 100),
+                priceInr: Math.round(formData.priceInr * 100),
+                razorpayPlanIdUsd: formData.razorpayPlanIdUsd,
+                razorpayPlanIdInr: formData.razorpayPlanIdInr,
             };
 
             if (editingPlan) {
@@ -212,13 +228,23 @@ export default function AdminPlansPage() {
 
                                 <div className="grid grid-cols-2 gap-4 py-2">
                                     <div className="space-y-1">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Price</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">USD Price</p>
                                         <p className="flex items-center gap-1 text-lg font-bold text-white">
                                             <DollarSign className="w-4 h-4" />
-                                            {plan.price / 100}
+                                            {getPlanUsdAmount(plan) / 100}
                                             <span className="text-xs font-medium text-gray-500">/mo</span>
                                         </p>
                                     </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">INR Price</p>
+                                        <p className="flex items-center gap-1 text-lg font-bold text-white">
+                                            ₹{getPlanInrAmount(plan) / 100}
+                                            <span className="text-xs font-medium text-gray-500">/mo</span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4 py-2">
                                     <div className="space-y-1">
                                         <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Credits</p>
                                         <p className="flex items-center gap-1 text-lg font-bold text-white">
@@ -284,16 +310,24 @@ export default function AdminPlansPage() {
                                         title="Display name for the plan"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Razorpay Plan ID</label>
+                                <div className="space-y-2 md:col-span-2">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">USD Razorpay Plan ID</label>
                                     <input
                                         type="text"
-                                        required
-                                        value={formData.razorpayPlanId}
-                                        onChange={(e) => setFormData({ ...formData, razorpayPlanId: e.target.value })}
+                                        value={formData.razorpayPlanIdUsd}
+                                        onChange={(e) => setFormData({ ...formData, razorpayPlanIdUsd: e.target.value })}
                                         className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 font-medium text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
-                                        placeholder="plan_L7v... (from Razorpay)"
-                                        title="The official Plan ID from your Razorpay Dashboard"
+                                        placeholder="plan_... (USD)"
+                                    />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">INR Razorpay Plan ID</label>
+                                    <input
+                                        type="text"
+                                        value={formData.razorpayPlanIdInr}
+                                        onChange={(e) => setFormData({ ...formData, razorpayPlanIdInr: e.target.value })}
+                                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 font-medium text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
+                                        placeholder="plan_... (INR)"
                                     />
                                 </div>
                             </div>
@@ -311,18 +345,32 @@ export default function AdminPlansPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
-                                    <label htmlFor="price" className="text-xs font-bold uppercase tracking-wider text-gray-500">Price ($ / month)</label>
+                                    <label htmlFor="priceUsd" className="text-xs font-bold uppercase tracking-wider text-gray-500">USD Price / month</label>
                                     <div className="relative">
                                         <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-admin-text-muted" />
                                         <input
-                                            id="price"
+                                            id="priceUsd"
                                             type="number"
-                                            required
                                             min="0"
-                                            value={formData.price}
-                                            onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                                            step="0.01"
+                                            value={formData.priceUsd}
+                                            onChange={(e) => setFormData({ ...formData, priceUsd: Number(e.target.value) })}
                                             className="w-full rounded-2xl border border-white/10 bg-white/5 py-2 pl-10 pr-4 font-bold text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
-                                            title="Monthly price in Dollars"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="priceInr" className="text-xs font-bold uppercase tracking-wider text-gray-500">INR Price / month</label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">₹</span>
+                                        <input
+                                            id="priceInr"
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            value={formData.priceInr}
+                                            onChange={(e) => setFormData({ ...formData, priceInr: Number(e.target.value) })}
+                                            className="w-full rounded-2xl border border-white/10 bg-white/5 py-2 pl-10 pr-4 font-bold text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
                                         />
                                     </div>
                                 </div>

@@ -110,6 +110,11 @@ export interface Subscription {
   updatedAt: string;
 }
 
+export interface PlanCurrencyPricing {
+  amount: number;
+  razorpayPlanId: string;
+}
+
 export interface Plan {
   id: string;
   planId: string;
@@ -117,8 +122,10 @@ export interface Plan {
   name: string;
   description: string;
   price: number;
+  currency?: string;
   credits: number;
   isActive: boolean;
+  pricing?: Record<string, PlanCurrencyPricing>;
   createdAt: string;
   updatedAt: string;
 }
@@ -170,7 +177,11 @@ class ApiService {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  async getPublicBillingConfig(): Promise<{ razorpayKeyId?: string }> {
+  async getPublicBillingConfig(): Promise<{
+    razorpayKeyId?: string;
+    supportedCurrencies?: string[];
+    defaultCurrency?: string;
+  }> {
     const response = await fetch(`${this.baseUrl}/billing-config`, {
       method: 'GET',
       headers: {
@@ -314,15 +325,16 @@ class ApiService {
   }
 
   // Subscription methods
-  async getActivePlans(): Promise<Plan[]> {
-    const response = await fetch(`${this.baseUrl}/plans`);
+  async getActivePlans(currency?: string): Promise<Plan[]> {
+    const query = currency ? `?currency=${encodeURIComponent(currency)}` : '';
+    const response = await fetch(`${this.baseUrl}/plans${query}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch plans: ${response.status}`);
     }
     return response.json();
   }
 
-  async createOrder(planId: string): Promise<{ subscriptionId: string; orderId?: string; keyId: string; amount: number; currency: string }> {
+  async createOrder(planId: string, currency?: string): Promise<{ subscriptionId: string; orderId?: string; keyId: string; amount: number; currency: string }> {
     // Attempt to get Kinde user data via /api/auth endpoint to include customer info for server-side customer creation
     let name = '';
     let email = '';
@@ -342,7 +354,7 @@ class ApiService {
 
     return this.makeRequest('/subscription/create-order', {
       method: 'POST',
-      body: JSON.stringify({ planId, name, email, contact }),
+      body: JSON.stringify({ planId, currency, name, email, contact }),
     });
   }
 
@@ -368,7 +380,7 @@ class ApiService {
     });
   }
 
-  async calculateUpgradePrice(planId: string): Promise<{ price: number }> {
+  async calculateUpgradePrice(planId: string): Promise<{ price: number; currency: string }> {
     return this.makeRequest(`/subscription/upgrade/calculate?planId=${planId}`);
   }
 
