@@ -45,7 +45,7 @@ export default function SubscriptionPage() {
                 <Spotlight />
             </div>
 
-            <div className="relative z-10 max-w-4xl mx-auto">
+            <div className="relative z-10 max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-12">
                     <div className="inline-block mb-4">

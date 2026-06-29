@@ -114,11 +114,10 @@ export function persistBillingCurrency(currency: BillingCurrency, explicit = tru
 
 export function resolvePlanForCurrency(plan: Plan, currency: BillingCurrency): Plan | null {
   const entry = plan.pricing?.[currency];
-  if (entry?.amount && entry.razorpayPlanId) {
+  if (entry?.amount) {
     return {
       ...plan,
       price: entry.amount,
-      razorpayPlanId: entry.razorpayPlanId,
       currency,
     };
   }

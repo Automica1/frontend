@@ -10,6 +10,8 @@ interface Subscription {
     amount: number;
     currency?: string;
     planId: string;
+    planName?: string;
+    pendingPlanName?: string;
     subscriptionId?: string;
     cancelAtCycleEnd?: boolean;
     cancelScheduledAt?: string;
@@ -85,7 +87,9 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <p className="text-purple-400 text-sm font-medium uppercase tracking-widest mb-2">Current Plan</p>
-                        <h3 className="text-2xl font-light text-white uppercase tracking-tighter leading-none">{subscription.planId.replace(/-/g, ' ')}</h3>
+                        <h3 className="text-2xl font-light text-white uppercase tracking-tighter leading-none">
+                            {subscription.planName || subscription.planId.replace(/-/g, ' ')}
+                        </h3>
                     </div>
                     <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${statusColors[statusLabel] || statusColors.expired}`}>
                         {statusText}
@@ -108,7 +112,7 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                         <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
                             <p className="text-xs text-blue-400 font-medium uppercase tracking-wider mb-1">Scheduled Change</p>
                             <p className="text-sm text-gray-300">
-                                Switching to <span className="text-white font-medium uppercase">{subscription.pendingPlanId.replace(/-/g, ' ')}</span> on {new Date(subscription.planChangeDate).toLocaleDateString()}
+                                Switching to <span className="text-white font-medium uppercase">{subscription.pendingPlanName || subscription.pendingPlanId.replace(/-/g, ' ')}</span> on {new Date(subscription.planChangeDate).toLocaleDateString()}
                             </p>
                         </div>
                     )}

@@ -44,13 +44,14 @@ export default function Navbar({ isAdmin, initialUser }: { isAdmin?: boolean; in
     return () => window.clearTimeout(timer);
   }, [isLoading, hasServerSession]);
 
-  // Navigation links configuration
+  // Option B: Pricing for guests; Billing (/subscription) for signed-in users.
   const navLinks = [
     { href: '/services', label: 'Services' },
     { href: '/contact', label: 'Contact Us' },
     { href: '/about', label: 'About Us' },
-    { href: '/pricing', label: 'Pricing' },
-    // { href: '/subscription', label: 'Subscription' }
+    isUserAuthenticated
+      ? { href: '/subscription', label: 'Billing' }
+      : { href: '/pricing', label: 'Pricing' },
   ];
 
   // Function to check if a link is active
@@ -453,28 +454,6 @@ export default function Navbar({ isAdmin, initialUser }: { isAdmin?: boolean; in
                   </span>
                 </Link>
               ))}
-
-              {/* Subscription Link for Mobile */}
-          {isUserAuthenticated && (
-                <Link
-                  href="/subscription"
-                  onClick={closeMobileMenu}
-                  className={`block text-xl font-medium transition-all duration-300 py-2 border-b border-gray-800/50 ${isActiveLink('/subscription')
-                    ? 'text-green-400 bg-green-500/10 px-3 rounded-lg border-green-500/30'
-                    : 'text-green-300 hover:text-green-400'
-                    }`}
-                >
-                  <span className="flex items-center justify-between">
-                    <span className="flex items-center space-x-2">
-                      <Star className="w-5 h-5" />
-                      <span>Subscription</span>
-                    </span>
-                    {isActiveLink('/subscription') && (
-                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                    )}
-                  </span>
-                </Link>
-              )}
 
               {/* Admin Dashboard Link for Mobile */}
               {isUserAuthenticated && isAdmin && (

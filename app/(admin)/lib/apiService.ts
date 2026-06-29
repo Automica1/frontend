@@ -404,6 +404,11 @@ interface Plan {
   credits: number;
   isActive: boolean;
   pricing?: Record<string, PlanCurrencyPricing>;
+  features?: string[];
+  displayOrder?: number;
+  isPopular?: boolean;
+  contactSales?: boolean;
+  ctaLabel?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -420,6 +425,11 @@ interface CreatePlanRequest {
   priceInr?: number;
   razorpayPlanIdUsd?: string;
   razorpayPlanIdInr?: string;
+  features?: string[];
+  displayOrder?: number;
+  isPopular?: boolean;
+  contactSales?: boolean;
+  ctaLabel?: string;
 }
 
 interface UpdatePlanRequest {
@@ -433,6 +443,11 @@ interface UpdatePlanRequest {
   priceInr?: number;
   razorpayPlanIdUsd?: string;
   razorpayPlanIdInr?: string;
+  features?: string[];
+  displayOrder?: number;
+  isPopular?: boolean;
+  contactSales?: boolean;
+  ctaLabel?: string;
 }
 
 // Query parameters interface for usage endpoints

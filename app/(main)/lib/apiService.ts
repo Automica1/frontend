@@ -112,7 +112,7 @@ export interface Subscription {
 
 export interface PlanCurrencyPricing {
   amount: number;
-  razorpayPlanId: string;
+  razorpayPlanId?: string;
 }
 
 export interface Plan {
@@ -124,10 +124,15 @@ export interface Plan {
   price: number;
   currency?: string;
   credits: number;
-  isActive: boolean;
+  isActive?: boolean;
   pricing?: Record<string, PlanCurrencyPricing>;
-  createdAt: string;
-  updatedAt: string;
+  features?: string[];
+  displayOrder?: number;
+  isPopular?: boolean;
+  contactSales?: boolean;
+  ctaLabel?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 class ApiService {

@@ -37,7 +37,12 @@ export default function AdminPlansPage() {
         razorpayPlanIdUsd: "",
         razorpayPlanIdInr: "",
         credits: 0,
-        isActive: true
+        isActive: true,
+        featuresText: "",
+        displayOrder: 0,
+        isPopular: false,
+        contactSales: false,
+        ctaLabel: "",
     });
 
     const getPlanUsdAmount = (plan: Plan) => plan.pricing?.USD?.amount ?? plan.price;
@@ -59,6 +64,14 @@ export default function AdminPlansPage() {
         }
     };
 
+    const parseFeatures = (text: string) =>
+        text
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean);
+
+    const formatFeatures = (features?: string[]) => (features?.length ? features.join('\n') : '');
+
     const handleOpenModal = (plan?: Plan) => {
         if (plan) {
             setEditingPlan(plan);
@@ -71,7 +84,12 @@ export default function AdminPlansPage() {
                 razorpayPlanIdUsd: plan.pricing?.USD?.razorpayPlanId || plan.razorpayPlanId || "",
                 razorpayPlanIdInr: plan.pricing?.INR?.razorpayPlanId || "",
                 credits: plan.credits,
-                isActive: plan.isActive
+                isActive: plan.isActive,
+                featuresText: formatFeatures(plan.features),
+                displayOrder: plan.displayOrder ?? 0,
+                isPopular: Boolean(plan.isPopular),
+                contactSales: Boolean(plan.contactSales),
+                ctaLabel: plan.ctaLabel || "",
             });
         } else {
             setEditingPlan(null);
@@ -84,7 +102,12 @@ export default function AdminPlansPage() {
                 razorpayPlanIdUsd: "",
                 razorpayPlanIdInr: "",
                 credits: 0,
-                isActive: true
+                isActive: true,
+                featuresText: "",
+                displayOrder: 0,
+                isPopular: false,
+                contactSales: false,
+                ctaLabel: "",
             });
         }
         setIsModalOpen(true);
@@ -106,6 +129,11 @@ export default function AdminPlansPage() {
                 priceInr: Math.round(formData.priceInr * 100),
                 razorpayPlanIdUsd: formData.razorpayPlanIdUsd,
                 razorpayPlanIdInr: formData.razorpayPlanIdInr,
+                features: parseFeatures(formData.featuresText),
+                displayOrder: formData.displayOrder,
+                isPopular: formData.isPopular,
+                contactSales: formData.contactSales,
+                ctaLabel: formData.ctaLabel.trim(),
             };
 
             if (editingPlan) {
@@ -155,7 +183,9 @@ export default function AdminPlansPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight text-white">Subscription Plans</h1>
-                    <p className="mt-1 font-medium text-gray-400">Manage your subscription tiers and pricing.</p>
+                    <p className="mt-1 font-medium text-gray-400">
+                        Manage catalog pricing, Razorpay plan IDs, and customer-facing plan copy.
+                    </p>
                 </div>
                 <button
                     onClick={() => handleOpenModal()}
@@ -254,9 +284,19 @@ export default function AdminPlansPage() {
                                     </div>
                                 </div>
 
-                                <div className="pt-2">
+                                <div className="pt-2 space-y-2">
                                     <p className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Plan ID</p>
                                     <code className="rounded border border-white/10 bg-black/25 px-2 py-0.5 text-[10px] font-mono text-gray-200">{plan.planId}</code>
+                                    <div className="grid grid-cols-1 gap-1 text-[10px] text-gray-500">
+                                        <p>USD Razorpay: <span className="text-gray-300">{plan.pricing?.USD?.razorpayPlanId || plan.razorpayPlanId || '—'}</span></p>
+                                        <p>INR Razorpay: <span className="text-gray-300">{plan.pricing?.INR?.razorpayPlanId || '—'}</span></p>
+                                    </div>
+                                    {plan.isPopular && (
+                                        <span className="inline-block rounded-full border border-purple-400/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-bold uppercase text-purple-200">Popular</span>
+                                    )}
+                                    {plan.contactSales && (
+                                        <span className="inline-block rounded-full border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-200 ml-1">Contact sales</span>
+                                    )}
                                 </div>
                             </motion.div>
                         ))}
@@ -270,7 +310,7 @@ export default function AdminPlansPage() {
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="w-full max-w-lg overflow-hidden rounded-[28px] border border-white/10 bg-[#0c1018] shadow-2xl"
+                        className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-white/10 bg-[#0c1018] shadow-2xl max-h-[90vh] overflow-y-auto"
                     >
                         <div className="flex items-center justify-between border-b border-white/10 p-6">
                             <h2 className="text-xl font-bold text-white">{editingPlan ? 'Edit Plan' : 'Create New Plan'}</h2>
@@ -343,6 +383,17 @@ export default function AdminPlansPage() {
                                 />
                             </div>
 
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Feature bullets (one per line)</label>
+                                <textarea
+                                    value={formData.featuresText}
+                                    onChange={(e) => setFormData({ ...formData, featuresText: e.target.value })}
+                                    className="min-h-[120px] w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 font-medium text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
+                                    placeholder="{credits} AI credits included"
+                                />
+                                <p className="text-[11px] text-gray-500">Use {'{credits}'} as a placeholder for the plan credit amount.</p>
+                            </div>
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label htmlFor="priceUsd" className="text-xs font-bold uppercase tracking-wider text-gray-500">USD Price / month</label>
@@ -390,18 +441,60 @@ export default function AdminPlansPage() {
                                         />
                                     </div>
                                 </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="displayOrder" className="text-xs font-bold uppercase tracking-wider text-gray-500">Display order</label>
+                                    <input
+                                        id="displayOrder"
+                                        type="number"
+                                        min="0"
+                                        value={formData.displayOrder}
+                                        onChange={(e) => setFormData({ ...formData, displayOrder: Number(e.target.value) })}
+                                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 font-bold text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
+                                    />
+                                </div>
+                                <div className="space-y-2 md:col-span-2">
+                                    <label htmlFor="ctaLabel" className="text-xs font-bold uppercase tracking-wider text-gray-500">Button label (optional)</label>
+                                    <input
+                                        id="ctaLabel"
+                                        type="text"
+                                        value={formData.ctaLabel}
+                                        onChange={(e) => setFormData({ ...formData, ctaLabel: e.target.value })}
+                                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 font-medium text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
+                                        placeholder="Get Started"
+                                    />
+                                </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
-                                    title={formData.isActive ? "Deactivate plan" : "Activate plan"}
-                                    className={`w-12 h-6 rounded-full transition-colors relative ${formData.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`}
-                                >
-                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isActive ? 'left-7' : 'left-1'}`}></div>
-                                </button>
-                                <span className="text-sm font-bold text-white">Plan is Active</span>
+                            <div className="flex flex-wrap items-center gap-6">
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
+                                        title={formData.isActive ? "Deactivate plan" : "Activate plan"}
+                                        className={`w-12 h-6 rounded-full transition-colors relative ${formData.isActive ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${formData.isActive ? 'left-7' : 'left-1'}`}></div>
+                                    </button>
+                                    <span className="text-sm font-bold text-white">Plan is Active</span>
+                                </div>
+                                <label className="flex items-center gap-2 text-sm text-white">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.isPopular}
+                                        onChange={(e) => setFormData({ ...formData, isPopular: e.target.checked })}
+                                        className="rounded border-white/20"
+                                    />
+                                    Highlight as popular
+                                </label>
+                                <label className="flex items-center gap-2 text-sm text-white">
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.contactSales}
+                                        onChange={(e) => setFormData({ ...formData, contactSales: e.target.checked })}
+                                        className="rounded border-white/20"
+                                    />
+                                    Contact sales (no checkout)
+                                </label>
                             </div>
 
                             <div className="pt-4 flex gap-3">

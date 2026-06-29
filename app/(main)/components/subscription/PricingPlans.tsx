@@ -1,297 +1,78 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-nextjs';
-import { apiService, Plan } from '../../lib/apiService';
-import { Loader2, Zap, Star, Crown } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { PricingCardUI } from '../pricing/PricingCardUI';
+import { Loader2 } from 'lucide-react';
 import { BillingCurrencyToggle } from './BillingCurrencyToggle';
 import { useDualCurrencyPlans } from '../../hooks/useDualCurrencyPlans';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { BillingCurrency, formatCheckoutAmount, formatPlanPrice } from '../../lib/billingCurrency';
-import { buildLoginPath } from '../../lib/authPaths';
+import { useSearchParams } from 'next/navigation';
+import { PlanCardGrid } from '../plans/PlanCardGrid';
+import { usePlanCheckout } from '../../hooks/usePlanCheckout';
 
-const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-
-const getPlanIcon = (name: string) => {
-    switch (name.toLowerCase()) {
-        case 'starter': return <Zap className="w-6 h-6" />;
-        case 'professional': return <Star className="w-6 h-6" />;
-        case 'enterprise': return <Crown className="w-6 h-6" />;
-        default: return <Zap className="w-6 h-6" />;
-    }
-};
-
-export default function PricingPlans({ onPaymentSuccess, currentSubscription }: {
-    onPaymentSuccess: () => void,
-    currentSubscription?: any
+export default function PricingPlans({
+  onPaymentSuccess,
+  currentSubscription,
+}: {
+  onPaymentSuccess: () => void;
+  currentSubscription?: any;
 }) {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const { isAuthenticated, user, isLoading: authLoading } = useKindeAuth();
-    const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
-    const [razorpayKeyId, setRazorpayKeyId] = useState<string | null>(RAZORPAY_KEY_ID || null);
+  const searchParams = useSearchParams();
+  const { isAuthenticated, user } = useKindeAuth();
+  const highlightPlanId = searchParams?.get('plan');
 
-    const userPhone = isAuthenticated
-        ? (((user as any)?.phone) || ((user as any)?.phone_number) || '')
-        : '';
+  const userPhone = isAuthenticated
+    ? ((user as any)?.phone || (user as any)?.phone_number || '')
+    : '';
 
-    const {
-        plans,
-        billingCurrency,
-        setCurrency,
-        loading,
-        isLocked,
-        regionConfidence,
-        showCurrencyToggle,
-    } = useDualCurrencyPlans({
-        phone: userPhone,
-        subscriptionCurrency: currentSubscription?.currency,
-    });
+  const {
+    plans,
+    billingCurrency,
+    setCurrency,
+    loading,
+    isLocked,
+    regionConfidence,
+    showCurrencyToggle,
+  } = useDualCurrencyPlans({
+    phone: userPhone,
+    subscriptionCurrency: currentSubscription?.currency,
+  });
 
-    const lockedCurrency = isLocked ? billingCurrency : null;
+  const lockedCurrency = isLocked ? billingCurrency : null;
 
-    useEffect(() => {
-        if (razorpayKeyId) {
-            return;
-        }
+  const { loadingPlanId, handleSubscribe, handleDowngrade } = usePlanCheckout({
+    billingCurrency,
+    currentSubscription,
+    onPaymentSuccess,
+    userPhone,
+  });
 
-        const fetchBillingConfig = async () => {
-            try {
-                const config = await apiService.getPublicBillingConfig();
-                if (config.razorpayKeyId) {
-                    setRazorpayKeyId(config.razorpayKeyId);
-                }
-            } catch (err) {
-                console.error('Failed to load billing config', err);
-            }
-        };
-
-        void fetchBillingConfig();
-    }, [razorpayKeyId]);
-
-    const loadRazorpay = () => {
-        return new Promise((resolve) => {
-            if ((window as any).Razorpay) {
-                resolve(true);
-                return;
-            }
-
-            const existingScript = document.querySelector<HTMLScriptElement>('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
-            if (existingScript) {
-                existingScript.remove();
-            }
-
-            const script = document.createElement('script');
-            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-            script.onload = () => resolve(true);
-            script.onerror = () => resolve(false);
-            document.body.appendChild(script);
-        });
-    };
-
-    const handleSubscribe = async (plan: Plan) => {
-        if (!authLoading && !isAuthenticated) {
-            const currency = searchParams?.get('currency') || billingCurrency;
-            const redirectPath = currency ? `/subscription?currency=${currency}` : '/subscription';
-            router.push(buildLoginPath(redirectPath));
-            return;
-        }
-
-        const keyId = razorpayKeyId;
-        if (!keyId) {
-            alert('Payment configuration is missing. Please contact support.');
-            return;
-        }
-
-        setLoadingPlanId(plan.planId);
-        document.querySelectorAll('.razorpay-container').forEach((node) => node.remove());
-        const res = await loadRazorpay();
-
-        if (!res) {
-            alert('Razorpay SDK failed to load. Are you online?');
-            setLoadingPlanId(null);
-            return;
-        }
-
-        try {
-            const checkoutCurrency = billingCurrency as BillingCurrency;
-            const isUpgrade = currentSubscription
-                && currentSubscription.status === 'active'
-                && currentSubscription.currency === checkoutCurrency
-                && plan.price > currentSubscription.amount;
-
-            let order;
-            if (isUpgrade) {
-                order = await apiService.createUpgradeOrder(plan.planId);
-            } else {
-                order = await apiService.createOrder(plan.planId, checkoutCurrency);
-            }
-
-            const confirmed = window.confirm(
-                `You will be charged ${formatCheckoutAmount(order.amount, (order.currency as BillingCurrency) || checkoutCurrency)}. Continue to secure checkout?`
-            );
-            if (!confirmed) {
-                setLoadingPlanId(null);
-                return;
-            }
-
-            const orderData = order as any;
-            const isSubscription = !isUpgrade && !!orderData.subscriptionId;
-
-            const options: Record<string, any> = {
-                key: keyId,
-                name: 'Automica',
-                description: `${isUpgrade ? 'Upgrade to' : ''} ${plan.name} — ${plan.credits.toLocaleString()} Credits/mo`,
-                theme: { color: '#8b5cf6' },
-                prefill: {
-                    name: isAuthenticated ? (((user as any)?.given_name) || ((user as any)?.name) || '') : '',
-                    email: isAuthenticated ? (((user as any)?.email) || '') : '',
-                    contact: userPhone,
-                },
-                modal: {
-                    ondismiss: function () {
-                        setLoadingPlanId(null);
-                    },
-                },
-                handler: async function (response: any) {
-                    try {
-                        if (isSubscription) {
-                            await apiService.verifyPayment({
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_subscription_id: response.razorpay_subscription_id,
-                                razorpay_signature: response.razorpay_signature,
-                            });
-                        } else {
-                            await apiService.verifyPayment({
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_signature: response.razorpay_signature,
-                            });
-                        }
-                        onPaymentSuccess();
-                    } catch (err) {
-                        console.error('Payment verification failed', err);
-                        alert('Payment verification failed. Please contact support.');
-                    } finally {
-                        setLoadingPlanId(null);
-                    }
-                },
-            };
-
-            if (isSubscription) {
-                options.subscription_id = orderData.subscriptionId;
-            } else {
-                options.order_id = orderData.orderId;
-                options.amount = order.amount;
-                options.currency = order.currency;
-            }
-
-            const paymentObject = new (window as any).Razorpay(options);
-            setLoadingPlanId(null);
-            paymentObject.open();
-        } catch (err) {
-            console.error('Failed to process subscription', err);
-            alert('Failed to initiate payment. Please try again.');
-            setLoadingPlanId(null);
-        }
-    };
-
-    const handleDowngrade = async (plan: Plan) => {
-        if (!authLoading && !isAuthenticated) {
-            router.push(buildLoginPath('/subscription'));
-            return;
-        }
-
-        if (!confirm(`Are you sure you want to downgrade to ${plan.name}? The change will take effect at the end of your current billing cycle.`)) {
-            return;
-        }
-
-        setLoadingPlanId(plan.planId);
-        try {
-            await apiService.downgradeSubscription(plan.planId);
-            alert(`Your downgrade to ${plan.name} has been scheduled.`);
-            onPaymentSuccess();
-        } catch (err) {
-            console.error('Failed to downgrade', err);
-            alert('Failed to schedule downgrade. Please try again.');
-        } finally {
-            setLoadingPlanId(null);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
-                <p className="text-gray-400 font-light">Loading premium plans...</p>
-            </div>
-        );
-    }
-
+  if (loading) {
     return (
-        <>
-            {(showCurrencyToggle || lockedCurrency) && (
-                <BillingCurrencyToggle
-                    value={billingCurrency}
-                    onChange={setCurrency}
-                    regionConfidence={regionConfidence}
-                    lockedCurrency={lockedCurrency}
-                />
-            )}
-            <div className={`grid grid-cols-1 ${plans.length === 2 ? 'md:grid-cols-2 max-w-4xl' : 'md:grid-cols-3 max-w-6xl'} gap-8 lg:gap-12 mx-auto px-4 mt-12`}>
-                {plans.map((plan, index) => {
-                    const isCurrent = currentSubscription && currentSubscription.status === 'active' && currentSubscription.planId === plan.planId;
-                    const sameCurrency = !currentSubscription?.currency || currentSubscription.currency === billingCurrency;
-                    const isUpgrade = currentSubscription && currentSubscription.status === 'active' && sameCurrency && plan.price > currentSubscription.amount;
-                    const isDowngrade = currentSubscription && currentSubscription.status === 'active' && sameCurrency && plan.price < currentSubscription.amount;
-
-                    let buttonText = 'Choose Plan';
-                    if (isCurrent) buttonText = 'Current Plan';
-                    else if (isUpgrade) buttonText = 'Upgrade Plan';
-                    else if (isDowngrade) buttonText = 'Downgrade Plan';
-
-                    const isPopular = plan.name.toLowerCase() === 'professional' || plan.name.toLowerCase() === 'pro plan' || plan.name.toLowerCase() === 'pro';
-
-                    return (
-                        <PricingCardUI
-                            key={plan.id}
-                            name={plan.name}
-                            price={
-                                <motion.span
-                                    key={`${plan.id}-${billingCurrency}`}
-                                    initial={{ opacity: 0, y: 6 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                >
-                                    {formatPlanPrice(plan.price, billingCurrency)}
-                                </motion.span>
-                            }
-                            description={plan.description || "The perfect plan to accelerate your business with Automica AI"}
-                            popular={isPopular}
-                            index={index}
-                            icon={getPlanIcon(plan.name)}
-                            features={[
-                                `${plan.credits.toLocaleString()} usage credits every month`,
-                                'Credits roll over indefinitely',
-                                'Advanced AI features unlocked',
-                                'Priority support',
-                                'Secure access & audit logs'
-                            ]}
-                            buttonText={buttonText}
-                            isLoading={loadingPlanId === plan.planId}
-                            disabled={isCurrent || !!loadingPlanId}
-                            onButtonClick={() => {
-                                if (isCurrent) return;
-                                if (isDowngrade) {
-                                    handleDowngrade(plan);
-                                } else {
-                                    handleSubscribe(plan);
-                                }
-                            }}
-                        />
-                    );
-                })}
-            </div>
-        </>
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+        <p className="text-gray-400 font-light">Loading premium plans...</p>
+      </div>
     );
+  }
+
+  return (
+    <>
+      {(showCurrencyToggle || lockedCurrency) && (
+        <BillingCurrencyToggle
+          value={billingCurrency}
+          onChange={setCurrency}
+          regionConfidence={regionConfidence}
+          lockedCurrency={lockedCurrency}
+        />
+      )}
+      <PlanCardGrid
+        mode="checkout"
+        plans={plans}
+        billingCurrency={billingCurrency}
+        highlightPlanId={highlightPlanId}
+        currentSubscription={currentSubscription}
+        loadingPlanId={loadingPlanId}
+        onSubscribe={handleSubscribe}
+        onDowngrade={handleDowngrade}
+      />
+    </>
+  );
 }

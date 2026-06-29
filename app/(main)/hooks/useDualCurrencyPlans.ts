@@ -12,6 +12,7 @@ import {
   persistBillingCurrency,
   resolvePlanForCurrency,
 } from '../lib/billingCurrency';
+import { sortPlans } from '../lib/planPresentation';
 
 type UseDualCurrencyPlansOptions = {
   phone?: string | null;
@@ -80,10 +81,10 @@ export function useDualCurrencyPlans(options: UseDualCurrencyPlansOptions = {}) 
   const activeCurrency: BillingCurrency = (isLocked ? lockedCurrency : billingCurrency) ?? billingCurrency;
 
   const plans = useMemo(() => {
-    return rawPlans
+    const resolved = rawPlans
       .map((plan) => resolvePlanForCurrency(plan, activeCurrency))
-      .filter((plan): plan is Plan => plan !== null)
-      .sort((a, b) => a.price - b.price);
+      .filter((plan): plan is Plan => plan !== null);
+    return sortPlans(resolved);
   }, [rawPlans, activeCurrency]);
 
   const setCurrency = (currency: BillingCurrency) => {
