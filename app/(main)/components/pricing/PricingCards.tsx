@@ -1,21 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Star, Zap, Crown } from 'lucide-react';
 import { HoverBorderGradient } from '../ui/hover-border-gradient';
 import Link from 'next/link';
 import { PricingCardUI } from './PricingCardUI';
 import { useRouter } from 'next/navigation';
-import { Plan } from '../../lib/apiService';
-import {
-  BillingCurrency,
-  SUPPORTED_CURRENCIES,
-  currencyLabel,
-  detectBillingCurrency,
-  formatPlanPrice,
-  normalizeBillingCurrency,
-  persistBillingCurrency,
-} from '../../lib/billingCurrency';
+import { motion } from 'framer-motion';
+import { useDualCurrencyPlans } from '../../hooks/useDualCurrencyPlans';
+import { formatPlanPrice } from '../../lib/billingCurrency';
+import { BillingCurrencyToggle } from '../subscription/BillingCurrencyToggle';
 
 const getPlanIcon = (name: string) => {
   switch (name.toLowerCase()) {
@@ -34,41 +28,14 @@ const getPlanIcon = (name: string) => {
 
 const PricingCards = () => {
   const router = useRouter();
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [billingCurrency, setBillingCurrency] = useState<BillingCurrency>(() => detectBillingCurrency());
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    const loadPlans = async () => {
-      try {
-        const query = `?currency=${encodeURIComponent(billingCurrency)}`;
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080/api/v1'}/plans${query}`,
-          { signal: controller.signal, cache: 'no-store' }
-        );
-        if (!response.ok) {
-          throw new Error(`Failed to fetch plans: ${response.status}`);
-        }
-        const data = (await response.json()) as Plan[];
-        setPlans(data);
-      } catch (error) {
-        if ((error as Error).name !== 'AbortError') {
-          console.error('Failed to load pricing plans', error);
-        }
-      }
-    };
-
-    void loadPlans();
-    return () => controller.abort();
-  }, [billingCurrency]);
-
-  const handleCurrencyChange = (currency: BillingCurrency) => {
-    setBillingCurrency(currency);
-    persistBillingCurrency(currency);
-  };
-
-  const sortedPlans = [...plans].sort((a, b) => a.price - b.price);
+  const {
+    plans,
+    billingCurrency,
+    setCurrency,
+    loading,
+    likelyIndian,
+    showCurrencyToggle,
+  } = useDualCurrencyPlans();
 
   return (
     <div className="relative py-20 px-4">
@@ -88,35 +55,38 @@ const PricingCards = () => {
             Scale your automation journey with flexible pricing designed for teams of all sizes
           </p>
 
-          <div className="flex flex-col items-center gap-3 mt-8">
-            <p className="text-xs uppercase tracking-widest text-gray-500">Billing currency</p>
-            <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
-              {SUPPORTED_CURRENCIES.map((currency) => (
-                <button
-                  key={currency}
-                  type="button"
-                  onClick={() => handleCurrencyChange(currency)}
-                  className={`px-4 py-2 text-sm rounded-full transition-colors ${
-                    billingCurrency === currency
-                      ? 'bg-purple-500/20 text-purple-200'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {currencyLabel(currency)}
-                </button>
-              ))}
+          {showCurrencyToggle && (
+            <div className="mt-8">
+              <BillingCurrencyToggle
+                value={billingCurrency}
+                onChange={setCurrency}
+                likelyIndian={likelyIndian}
+              />
             </div>
-          </div>
+          )}
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-          {sortedPlans.map((plan, index) => {
+          {(loading ? [] : plans).map((plan, index) => {
             const isEnterprise = plan.name.toLowerCase() === 'enterprise';
+            const priceLabel = isEnterprise
+              ? 'Custom'
+              : `${formatPlanPrice(plan.price, billingCurrency)} / month`;
+
             return (
               <PricingCardUI
                 key={plan.planId}
                 name={plan.name}
-                price={isEnterprise ? 'Custom' : `${formatPlanPrice(plan.price, normalizeBillingCurrency(plan.currency) || billingCurrency)} / month`}
+                price={
+                  <motion.span
+                    key={`${plan.planId}-${billingCurrency}`}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {priceLabel}
+                  </motion.span>
+                }
                 description={plan.description || 'The perfect plan to accelerate your business with Automica AI'}
                 icon={getPlanIcon(plan.name)}
                 features={[

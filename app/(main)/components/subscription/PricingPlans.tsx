@@ -1,17 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-nextjs';
 import { apiService, Plan } from '../../lib/apiService';
 import { Loader2, Zap, Star, Crown } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { PricingCardUI } from '../pricing/PricingCardUI';
-import {
-    BillingCurrency,
-    SUPPORTED_CURRENCIES,
-    currencyLabel,
-    detectBillingCurrency,
-    formatPlanPrice,
-    normalizeBillingCurrency,
-    persistBillingCurrency,
-} from '../../lib/billingCurrency';
+import { BillingCurrencyToggle } from './BillingCurrencyToggle';
+import { useDualCurrencyPlans } from '../../hooks/useDualCurrencyPlans';
+import { BillingCurrency, formatPlanPrice } from '../../lib/billingCurrency';
 
 const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
@@ -30,58 +25,26 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
 }) {
     const { isAuthenticated, user } = useKindeAuth();
     const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
-    const [plans, setPlans] = useState<Plan[]>([]);
-    const [fetchingPlans, setFetchingPlans] = useState(true);
     const [razorpayKeyId, setRazorpayKeyId] = useState<string | null>(RAZORPAY_KEY_ID || null);
 
     const userPhone = isAuthenticated
         ? (((user as any)?.phone) || ((user as any)?.phone_number) || '')
         : '';
 
-    const lockedCurrency = currentSubscription?.currency as BillingCurrency | undefined;
-    const [billingCurrency, setBillingCurrency] = useState<BillingCurrency>(() =>
-        detectBillingCurrency({
-            phone: userPhone,
-            subscriptionCurrency: currentSubscription?.currency,
-        })
-    );
+    const {
+        plans,
+        billingCurrency,
+        setCurrency,
+        loading,
+        isLocked,
+        likelyIndian,
+        showCurrencyToggle,
+    } = useDualCurrencyPlans({
+        phone: userPhone,
+        subscriptionCurrency: currentSubscription?.currency,
+    });
 
-    useEffect(() => {
-        setBillingCurrency(detectBillingCurrency({
-            phone: userPhone,
-            subscriptionCurrency: currentSubscription?.currency,
-        }));
-    }, [userPhone, currentSubscription?.currency]);
-
-    useEffect(() => {
-        const controller = new AbortController();
-
-        const fetchPlans = async () => {
-            setFetchingPlans(true);
-            try {
-                const query = `?currency=${encodeURIComponent(billingCurrency)}`;
-                const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080/api/v1'}/plans${query}`,
-                    { signal: controller.signal, cache: 'no-store' }
-                );
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch plans: ${response.status}`);
-                }
-                const data = (await response.json()) as Plan[];
-                setPlans(data);
-            } catch (err) {
-                if ((err as Error).name !== 'AbortError') {
-                    console.error('Failed to fetch plans', err);
-                }
-            } finally {
-                if (!controller.signal.aborted) {
-                    setFetchingPlans(false);
-                }
-            }
-        };
-        void fetchPlans();
-        return () => controller.abort();
-    }, [billingCurrency]);
+    const lockedCurrency = isLocked ? (billingCurrency as BillingCurrency) : null;
 
     useEffect(() => {
         if (razorpayKeyId) {
@@ -101,12 +64,6 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
 
         void fetchBillingConfig();
     }, [razorpayKeyId]);
-
-    const handleCurrencyChange = (currency: BillingCurrency) => {
-        if (lockedCurrency) return;
-        setBillingCurrency(currency);
-        persistBillingCurrency(currency);
-    };
 
     const loadRazorpay = () => {
         return new Promise((resolve) => {
@@ -146,7 +103,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
         }
 
         try {
-            const checkoutCurrency = (lockedCurrency || billingCurrency) as BillingCurrency;
+            const checkoutCurrency = billingCurrency;
             const isUpgrade = currentSubscription
                 && currentSubscription.status === 'active'
                 && currentSubscription.currency === checkoutCurrency
@@ -238,33 +195,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
         }
     };
 
-    const currencyToggle = useMemo(() => (
-        <div className="flex flex-col items-center gap-3 mt-8">
-            <p className="text-xs uppercase tracking-widest text-gray-500">Billing currency</p>
-            <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1">
-                {SUPPORTED_CURRENCIES.map((currency) => (
-                    <button
-                        key={currency}
-                        type="button"
-                        disabled={!!lockedCurrency && lockedCurrency !== currency}
-                        onClick={() => handleCurrencyChange(currency)}
-                        className={`px-4 py-2 text-sm rounded-full transition-colors ${
-                            billingCurrency === currency
-                                ? 'bg-purple-500/20 text-purple-200'
-                                : 'text-gray-400 hover:text-white'
-                        } ${lockedCurrency && lockedCurrency !== currency ? 'opacity-40 cursor-not-allowed' : ''}`}
-                    >
-                        {currencyLabel(currency)}
-                    </button>
-                ))}
-            </div>
-            {lockedCurrency && (
-                <p className="text-xs text-gray-500">Currency locked to your active subscription ({lockedCurrency}).</p>
-            )}
-        </div>
-    ), [billingCurrency, lockedCurrency]);
-
-    if (fetchingPlans) {
+    if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
@@ -273,13 +204,18 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
         );
     }
 
-    const sortedPlans = [...plans].sort((a, b) => a.price - b.price);
-
     return (
         <>
-            {currencyToggle}
-            <div className={`grid grid-cols-1 ${sortedPlans.length === 2 ? 'md:grid-cols-2 max-w-4xl' : 'md:grid-cols-3 max-w-6xl'} gap-8 lg:gap-12 mx-auto px-4 mt-12`}>
-                {sortedPlans.map((plan, index) => {
+            {(showCurrencyToggle || lockedCurrency) && (
+                <BillingCurrencyToggle
+                    value={billingCurrency}
+                    onChange={setCurrency}
+                    likelyIndian={likelyIndian}
+                    lockedCurrency={lockedCurrency}
+                />
+            )}
+            <div className={`grid grid-cols-1 ${plans.length === 2 ? 'md:grid-cols-2 max-w-4xl' : 'md:grid-cols-3 max-w-6xl'} gap-8 lg:gap-12 mx-auto px-4 mt-12`}>
+                {plans.map((plan, index) => {
                     const isCurrent = currentSubscription && currentSubscription.status === 'active' && currentSubscription.planId === plan.planId;
                     const sameCurrency = !currentSubscription?.currency || currentSubscription.currency === billingCurrency;
                     const isUpgrade = currentSubscription && currentSubscription.status === 'active' && sameCurrency && plan.price > currentSubscription.amount;
@@ -296,7 +232,16 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
                         <PricingCardUI
                             key={plan.id}
                             name={plan.name}
-                            price={formatPlanPrice(plan.price, normalizeBillingCurrency(plan.currency) || billingCurrency)}
+                            price={
+                                <motion.span
+                                    key={`${plan.id}-${billingCurrency}`}
+                                    initial={{ opacity: 0, y: 6 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    {formatPlanPrice(plan.price, billingCurrency)}
+                                </motion.span>
+                            }
                             description={plan.description || "The perfect plan to accelerate your business with Automica AI"}
                             popular={isPopular}
                             index={index}

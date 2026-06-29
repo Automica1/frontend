@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 
 export interface PricingCardProps {
   name: string;
-  price: string;
+  price: React.ReactNode;
   description: string;
   features: string[];
   icon: React.ReactNode;
