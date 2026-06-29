@@ -327,7 +327,7 @@ class ApiService {
   // Subscription methods
   async getActivePlans(currency?: string): Promise<Plan[]> {
     const query = currency ? `?currency=${encodeURIComponent(currency)}` : '';
-    const response = await fetch(`${this.baseUrl}/plans${query}`);
+    const response = await fetch(`${this.baseUrl}/plans${query}`, { cache: 'no-store' });
     if (!response.ok) {
       throw new Error(`Failed to fetch plans: ${response.status}`);
     }

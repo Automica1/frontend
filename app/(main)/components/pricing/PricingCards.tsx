@@ -6,13 +6,14 @@ import { HoverBorderGradient } from '../ui/hover-border-gradient';
 import Link from 'next/link';
 import { PricingCardUI } from './PricingCardUI';
 import { useRouter } from 'next/navigation';
-import { apiService, Plan } from '../../lib/apiService';
+import { Plan } from '../../lib/apiService';
 import {
   BillingCurrency,
   SUPPORTED_CURRENCIES,
   currencyLabel,
   detectBillingCurrency,
   formatPlanPrice,
+  normalizeBillingCurrency,
   persistBillingCurrency,
 } from '../../lib/billingCurrency';
 
@@ -34,23 +35,32 @@ const getPlanIcon = (name: string) => {
 const PricingCards = () => {
   const router = useRouter();
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [billingCurrency, setBillingCurrency] = useState<BillingCurrency>('USD');
+  const [billingCurrency, setBillingCurrency] = useState<BillingCurrency>(() => detectBillingCurrency());
 
   useEffect(() => {
-    const currency = detectBillingCurrency();
-    setBillingCurrency(currency);
-  }, []);
+    const controller = new AbortController();
 
-  useEffect(() => {
     const loadPlans = async () => {
       try {
-        const data = await apiService.getActivePlans(billingCurrency);
+        const query = `?currency=${encodeURIComponent(billingCurrency)}`;
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080/api/v1'}/plans${query}`,
+          { signal: controller.signal, cache: 'no-store' }
+        );
+        if (!response.ok) {
+          throw new Error(`Failed to fetch plans: ${response.status}`);
+        }
+        const data = (await response.json()) as Plan[];
         setPlans(data);
       } catch (error) {
-        console.error('Failed to load pricing plans', error);
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Failed to load pricing plans', error);
+        }
       }
     };
+
     void loadPlans();
+    return () => controller.abort();
   }, [billingCurrency]);
 
   const handleCurrencyChange = (currency: BillingCurrency) => {
@@ -106,7 +116,7 @@ const PricingCards = () => {
               <PricingCardUI
                 key={plan.planId}
                 name={plan.name}
-                price={isEnterprise ? 'Custom' : `${formatPlanPrice(plan.price, billingCurrency)} / month`}
+                price={isEnterprise ? 'Custom' : `${formatPlanPrice(plan.price, normalizeBillingCurrency(plan.currency) || billingCurrency)} / month`}
                 description={plan.description || 'The perfect plan to accelerate your business with Automica AI'}
                 icon={getPlanIcon(plan.name)}
                 features={[

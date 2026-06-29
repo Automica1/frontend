@@ -9,6 +9,7 @@ import {
     currencyLabel,
     detectBillingCurrency,
     formatPlanPrice,
+    normalizeBillingCurrency,
     persistBillingCurrency,
 } from '../../lib/billingCurrency';
 
@@ -53,18 +54,33 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
     }, [userPhone, currentSubscription?.currency]);
 
     useEffect(() => {
+        const controller = new AbortController();
+
         const fetchPlans = async () => {
             setFetchingPlans(true);
             try {
-                const data = await apiService.getActivePlans(billingCurrency);
+                const query = `?currency=${encodeURIComponent(billingCurrency)}`;
+                const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080/api/v1'}/plans${query}`,
+                    { signal: controller.signal, cache: 'no-store' }
+                );
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch plans: ${response.status}`);
+                }
+                const data = (await response.json()) as Plan[];
                 setPlans(data);
             } catch (err) {
-                console.error('Failed to fetch plans', err);
+                if ((err as Error).name !== 'AbortError') {
+                    console.error('Failed to fetch plans', err);
+                }
             } finally {
-                setFetchingPlans(false);
+                if (!controller.signal.aborted) {
+                    setFetchingPlans(false);
+                }
             }
         };
         void fetchPlans();
+        return () => controller.abort();
     }, [billingCurrency]);
 
     useEffect(() => {
@@ -280,7 +296,7 @@ export default function PricingPlans({ onPaymentSuccess, currentSubscription }: 
                         <PricingCardUI
                             key={plan.id}
                             name={plan.name}
-                            price={formatPlanPrice(plan.price, billingCurrency)}
+                            price={formatPlanPrice(plan.price, normalizeBillingCurrency(plan.currency) || billingCurrency)}
                             description={plan.description || "The perfect plan to accelerate your business with Automica AI"}
                             popular={isPopular}
                             index={index}
