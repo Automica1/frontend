@@ -14,6 +14,7 @@ import {
   Search,
   ShieldCheck,
   RotateCcw,
+  Trash2,
   User,
   Package,
 } from 'lucide-react';
@@ -69,7 +70,19 @@ export default function AdminSubscriptionsPage() {
   const [selected, setSelected] = useState<AdminSubscription | null>(null);
   const [selectedLoading, setSelectedLoading] = useState(false);
   const [reconciling, setReconciling] = useState(false);
+  const [testResetEnabled, setTestResetEnabled] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState('');
   const subscriptionIdParam = searchParams?.get('subscriptionId');
+
+  useEffect(() => {
+    void apiService.getSubscriptionTestResetCapabilities().then((res) => {
+      setTestResetEnabled(!!res.enabled);
+    }).catch(() => {
+      setTestResetEnabled(false);
+    });
+  }, []);
 
   useEffect(() => {
     void loadData();
@@ -164,6 +177,32 @@ export default function AdminSubscriptionsPage() {
       });
     } finally {
       setReconciling(false);
+    }
+  };
+
+  const handleTestReset = async () => {
+    if (!selected || resetConfirmText !== 'RESET') return;
+
+    try {
+      setResetting(true);
+      const response = await apiService.resetSubscriptionForTesting(selected.subscriptionId, 'RESET');
+      toast({
+        tone: 'success',
+        title: 'Subscription reset for testing',
+        message: `Removed ${response.localRecordsDeleted} local record(s) and cancelled ${response.razorpayCancelled.length} Razorpay sub(s) for ${response.email}.`,
+      });
+      setResetConfirmOpen(false);
+      setResetConfirmText('');
+      setSelected(null);
+      await loadData();
+    } catch (err) {
+      toast({
+        tone: 'error',
+        title: 'Test reset failed',
+        message: err instanceof Error ? err.message : 'Please try again.',
+      });
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -433,6 +472,69 @@ export default function AdminSubscriptionsPage() {
                     <ExternalLink className="h-4 w-4 text-gray-300" />
                   </button>
                 </div>
+
+                {testResetEnabled && (
+                  <div className="mt-6 rounded-[24px] border border-amber-500/25 bg-amber-500/10 p-5">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-amber-100">Dev test reset</p>
+                        <p className="mt-1 text-xs leading-relaxed text-amber-100/80">
+                          Immediately cancels Razorpay test subscriptions, deletes all local billing records for this user,
+                          and clears stored billing currency so you can run a fresh checkout. Dev2 + Razorpay test mode only.
+                        </p>
+                      </div>
+                      <Trash2 className="h-5 w-5 shrink-0 text-amber-200" />
+                    </div>
+                    {!resetConfirmOpen ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResetConfirmOpen(true);
+                          setResetConfirmText('');
+                        }}
+                        className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-amber-400/30 bg-amber-500/20 px-4 py-2.5 text-sm font-semibold text-amber-50 transition-colors hover:bg-amber-500/30"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Reset for testing
+                      </button>
+                    ) : (
+                      <div className="mt-4 space-y-3">
+                        <p className="text-xs text-amber-100/90">
+                          Type <span className="font-mono font-semibold">RESET</span> to confirm. This cannot be undone.
+                        </p>
+                        <input
+                          type="text"
+                          value={resetConfirmText}
+                          onChange={(e) => setResetConfirmText(e.target.value)}
+                          placeholder="Type RESET"
+                          className="w-full rounded-xl border border-amber-400/30 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-amber-100/40"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setResetConfirmOpen(false);
+                              setResetConfirmText('');
+                            }}
+                            disabled={resetting}
+                            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-gray-300 hover:bg-white/10 disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleTestReset()}
+                            disabled={resetting || resetConfirmText !== 'RESET'}
+                            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/20 px-3 py-2 text-sm font-semibold text-red-100 hover:bg-red-500/30 disabled:opacity-50"
+                          >
+                            {resetting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                            Reset now
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

@@ -853,6 +853,29 @@ class ApiService {
     });
   }
 
+  async getSubscriptionTestResetCapabilities(): Promise<{ enabled: boolean; reason?: string }> {
+    return this.makeAuthenticatedRequest<{ enabled: boolean; reason?: string }>(
+      '/admin/subscriptions/test-reset/capabilities'
+    );
+  }
+
+  async resetSubscriptionForTesting(
+    subscriptionId: string,
+    confirm: 'RESET'
+  ): Promise<{
+    message: string;
+    userId: string;
+    email: string;
+    razorpayCancelled: string[];
+    localRecordsDeleted: number;
+    billingCurrencyCleared: boolean;
+  }> {
+    return this.makeAuthenticatedRequest(`/admin/subscriptions/${subscriptionId}/test-reset`, {
+      method: 'POST',
+      body: JSON.stringify({ confirm }),
+    });
+  }
+
   async getHealthStatus(): Promise<{ status: string; message: string }> {
     const healthUrl = this.baseUrl.replace(/\/api\/v1$/, '') + '/health';
     const response = await fetch(healthUrl);
