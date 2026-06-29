@@ -59,8 +59,10 @@ const validateFile = (file: File): { isValid: boolean; error?: string } => {
 
 export const FileUpload = ({
   onChange,
+  allowGuestAccess = false,
 }: {
   onChange?: (files: File[]) => void;
+  allowGuestAccess?: boolean;
 }) => {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
@@ -70,7 +72,8 @@ export const FileUpload = ({
   // Authentication with dynamic redirect
   const { isAuthenticated, user } = useKindeAuth();
   const router = useRouter();
-  const pathname = usePathname() ?? '/'; // Get current path for dynamic redirect
+  const pathname = usePathname() ?? '/';
+  const canUpload = isAuthenticated || allowGuestAccess;
 
   // Create dynamic redirect URL based on current path
   const getRedirectUrl = () => {
@@ -109,12 +112,10 @@ export const FileUpload = ({
 
   // Handle authentication check with dynamic redirect
   const handleAuthCheck = (): boolean => {
-    if (!isAuthenticated) {
-      const redirectUrl = getRedirectUrl();
-      router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}&prompt=login`);
-      return false;
-    }
-    return true;
+    if (canUpload) return true;
+    const redirectUrl = getRedirectUrl();
+    router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}&prompt=login`);
+    return false;
   };
 
   const handleFileChange = (newFiles: File[]) => {
@@ -183,7 +184,7 @@ export const FileUpload = ({
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    if (!isAuthenticated) return;
+    if (!canUpload) return;
     setIsDragActive(true);
   };
 
@@ -229,7 +230,7 @@ export const FileUpload = ({
       )}
 
       {/* Authentication required message */}
-      {!isAuthenticated && (
+      {!canUpload && (
         <div className="mb-4 p-3 bg-amber-900/50 border border-amber-700 rounded-lg">
           <p className="text-amber-300 text-sm flex items-center">
             <Lock className="h-4 w-4 mr-2" />
@@ -241,18 +242,18 @@ export const FileUpload = ({
       {/* Upload Area with GridPattern Background */}
       <div
         className={`flex-1 flex flex-col min-h-0 overflow-hidden ${
-          !isAuthenticated ? 'opacity-50 pointer-events-none' : ''
+          !canUpload ? 'opacity-50 pointer-events-none' : ''
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
         <motion.div
-          onClick={!hasFiles && isAuthenticated ? handleClick : isAuthenticated ? undefined : handleSignInClick}
-          whileHover={!hasFiles && isAuthenticated ? "animate" : undefined}
+          onClick={!hasFiles && canUpload ? handleClick : !canUpload ? handleSignInClick : undefined}
+          whileHover={!hasFiles && canUpload ? "animate" : undefined}
           className={`flex-1 flex flex-col p-4 sm:p-6 group/file block rounded-lg w-full relative overflow-hidden min-h-0 ${
-            !hasFiles && isAuthenticated ? 'cursor-pointer hover:shadow-2xl' : 
-            !isAuthenticated ? 'cursor-pointer' : ''
+            !hasFiles && canUpload ? 'cursor-pointer hover:shadow-2xl' : 
+            !canUpload ? 'cursor-pointer' : ''
           }`}
         >
           <input
@@ -274,15 +275,17 @@ export const FileUpload = ({
               <div className="flex flex-col items-center justify-center w-full max-w-xl mx-auto space-y-4">
                 <div className="text-center px-4">
                   <p className="relative z-20 font-sans font-bold text-neutral-300 text-sm sm:text-base">
-                    {isAuthenticated ? 'Upload file' : 'Sign in to upload file'}
+                    {canUpload ? 'Upload file' : 'Sign in to upload file'}
                   </p>
                   <p className="relative z-20 font-sans font-normal text-neutral-400 text-xs sm:text-base mt-2">
-                    {isAuthenticated 
-                      ? 'Drag or drop your files here or click to upload'
+                    {canUpload 
+                      ? allowGuestAccess && !isAuthenticated
+                        ? 'Drag or drop files here, then run your test'
+                        : 'Drag or drop your files here or click to upload'
                       : 'Please sign in to start uploading files'
                     }
                   </p>
-                  {isAuthenticated && (
+                  {canUpload && (
                     <p className="relative z-20 font-sans font-normal text-neutral-500 text-xs mt-1">
                       Supports PDF, JPEG, JPG, PNG (max 10MB)
                     </p>
@@ -300,7 +303,7 @@ export const FileUpload = ({
                     }}
                     className="relative group-hover/file:shadow-2xl z-40 bg-neutral-900 flex items-center justify-center h-24 w-24 sm:h-32 sm:w-32 rounded-md shadow-[0px_10px_50px_rgba(0,0,0,0.1)]"
                   >
-                    {!isAuthenticated ? (
+                    {!canUpload ? (
                       <Lock className="h-6 w-6 sm:h-8 sm:w-8 text-neutral-400" />
                     ) : isDragActive ? (
                       <motion.p
@@ -319,7 +322,7 @@ export const FileUpload = ({
                   <motion.div
                     variants={secondaryVariant}
                     className={`absolute opacity-0 border border-dashed ${
-                      isAuthenticated ? 'border-sky-400' : 'border-amber-400'
+                      canUpload ? 'border-sky-400' : 'border-amber-400'
                     } inset-0 z-30 bg-transparent flex items-center justify-center h-24 w-24 sm:h-32 sm:w-32 rounded-md`}
                   ></motion.div>
                 </div>
@@ -441,7 +444,7 @@ export const FileUpload = ({
       </div>
 
       {/* Upload different file button - matches the process button styling */}
-      {hasFiles && isAuthenticated && (
+      {hasFiles && canUpload && (
         <div className="flex-shrink-0 p-4 sm:p-6 pt-4">
           <motion.button
             initial={{ opacity: 0, y: 10 }}
@@ -456,7 +459,7 @@ export const FileUpload = ({
       )}
 
       {/* Login button when not authenticated - with dynamic redirect */}
-      {!isAuthenticated && (
+      {!canUpload && (
         <div className="flex-shrink-0 p-4 sm:p-6 pt-4">
           <motion.button
             initial={{ opacity: 0, y: 10 }}

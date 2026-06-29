@@ -1,7 +1,7 @@
 // app/services/[slug]/SolutionPageClient.tsx
 "use client";
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // Import icons that might be used
 import { 
@@ -29,6 +29,7 @@ import DocumentationComponent from '../../components/Service_Slug/DocumentationC
 import SolutionNavbar from '../../components/Service_Slug/SolutionNavbar';
 import ServicesSidebar from '../../components/Service_Slug/ServiceSidebar';
 import MobileSwipeIndicator from '../../components/Service_Slug/MobileSwipeIndicator';
+import { storeGuestPassKey } from '../../lib/guestPassStorage';
 
 interface SerializableSolution {
   title: string;
@@ -115,8 +116,28 @@ export default function SolutionPageClient({
   services,
   onServiceChange 
 }: SolutionPageClientProps) {
-  const [activeSection, setActiveSection] = useState<ActiveSection>('about');
+  const searchParams = useSearchParams();
+  const accessFromUrl = searchParams?.get('access')?.trim() ?? '';
+  const tabFromUrl = searchParams?.get('tab');
+  const initialSection: ActiveSection =
+    tabFromUrl === 'try-api' || accessFromUrl ? 'try-api' : 'about';
+
+  const [activeSection, setActiveSection] = useState<ActiveSection>(initialSection);
   const router = useRouter();
+
+  useEffect(() => {
+    if (accessFromUrl) {
+      storeGuestPassKey(accessFromUrl);
+      setActiveSection('try-api');
+
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
+      params.delete('access');
+      const query = params.toString();
+      router.replace(`/services/${solution.slug}${query ? `?${query}` : ''}`, { scroll: false });
+    } else if (tabFromUrl === 'try-api') {
+      setActiveSection('try-api');
+    }
+  }, [accessFromUrl, tabFromUrl, router, searchParams, solution.slug]);
 
   const handleServiceChange = (slug: string) => {
     console.log('Service clicked:', slug);
@@ -162,7 +183,7 @@ export default function SolutionPageClient({
       case 'about':
         return <AboutComponent solution={solutionWithIcon} onSectionChange={setActiveSection} />;
       case 'try-api':
-        return <TryAPIComponent solution={tryApiSolution} />;
+        return <TryAPIComponent solution={tryApiSolution} initialAccessCode={accessFromUrl || undefined} />;
       case 'documentation':
         return <DocumentationComponent solution={solutionWithIcon} />;
       default:

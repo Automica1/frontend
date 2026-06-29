@@ -1,6 +1,7 @@
 // x:\Web Dev\Automica\frontend\app\(main)\lib\apiService.ts
 import { ApiResponse, QRExtractResponse, SignatureVerificationResponse, FaceDetectionResponse, FaceVerificationResponse, IdCropResponse } from '../types/api';
 import { useCreditsStore } from '../stores/creditsStore';
+import { loadGuestPassKey, normalizeGuestPassKey } from './guestPassStorage';
 
 // Extended response types that include credits
 interface ApiResponseWithCredits extends ApiResponse {
@@ -88,6 +89,22 @@ interface CreateApiKeyResponse {
   keyPrefix: string;
   expiresAt: string;
   createdAt: string;
+}
+
+export interface GuestPassBalanceResponse {
+  message: string;
+  label: string;
+  remainingCredits: number;
+  allowedServices: string[];
+  serviceAllowed?: boolean;
+}
+
+export interface GuestPassValidateResponse {
+  message: string;
+  valid: boolean;
+  remainingCredits?: number;
+  allowedServices?: string[];
+  serviceAllowed?: boolean;
 }
 
 export interface Subscription {
@@ -182,6 +199,55 @@ class ApiService {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
+  async getGuestPassBalance(serviceSlug?: string): Promise<GuestPassBalanceResponse> {
+    const key = loadGuestPassKey();
+    if (!key) {
+      throw new Error('No guest access code saved');
+    }
+
+    const query = serviceSlug ? `?service=${encodeURIComponent(serviceSlug)}` : '';
+    const response = await fetch(`${this.baseUrl}/guest-passes/balance${query}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Guest-Pass': key,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Invalid guest access code');
+    }
+
+    const result = await response.json();
+    const { updateCredits } = useCreditsStore.getState();
+    if (typeof result.remainingCredits === 'number') {
+      updateCredits(result.remainingCredits);
+    }
+    return result;
+  }
+
+  async validateGuestPass(key: string, serviceSlug?: string): Promise<GuestPassValidateResponse> {
+    const normalized = normalizeGuestPassKey(key);
+    const response = await fetch(`${this.baseUrl}/guest-passes/validate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Guest-Pass': normalized,
+      },
+      body: JSON.stringify({
+        key: normalized,
+        serviceSlug,
+      }),
+    });
+
+    if (!response.ok) {
+      return { message: 'Validation failed', valid: false };
+    }
+
+    return response.json();
+  }
+
   async getPublicBillingConfig(): Promise<{
     razorpayKeyId?: string;
     supportedCurrencies?: string[];
@@ -224,7 +290,27 @@ class ApiService {
     const fullUrl = `${this.baseUrl}${endpoint}`;
 
     try {
-      const token = await this.getAuthToken();
+      const guestPass = loadGuestPassKey();
+      let authToken: string | null = null;
+
+      try {
+        authToken = await this.getAuthToken();
+      } catch (authError) {
+        if (!guestPass) {
+          throw authError;
+        }
+      }
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options.headers as Record<string, string> | undefined),
+      };
+
+      if (authToken) {
+        headers.Authorization = `Bearer ${authToken}`;
+      } else if (guestPass) {
+        headers['X-Guest-Pass'] = guestPass;
+      }
 
       // Log the request for debugging
       console.log(`Making request to: ${fullUrl}`);
@@ -232,11 +318,7 @@ class ApiService {
 
       const response = await fetch(fullUrl, {
         ...options,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers,
       });
 
       // Handle auth errors with retry

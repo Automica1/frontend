@@ -43,11 +43,13 @@ export const FileUpload2 = ({
   maxFiles = 2,
   className = "",
   compactPanel = false,
+  allowGuestAccess = false,
 }: {
   onChange?: (files: File[]) => void;
   maxFiles?: number;
   className?: string;
   compactPanel?: boolean;
+  allowGuestAccess?: boolean;
 }) => {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -58,7 +60,8 @@ export const FileUpload2 = ({
   // Authentication with dynamic redirect
   const { isAuthenticated, user } = useKindeAuth();
   const router = useRouter();
-  const pathname = usePathname() ?? '/'; // Get current path for dynamic redirect
+  const pathname = usePathname() ?? '/';
+  const canUpload = isAuthenticated || allowGuestAccess;
 
   // File validation constants
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
@@ -86,12 +89,10 @@ export const FileUpload2 = ({
 
   // Handle authentication check with dynamic redirect
   const handleAuthCheck = (): boolean => {
-    if (!isAuthenticated) {
-      const redirectUrl = getRedirectUrl();
-      router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}&prompt=login`);
-      return false;
-    }
-    return true;
+    if (canUpload) return true;
+    const redirectUrl = getRedirectUrl();
+    router.push(`/api/auth/login?post_login_redirect_url=${redirectUrl}&prompt=login`);
+    return false;
   };
 
   // Handle sign in click with dynamic redirect
@@ -230,7 +231,7 @@ export const FileUpload2 = ({
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    if (!isAuthenticated) return;
+    if (!canUpload) return;
     setIsDragActive(true);
   };
 
@@ -251,7 +252,7 @@ export const FileUpload2 = ({
     }
   };
 
-  const canAcceptMore = files.length < maxFiles && isAuthenticated;
+  const canAcceptMore = files.length < maxFiles && canUpload;
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -286,7 +287,7 @@ export const FileUpload2 = ({
       onDrop={handleDrop}
     >
       {/* Authentication required message */}
-      {!isAuthenticated && (
+      {!canUpload && (
         <div className="mb-4 p-3 bg-amber-900/50 border border-amber-700 rounded-lg">
           <p className="text-amber-300 text-sm flex items-center">
             <Lock className="h-4 w-4 mr-2" />
@@ -312,15 +313,15 @@ export const FileUpload2 = ({
 
       <div className={cn(
         "flex-1 flex flex-col min-h-0 overflow-hidden",
-        !isAuthenticated ? 'opacity-50' : ''
+        !canUpload ? 'opacity-50' : ''
       )}>
         <motion.div
-          onClick={files.length === 0 ? (isAuthenticated ? handleClick : handleSignInClick) : undefined}
+          onClick={files.length === 0 ? (canUpload ? handleClick : handleSignInClick) : undefined}
           whileHover={canAcceptMore ? "animate" : undefined}
           className={cn(
             "flex-1 flex flex-col p-6 group/file block rounded-lg w-full relative overflow-hidden min-h-0",
-            files.length === 0 && isAuthenticated ? "cursor-pointer hover:shadow-2xl" : 
-            files.length === 0 && !isAuthenticated ? "cursor-pointer" : ""
+            files.length === 0 && canUpload ? "cursor-pointer hover:shadow-2xl" : 
+            files.length === 0 && !canUpload ? "cursor-pointer" : ""
           )}
         >
           <input
@@ -345,11 +346,13 @@ export const FileUpload2 = ({
               <div className="flex flex-col items-center justify-center w-full max-w-xl mx-auto space-y-4">
                 <div className="text-center">
                   <p className="relative z-20 font-sans font-bold text-neutral-300 text-base">
-                    {isAuthenticated ? 'Upload Files' : 'Sign in to upload files'}
+                    {canUpload ? 'Upload Files' : 'Sign in to upload files'}
                   </p>
                   <p className="relative z-20 font-sans font-normal text-neutral-400 text-sm mt-2">
-                    {isAuthenticated 
-                      ? `Upload up to ${maxFiles} files (JPEG, JPG, PNG, PDF - Max 10MB each)`
+                    {canUpload 
+                      ? allowGuestAccess && !isAuthenticated
+                        ? `Upload up to ${maxFiles} files, then run your test`
+                        : `Upload up to ${maxFiles} files (JPEG, JPG, PNG, PDF - Max 10MB each)`
                       : 'Please sign in to start uploading files'
                     }
                   </p>
@@ -382,7 +385,7 @@ export const FileUpload2 = ({
                       emptyIconSize
                     )}
                   >
-                    {!isAuthenticated ? (
+                    {!canUpload ? (
                       <Lock className="h-8 w-8 text-neutral-400" />
                     ) : isDragActive && canAcceptMore ? (
                       <motion.p
@@ -403,7 +406,7 @@ export const FileUpload2 = ({
                     className={cn(
                       "absolute opacity-0 border border-dashed inset-0 z-30 bg-transparent flex items-center justify-center rounded-md",
                       emptyIconSize,
-                      isAuthenticated ? "border-sky-400" : "border-amber-400"
+                      canUpload ? "border-sky-400" : "border-amber-400"
                     )}
                   ></motion.div>
                 </div>
@@ -493,7 +496,7 @@ export const FileUpload2 = ({
                     </div>
 
                     {/* Upload area for second file */}
-                    {isAuthenticated && (
+                    {canUpload && (
                       <div className="flex-1 min-h-0">
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
@@ -598,7 +601,7 @@ export const FileUpload2 = ({
       </div>
 
       {/* Login button when not authenticated - with dynamic redirect */}
-      {!isAuthenticated && (
+      {!canUpload && (
         <div className="flex-shrink-0 p-4 pt-4">
           <motion.button
             initial={{ opacity: 0, y: 10 }}

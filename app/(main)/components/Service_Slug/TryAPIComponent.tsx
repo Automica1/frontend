@@ -11,6 +11,8 @@ import { FileUpload } from '../ui/file-upload';
 import { TabbedResponseSection } from '../TabbedResponse/index';
 import { ProcessingActionCard } from '../TabbedResponse/ProcessingActionCard';
 import { loadBetaKeyPrefs, storeBetaKeyPrefs } from '../../lib/betaKeyStorage';
+import { clearGuestPassKey, loadGuestPassKey, normalizeGuestPassKey, storeGuestPassKey } from '../../lib/guestPassStorage';
+import { getServiceRunCost } from '../../lib/serviceRunCosts';
 import BetaAccessPanel from './BetaAccessPanel';
 import TryAPISetupPanel from './TryAPISetupPanel';
 import BetaFeedbackPanel from './BetaFeedbackPanel';
@@ -25,14 +27,14 @@ import {
   saveBetaSessionCache,
 } from '../../lib/betaSessionCache';
 import { extractVerificationFromApiResponse } from '../../lib/betaFeedbackConfig';
-
-const BETA_RUN_COST = 2;
+import { useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs';
 
 interface TryAPIComponentProps {
   solution: Solution;
+  initialAccessCode?: string;
 }
 
-export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
+export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIComponentProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [hasStartedProcessing, setHasStartedProcessing] = useState(false);
   const [uploadKey, setUploadKey] = useState(0);
@@ -41,17 +43,73 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   const [pendingSession, setPendingSession] = useState<BetaFeedbackSessionSummary | null>(null);
   const [pendingThumbnails, setPendingThumbnails] = useState<string[]>([]);
   const [submitValidationError, setSubmitValidationError] = useState<string | null>(null);
+  const [guestValidating, setGuestValidating] = useState(false);
+  const [guestPassReady, setGuestPassReady] = useState(false);
+  const [guestServiceAllowed, setGuestServiceAllowed] = useState<boolean | null>(null);
+  const [guestValidationFailed, setGuestValidationFailed] = useState(false);
+  const { isAuthenticated } = useKindeBrowserClient();
   const solutionType = useSolutionType(solution);
   const currentApi = useSolutionApi(solutionType);
   const { credits, updateCredits } = useCredits();
+  const runCost = getServiceRunCost(solutionType);
 
   const serviceSlug = solution.slug || solutionType;
+
+  const validateGuestAccess = useCallback(async (code: string) => {
+    const trimmed = normalizeGuestPassKey(code);
+    if (!trimmed) {
+      setGuestValidationFailed(false);
+      setGuestServiceAllowed(null);
+      setGuestPassReady(false);
+      return;
+    }
+
+    setGuestValidating(true);
+    setGuestValidationFailed(false);
+    try {
+      const result = await apiService.validateGuestPass(trimmed, serviceSlug);
+      if (!result.valid) {
+        setGuestValidationFailed(true);
+        setGuestServiceAllowed(null);
+        setGuestPassReady(false);
+        return;
+      }
+      storeGuestPassKey(trimmed);
+      if (typeof result.remainingCredits === 'number') {
+        updateCredits(result.remainingCredits);
+      }
+      const allowed = result.serviceAllowed ?? true;
+      setGuestServiceAllowed(allowed);
+      setGuestPassReady(allowed);
+      setGuestValidationFailed(!allowed);
+    } catch {
+      setGuestValidationFailed(true);
+      setGuestServiceAllowed(null);
+      setGuestPassReady(false);
+    } finally {
+      setGuestValidating(false);
+    }
+  }, [serviceSlug, updateCredits]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      clearGuestPassKey();
+      setGuestPassReady(false);
+      setGuestServiceAllowed(null);
+      setGuestValidationFailed(false);
+      return;
+    }
+    const saved = initialAccessCode || loadGuestPassKey();
+    if (saved) {
+      void validateGuestAccess(saved);
+    }
+  }, [isAuthenticated, serviceSlug, initialAccessCode, validateGuestAccess]);
 
   useEffect(() => {
     const prefs = loadBetaKeyPrefs(serviceSlug);
     setBetaKey(prefs.key);
-    setBetaEnabled(prefs.enabled);
-  }, [serviceSlug]);
+    setBetaEnabled(isAuthenticated ? prefs.enabled : false);
+  }, [isAuthenticated, serviceSlug]);
 
   const handleBetaEnabledChange = (enabled: boolean) => {
     setBetaEnabled(enabled);
@@ -64,7 +122,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
   };
 
   const refreshPendingFeedback = useCallback(async () => {
-    if (!solution.hasBeta || !serviceSlug) return;
+    if (!isAuthenticated || !solution.hasBeta || !serviceSlug) return;
 
     try {
       const response = await apiService.getPendingBetaFeedback(serviceSlug);
@@ -84,7 +142,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     } catch (error) {
       console.error('Failed to load pending beta feedback:', error);
     }
-  }, [solution.hasBeta, serviceSlug]);
+  }, [isAuthenticated, solution.hasBeta, serviceSlug]);
 
   useEffect(() => {
     refreshPendingFeedback();
@@ -107,9 +165,14 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     }
   };
 
-  const insufficientCredits = credits !== null && credits < BETA_RUN_COST;
+  const insufficientCredits = credits !== null && credits < runCost;
+  const guestNeedsLink = !isAuthenticated && !guestPassReady && !guestValidating;
+  const guestCreditsPending = !isAuthenticated && guestPassReady && credits === null;
+  const guestBlocked = !isAuthenticated && guestServiceAllowed === false;
+  const submitBlocked =
+    guestNeedsLink || guestValidating || guestCreditsPending || guestBlocked || insufficientCredits;
   const canShowFeedback = Boolean(
-    solution.hasBeta && betaEnabled && pendingSession && pendingThumbnails.length > 0
+    isAuthenticated && solution.hasBeta && betaEnabled && pendingSession && pendingThumbnails.length > 0
   );
   const postRunShowFeedback = Boolean(canShowFeedback && !currentApi.loading);
 
@@ -157,10 +220,20 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
     ) : null;
 
   const submitBlockedMessage =
-    insufficientCredits && canShowFeedback && pendingSession
+    guestValidating
+      ? 'Checking access link…'
+      : guestNeedsLink
+      ? 'Sign in, or open the access link you were given.'
+      : guestValidationFailed && !guestBlocked
+      ? 'This access link is invalid or expired.'
+      : guestBlocked
+      ? 'This access link does not include this service.'
+      : insufficientCredits && canShowFeedback && pendingSession
       ? `Not enough credits to run again. Submit feedback to earn up to ${pendingSession.creditsCharged} credits back, or buy more credits.`
       : insufficientCredits
-        ? 'Not enough credits to run this test.'
+        ? !isAuthenticated
+          ? 'No credits remain on this access link.'
+          : 'Not enough credits to run this test.'
         : undefined;
 
   const handleFileUpload = (uploadedFiles: File[]) => {
@@ -185,7 +258,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
 
     if (insufficientCredits && canShowFeedback) {
       setSubmitValidationError(
-        `Not enough credits. Submit feedback to earn up to ${pendingSession?.creditsCharged ?? BETA_RUN_COST} credits back.`
+        `Not enough credits. Submit feedback to earn up to ${pendingSession?.creditsCharged ?? runCost} credits back.`
       );
       return;
     }
@@ -260,7 +333,7 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
           sessionId,
           thumbnails,
           capturedAt: new Date().toISOString(),
-          creditsCharged: BETA_RUN_COST,
+          creditsCharged: runCost,
         });
         await refreshPendingFeedback();
         setPendingThumbnails(thumbnails);
@@ -393,12 +466,12 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
       files={files}
       onSubmit={handleSubmit}
       loading={currentApi.loading}
-      submitBlocked={insufficientCredits}
+      submitBlocked={submitBlocked}
       submitBlockedMessage={submitBlockedMessage}
       validationMessage={submitValidationError ?? undefined}
       embedded={canShowFeedback}
       betaControls={
-        solution.hasBeta && solution.slug ? (
+        isAuthenticated && solution.hasBeta && solution.slug ? (
           <BetaAccessPanel
             enabled={betaEnabled}
             betaKey={betaKey}
@@ -422,9 +495,10 @@ export default function TryAPIComponent({ solution }: TryAPIComponentProps) {
                   key={uploadKey}
                   onChange={handleFileUpload}
                   compactPanel={solution.hasBeta}
+                  allowGuestAccess={guestPassReady}
                 />
               ) : (
-                <FileUpload key={uploadKey} onChange={handleFileUpload} />
+                <FileUpload key={uploadKey} onChange={handleFileUpload} allowGuestAccess={guestPassReady} />
               )}
             </div>
           </div>

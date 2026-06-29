@@ -80,6 +80,63 @@ interface BetaKeyRevokeResponse {
   id: string;
 }
 
+interface GuestPassInfo {
+  id: string;
+  keyPrefix: string;
+  walletUserId: string;
+  label: string;
+  description?: string;
+  initialCredits: number;
+  remainingCredits: number;
+  allowedServices: string[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt?: string;
+  revokedAt?: string;
+  isActive: boolean;
+  usageCount: number;
+  lastUsedAt?: string;
+}
+
+interface GuestPassCreateRequest {
+  label: string;
+  description?: string;
+  credits: number;
+  allowedServices?: string[];
+  expiresInDays?: number;
+}
+
+interface GuestPassCreateResponse {
+  message: string;
+  guestPassKey: string;
+  keyPrefix: string;
+  label: string;
+  initialCredits: number;
+  allowedServices: string[];
+  expiresAt?: string;
+  createdAt: string;
+}
+
+interface GuestPassListResponse {
+  message: string;
+  passes: GuestPassInfo[];
+  total: number;
+}
+
+interface GuestPassUpdateRequest {
+  label?: string;
+  description?: string;
+  allowedServices?: string[];
+  topUpCredits?: number;
+  expiresInDays?: number;
+}
+
+interface GuestPassRevokeResponse {
+  message: string;
+  id: string;
+}
+
 interface BetaFeedbackSessionInfo {
   id?: string;
   userId: string;
@@ -1216,6 +1273,34 @@ class ApiService {
     });
   }
 
+  async getSupportedGuestPassServices(): Promise<{ message: string; services: string[] }> {
+    return this.makeAuthenticatedRequest('/admin/guest-passes/services');
+  }
+
+  async listGuestPasses(): Promise<GuestPassListResponse> {
+    return this.makeAuthenticatedRequest<GuestPassListResponse>('/admin/guest-passes');
+  }
+
+  async createGuestPass(payload: GuestPassCreateRequest): Promise<GuestPassCreateResponse> {
+    return this.makeAuthenticatedRequest<GuestPassCreateResponse>('/admin/guest-passes', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateGuestPass(passId: string, payload: GuestPassUpdateRequest): Promise<{ message: string; pass: GuestPassInfo }> {
+    return this.makeAuthenticatedRequest(`/admin/guest-passes/${passId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async revokeGuestPass(passId: string): Promise<GuestPassRevokeResponse> {
+    return this.makeAuthenticatedRequest<GuestPassRevokeResponse>(`/admin/guest-passes/${passId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async listBetaFeedbackSessions(service?: string, limit = 50): Promise<BetaFeedbackSessionListResponse> {
     const params = new URLSearchParams();
     if (service) params.set('service', service);
@@ -1278,6 +1363,12 @@ export type {
   BetaKeyGenerateResponse,
   BetaKeyListResponse,
   BetaKeyRevokeResponse,
+  GuestPassInfo,
+  GuestPassCreateRequest,
+  GuestPassCreateResponse,
+  GuestPassListResponse,
+  GuestPassUpdateRequest,
+  GuestPassRevokeResponse,
   BetaFeedbackSessionInfo,
   BetaFeedbackSessionDetail,
   BetaFeedbackSessionDetailResponse,

@@ -3,6 +3,7 @@ import { useEffect, useCallback } from 'react';
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 import { apiService } from '../lib/apiService';
 import { subscriptionApi } from '../lib/subscriptionApi';
+import { loadGuestPassKey } from '../lib/guestPassStorage';
 import {
   useCreditsStore,
   useCredits as useCreditsValue,
@@ -11,7 +12,8 @@ import {
   useSetCreditsError,
   useUpdateCredits,
   useSubscription as useSubscriptionValue,
-  useSetSubscription
+  useSetSubscription,
+  useResetCredits
 } from '../stores/creditsStore';
 
 interface UseCreditsReturn {
@@ -26,20 +28,42 @@ interface UseCreditsReturn {
 export const useCredits = (): UseCreditsReturn => {
   const { isAuthenticated, isLoading: authLoading } = useKindeBrowserClient();
 
-  // Get values from Zustand store
   const credits = useCreditsValue();
   const subscription = useSubscriptionValue();
   const { loading, error } = useCreditsStore();
 
-  // Get individual actions
   const setCredits = useSetCredits();
   const setSubscription = useSetSubscription();
   const setLoading = useSetCreditsLoading();
   const setError = useSetCreditsError();
   const updateCredits = useUpdateCredits();
+  const resetCredits = useResetCredits();
 
   const fetchCredits = useCallback(async () => {
-    if (!isAuthenticated || authLoading) return;
+    if (authLoading) return;
+
+    if (!isAuthenticated) {
+      const guestKey = loadGuestPassKey();
+      if (!guestKey) {
+        resetCredits();
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        const balance = await apiService.getGuestPassBalance();
+        setCredits(balance.remainingCredits, 'guest_pass');
+        setSubscription(null);
+      } catch (err) {
+        console.error('Failed to fetch guest pass balance:', err);
+        setError('Failed to load guest pass credits');
+        resetCredits();
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -58,13 +82,12 @@ export const useCredits = (): UseCreditsReturn => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, authLoading, setCredits, setSubscription, setLoading, setError]);
+  }, [isAuthenticated, authLoading, setCredits, setSubscription, setLoading, setError, resetCredits]);
 
   const refreshCredits = useCallback(async () => {
     await fetchCredits();
   }, [fetchCredits]);
 
-  // Fetch credits when user is authenticated
   useEffect(() => {
     fetchCredits();
   }, [fetchCredits]);
