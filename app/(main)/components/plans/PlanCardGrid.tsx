@@ -16,6 +16,7 @@ import {
 } from '../../lib/planPresentation';
 import { buildLoginPath } from '../../lib/authPaths';
 import { persistBillingCurrency } from '../../lib/billingCurrency';
+import { useKindeAuth } from '@kinde-oss/kinde-auth-nextjs';
 
 export type PlanCardGridMode = 'marketing' | 'checkout';
 
@@ -41,6 +42,7 @@ export function PlanCardGrid({
   onDowngrade,
 }: PlanCardGridProps) {
   const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useKindeAuth();
   const highlightRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -54,9 +56,12 @@ export function PlanCardGrid({
       return;
     }
     persistBillingCurrency(billingCurrency, true);
-    router.push(
-      buildLoginPath(`/subscription?currency=${billingCurrency}&plan=${encodeURIComponent(plan.planId)}`)
-    );
+    const target = `/subscription?currency=${billingCurrency}&plan=${encodeURIComponent(plan.planId)}`;
+    if (!authLoading && isAuthenticated) {
+      router.push(target);
+      return;
+    }
+    router.push(buildLoginPath(target));
   };
 
   return (

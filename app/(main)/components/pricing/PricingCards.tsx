@@ -1,19 +1,13 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { HoverBorderGradient } from '../ui/hover-border-gradient';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useKindeAuth } from '@kinde-oss/kinde-auth-nextjs';
 import { useDualCurrencyPlans } from '../../hooks/useDualCurrencyPlans';
-import { persistBillingCurrency, type BillingCurrency } from '../../lib/billingCurrency';
 import { BillingCurrencyToggle } from '../subscription/BillingCurrencyToggle';
 import { PlanCardGrid } from '../plans/PlanCardGrid';
 
 const PricingCards = () => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { isAuthenticated, isLoading: authLoading } = useKindeAuth();
   const {
     plans,
     billingCurrency,
@@ -22,24 +16,6 @@ const PricingCards = () => {
     regionConfidence,
     showCurrencyToggle,
   } = useDualCurrencyPlans();
-
-  useEffect(() => {
-    if (authLoading || !isAuthenticated) return;
-
-    const currencyParam = searchParams.get('currency');
-    const currency: BillingCurrency =
-      currencyParam === 'INR' || currencyParam === 'USD' ? currencyParam : billingCurrency;
-    persistBillingCurrency(currency, true);
-    router.replace(`/subscription?currency=${currency}`);
-  }, [authLoading, isAuthenticated, billingCurrency, router, searchParams]);
-
-  if (!authLoading && isAuthenticated) {
-    return (
-      <div className="py-20 text-center text-gray-400 font-light">
-        Redirecting to your subscription…
-      </div>
-    );
-  }
 
   return (
     <div className="relative py-20 px-4">

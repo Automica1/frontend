@@ -44,14 +44,13 @@ export default function Navbar({ isAdmin, initialUser }: { isAdmin?: boolean; in
     return () => window.clearTimeout(timer);
   }, [isLoading, hasServerSession]);
 
-  // Option B: Pricing for guests; Billing (/subscription) for signed-in users.
+  const hasActiveSubscription = subscription?.status === 'active';
+
   const navLinks = [
     { href: '/services', label: 'Services' },
     { href: '/contact', label: 'Contact Us' },
     { href: '/about', label: 'About Us' },
-    isUserAuthenticated
-      ? { href: '/subscription', label: 'Billing' }
-      : { href: '/pricing', label: 'Pricing' },
+    { href: '/pricing', label: 'Pricing' },
   ];
 
   // Function to check if a link is active
@@ -314,11 +313,13 @@ export default function Navbar({ isAdmin, initialUser }: { isAdmin?: boolean; in
 
                   {/* Credits & Subscription Section */}
                   <div className="px-4 py-3 border-b border-white/10">
-                    {subscription && subscription.status === 'active' && (
+                    {hasActiveSubscription && (
                       <div className="flex items-center justify-between mb-3 bg-white/5 border border-white/10 rounded-lg p-2 transition-colors hover:bg-white/10">
                         <div className="flex items-center space-x-2">
                           <Star className="w-4 h-4 text-purple-400" />
-                          <span className="text-gray-200 text-sm font-medium">Pro Plan</span>
+                          <span className="text-gray-200 text-sm font-medium">
+                            {subscription?.planName || 'Active plan'}
+                          </span>
                         </div>
                         <span className="text-xs text-green-400/80 font-medium px-2 py-0.5 bg-white/5 rounded-full border border-white/10">Active</span>
                       </div>
@@ -350,12 +351,14 @@ export default function Navbar({ isAdmin, initialUser }: { isAdmin?: boolean; in
                     )}
                     {/* Subscription link in dropdown */}
                     <Link
-                      href="/subscription"
+                      href={hasActiveSubscription ? '/subscription' : '/pricing'}
                       onClick={() => setShowUserDropdown(false)}
                       className="flex items-center justify-center space-x-2 w-full px-3 py-2 bg-gradient-to-r from-green-500/20 to-green-600/20 border border-green-500/30 rounded-md text-green-300 hover:text-green-200 hover:from-green-500/30 hover:to-green-600/30 transition-all duration-200"
                     >
                       <Star className="w-3 h-3" />
-                      <span className="text-xs font-medium">Subscription</span>
+                      <span className="text-xs font-medium">
+                        {hasActiveSubscription ? 'Manage subscription' : 'View plans'}
+                      </span>
                     </Link>
                   </div>
 
@@ -396,10 +399,10 @@ export default function Navbar({ isAdmin, initialUser }: { isAdmin?: boolean; in
           {/* Mobile Credits Display (only when authenticated) */}
           {isUserAuthenticated && (
             <div className="flex items-center space-x-2">
-              {subscription && (subscription.status === 'active' || subscription.status === 'cancelled') && (
+              {hasActiveSubscription && (
                 <div
                   className="flex items-center px-2 py-1 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full transition-all duration-300"
-                  title="Pro Subscription Active"
+                  title="Subscription active"
                 >
                   <Star className="w-3.5 h-3.5 text-purple-400" />
                 </div>
@@ -503,9 +506,10 @@ export default function Navbar({ isAdmin, initialUser }: { isAdmin?: boolean; in
                           Admin
                         </div>
                       )}
-                      {subscription && (subscription.status === 'active' || subscription.status === 'cancelled') && (
+                      {hasActiveSubscription && (
                         <div className="inline-flex items-center ml-2 px-2 py-0.5 rounded-full text-xs font-medium bg-white/5 text-gray-200 border border-white/10 mt-1">
-                          <Star className="w-3 h-3 mr-1 text-purple-400" /> Pro
+                          <Star className="w-3 h-3 mr-1 text-purple-400" />
+                          {subscription?.planName || 'Subscribed'}
                         </div>
                       )}
                       {/* Mobile Credits in User Section */}
