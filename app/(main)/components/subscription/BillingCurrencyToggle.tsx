@@ -1,118 +1,56 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import {
   BillingCurrency,
-  BillingRegionConfidence,
   SUPPORTED_CURRENCIES,
-  currencyLabel,
-  currencyToggleHint,
 } from '../../lib/billingCurrency';
 
 type BillingCurrencyToggleProps = {
   value: BillingCurrency;
   onChange: (currency: BillingCurrency) => void;
-  regionConfidence?: BillingRegionConfidence;
-  lockedCurrency?: BillingCurrency | null;
+  compact?: boolean;
 };
 
-function CurrencyPillToggle({
-  value,
-  onChange,
-  regionConfidence,
-}: {
-  value: BillingCurrency;
-  onChange: (currency: BillingCurrency) => void;
-  regionConfidence: BillingRegionConfidence;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <p className="text-xs text-gray-500">{currencyToggleHint(regionConfidence, value)}</p>
-      <div
-        className="relative inline-grid grid-cols-2 rounded-full border border-white/10 bg-white/5 p-1"
-        role="group"
-        aria-label="Billing currency"
-      >
-        {SUPPORTED_CURRENCIES.map((currency) => {
-          const selected = value === currency;
-          return (
-            <button
-              key={currency}
-              type="button"
-              onClick={() => onChange(currency)}
-              className={`relative z-10 px-4 py-2 text-sm rounded-full transition-colors duration-200 ${
-                selected ? 'text-purple-100' : 'text-gray-400 hover:text-gray-200'
-              }`}
-              aria-pressed={selected}
-            >
-              {selected && (
-                <motion.span
-                  layoutId="billing-currency-pill"
-                  className="absolute inset-0 rounded-full bg-purple-500/25 border border-purple-400/20"
-                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                />
-              )}
-              <span className="relative">{currencyLabel(currency)}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+const LABELS: Record<BillingCurrency, string> = {
+  INR: '₹ INR',
+  USD: '$ USD',
+};
 
+/** Minimal INR / USD switcher — no hints or text-link fallbacks. */
 export function BillingCurrencyToggle({
   value,
   onChange,
-  regionConfidence = 'non_india',
-  lockedCurrency = null,
+  compact = true,
 }: BillingCurrencyToggleProps) {
-  if (lockedCurrency) {
-    return (
-      <p className="text-xs text-gray-500 text-center">
-        Billed in {currencyLabel(lockedCurrency)} — currency is locked to your subscription.
-      </p>
-    );
-  }
-
-  if (regionConfidence === 'ambiguous') {
-    return <CurrencyPillToggle value={value} onChange={onChange} regionConfidence={regionConfidence} />;
-  }
-
-  if (regionConfidence === 'india' && value === 'USD') {
-    return <CurrencyPillToggle value={value} onChange={onChange} regionConfidence={regionConfidence} />;
-  }
-
-  if (regionConfidence === 'non_india' && value === 'INR') {
-    return <CurrencyPillToggle value={value} onChange={onChange} regionConfidence={regionConfidence} />;
-  }
-
-  if (regionConfidence === 'india' && value === 'INR') {
-    return (
-      <div className="flex flex-col items-center gap-2">
-        <p className="text-xs text-gray-500">{currencyToggleHint('india', value)}</p>
-        <button
-          type="button"
-          onClick={() => onChange('USD')}
-          className="text-xs text-purple-300/80 hover:text-purple-200 underline-offset-4 hover:underline transition-colors"
-        >
-          Pay in USD instead
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col items-center gap-2">
-      <p className="text-xs text-gray-500">{currencyToggleHint('non_india', value)}</p>
-      <button
-        type="button"
-        onClick={() => onChange('INR')}
-        className="text-xs text-purple-300/80 hover:text-purple-200 underline-offset-4 hover:underline transition-colors"
-      >
-        Billing in India? Pay in INR
-      </button>
+    <div
+      className={`inline-flex rounded-full border border-white/10 bg-white/5 ${
+        compact ? 'p-0.5' : 'p-1'
+      }`}
+      role="group"
+      aria-label="Billing currency"
+    >
+      {SUPPORTED_CURRENCIES.map((currency) => {
+        const selected = value === currency;
+        return (
+          <button
+            key={currency}
+            type="button"
+            onClick={() => onChange(currency)}
+            className={`rounded-full font-medium transition-colors ${
+              compact ? 'px-3 py-1 text-xs' : 'px-4 py-1.5 text-sm'
+            } ${
+              selected
+                ? 'bg-white/10 text-white shadow-sm'
+                : 'text-gray-500 hover:text-gray-300'
+            }`}
+            aria-pressed={selected}
+          >
+            {LABELS[currency]}
+          </button>
+        );
+      })}
     </div>
   );
 }

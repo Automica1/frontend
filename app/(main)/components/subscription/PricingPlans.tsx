@@ -25,20 +25,17 @@ export default function PricingPlans({
   const {
     plans,
     billingCurrency,
+    checkoutCurrency,
     setCurrency,
     loading,
-    isLocked,
-    regionConfidence,
     showCurrencyToggle,
   } = useDualCurrencyPlans({
     phone: userPhone,
     subscriptionCurrency: currentSubscription?.currency,
   });
 
-  const lockedCurrency = isLocked ? billingCurrency : null;
-
   const { loadingPlanId, handleSubscribe, handleDowngrade } = usePlanCheckout({
-    billingCurrency,
+    billingCurrency: checkoutCurrency,
     currentSubscription,
     onPaymentSuccess,
     userPhone,
@@ -55,13 +52,13 @@ export default function PricingPlans({
 
   return (
     <>
-      {(showCurrencyToggle || lockedCurrency) && (
-        <BillingCurrencyToggle
-          value={billingCurrency}
-          onChange={setCurrency}
-          regionConfidence={regionConfidence}
-          lockedCurrency={lockedCurrency}
-        />
+      {showCurrencyToggle && (
+        <div className="flex justify-center mb-8">
+          <BillingCurrencyToggle
+            value={billingCurrency}
+            onChange={setCurrency}
+          />
+        </div>
       )}
       <PlanCardGrid
         mode="checkout"

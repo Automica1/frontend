@@ -13,7 +13,6 @@ const PricingCards = () => {
     billingCurrency,
     setCurrency,
     loading,
-    regionConfidence,
     showCurrencyToggle,
   } = useDualCurrencyPlans();
 
@@ -36,11 +35,10 @@ const PricingCards = () => {
           </p>
 
           {showCurrencyToggle && (
-            <div className="mt-8">
+            <div className="mt-8 flex justify-center">
               <BillingCurrencyToggle
                 value={billingCurrency}
                 onChange={setCurrency}
-                regionConfidence={regionConfidence}
               />
             </div>
           )}

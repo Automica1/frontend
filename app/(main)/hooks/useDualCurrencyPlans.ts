@@ -19,6 +19,10 @@ type UseDualCurrencyPlansOptions = {
   subscriptionCurrency?: string | null;
 };
 
+function canToggleWhileLocked(regionConfidence: BillingRegionConfidence): boolean {
+  return regionConfidence === 'india' || regionConfidence === 'ambiguous';
+}
+
 export function useDualCurrencyPlans(options: UseDualCurrencyPlansOptions = {}) {
   const searchParams = useSearchParams();
   const queryCurrency = searchParams?.get('currency') ?? null;
@@ -40,6 +44,10 @@ export function useDualCurrencyPlans(options: UseDualCurrencyPlansOptions = {}) 
     () => getBillingRegionConfidence({ phone: options.phone }),
     [options.phone]
   );
+
+  const showCurrencyToggle = !isLocked || canToggleWhileLocked(regionConfidence);
+  const checkoutCurrency: BillingCurrency =
+    (isLocked ? lockedCurrency : billingCurrency) ?? billingCurrency;
 
   useEffect(() => {
     setBillingCurrency(
@@ -78,28 +86,31 @@ export function useDualCurrencyPlans(options: UseDualCurrencyPlansOptions = {}) 
     };
   }, []);
 
-  const activeCurrency: BillingCurrency = (isLocked ? lockedCurrency : billingCurrency) ?? billingCurrency;
-
   const plans = useMemo(() => {
     const resolved = rawPlans
-      .map((plan) => resolvePlanForCurrency(plan, activeCurrency))
+      .map((plan) => resolvePlanForCurrency(plan, billingCurrency))
       .filter((plan): plan is Plan => plan !== null);
     return sortPlans(resolved);
-  }, [rawPlans, activeCurrency]);
+  }, [rawPlans, billingCurrency]);
 
   const setCurrency = (currency: BillingCurrency) => {
-    if (isLocked) return;
+    if (isLocked && !canToggleWhileLocked(regionConfidence)) {
+      return;
+    }
     setBillingCurrency(currency);
-    persistBillingCurrency(currency, true);
+    if (!isLocked) {
+      persistBillingCurrency(currency, true);
+    }
   };
 
   return {
     plans,
-    billingCurrency: activeCurrency,
+    billingCurrency,
+    checkoutCurrency,
     setCurrency,
     loading,
     isLocked,
     regionConfidence,
-    showCurrencyToggle: !isLocked,
+    showCurrencyToggle,
   };
 }
