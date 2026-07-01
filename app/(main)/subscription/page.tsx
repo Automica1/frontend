@@ -3,6 +3,7 @@
 
 import React, { Suspense, useEffect } from 'react';
 import Script from 'next/script';
+import { useSearchParams } from 'next/navigation';
 import { subscriptionApi } from '../lib/subscriptionApi';
 import { useCredits } from '../hooks/useCredits';
 import SubscriptionCard from '../components/subscription/SubscriptionCard';
@@ -13,6 +14,37 @@ import Link from 'next/link';
 import { Check, CreditCard, RefreshCw, Lock } from 'lucide-react';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-nextjs';
 import { buildLoginPath } from '../lib/authPaths';
+import { clearPendingCheckout } from '../lib/pendingCheckoutStorage';
+
+function PaymentStatusBanner() {
+    const searchParams = useSearchParams();
+    const status = searchParams?.get('payment');
+
+    if (!status || status === 'success') {
+        if (status === 'success') {
+            return (
+                <div className="mb-8 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-6 py-4 text-center text-emerald-100 text-sm">
+                    Payment successful. Your subscription and credits are updating now.
+                </div>
+            );
+        }
+        return null;
+    }
+
+    if (status === 'cancelled') {
+        return (
+            <div className="mb-8 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-6 py-4 text-center text-amber-100 text-sm">
+                Checkout was cancelled. You can choose a plan again whenever you are ready.
+            </div>
+        );
+    }
+
+    return (
+        <div className="mb-8 rounded-2xl border border-red-500/30 bg-red-500/10 px-6 py-4 text-center text-red-100 text-sm">
+            Payment could not be completed. Please try again or contact support if the issue persists.
+        </div>
+    );
+}
 
 export default function SubscriptionPage() {
     const { isAuthenticated, isLoading: authLoading } = useKindeAuth();
@@ -25,6 +57,9 @@ export default function SubscriptionPage() {
 
     useEffect(() => {
         const paymentStatus = new URLSearchParams(window.location.search).get('payment');
+        if (paymentStatus === 'success' || paymentStatus === 'cancelled' || paymentStatus === 'error') {
+            clearPendingCheckout();
+        }
         if (paymentStatus === 'success') {
             refreshCredits();
         }
@@ -72,6 +107,9 @@ export default function SubscriptionPage() {
             </div>
 
             <div className="relative z-10 max-w-7xl mx-auto">
+                <Suspense fallback={null}>
+                    <PaymentStatusBanner />
+                </Suspense>
                 {/* Header */}
                 <div className="text-center mb-12">
                     <div className="inline-block mb-4">

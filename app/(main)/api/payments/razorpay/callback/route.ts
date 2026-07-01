@@ -16,23 +16,23 @@ function buildRedirect(req: NextRequest, nextPath: string, params: Record<string
   return NextResponse.redirect(url, 303);
 }
 
-export async function POST(req: NextRequest) {
+async function handleCallback(req: NextRequest, formData: FormData) {
   const nextPath = req.nextUrl.searchParams.get('next') || '/subscription';
-
-  let formData: FormData;
-  try {
-    formData = await req.formData();
-  } catch {
-    return buildRedirect(req, nextPath, { payment: 'error', reason: 'invalid_callback' });
-  }
 
   const paymentId = readField(formData, 'razorpay_payment_id');
   const subscriptionId = readField(formData, 'razorpay_subscription_id');
   const orderId = readField(formData, 'razorpay_order_id');
   const signature = readField(formData, 'razorpay_signature');
+  const errorCode = readField(formData, 'error[code]') || readField(formData, 'error_code');
+  const errorDescription =
+    readField(formData, 'error[description]') || readField(formData, 'error_description');
+
+  if (errorCode || errorDescription) {
+    return buildRedirect(req, nextPath, { payment: 'cancelled' });
+  }
 
   if (!paymentId || !signature || (!subscriptionId && !orderId)) {
-    return buildRedirect(req, nextPath, { payment: 'error', reason: 'missing_fields' });
+    return buildRedirect(req, nextPath, { payment: 'cancelled' });
   }
 
   try {
@@ -71,4 +71,25 @@ export async function POST(req: NextRequest) {
     console.error('Razorpay callback failed', error);
     return buildRedirect(req, nextPath, { payment: 'error', reason: 'server_error' });
   }
+}
+
+export async function POST(req: NextRequest) {
+  let formData: FormData;
+  try {
+    formData = await req.formData();
+  } catch {
+    const nextPath = req.nextUrl.searchParams.get('next') || '/subscription';
+    return buildRedirect(req, nextPath, { payment: 'error', reason: 'invalid_callback' });
+  }
+
+  const response = await handleCallback(req, formData);
+  return response;
+}
+
+export async function GET(req: NextRequest) {
+  const nextPath = req.nextUrl.searchParams.get('next') || '/subscription';
+  const payment = req.nextUrl.searchParams.get('razorpay_payment_id')
+    ? 'success'
+    : 'cancelled';
+  return buildRedirect(req, nextPath, { payment });
 }

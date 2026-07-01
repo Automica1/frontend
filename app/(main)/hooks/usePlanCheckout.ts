@@ -6,12 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { apiService, Plan } from '../lib/apiService';
 import { BillingCurrency } from '../lib/billingCurrency';
 import { buildLoginPath } from '../lib/authPaths';
-import {
-  cleanupRazorpayModal,
-  closeActiveCheckout,
-  loadRazorpay,
-  openRazorpayCheckout,
-} from '../lib/razorpayCheckout';
+import { savePendingCheckout } from '../lib/pendingCheckoutStorage';
 
 export function usePlanCheckout(options: {
   billingCurrency: BillingCurrency;
@@ -21,25 +16,15 @@ export function usePlanCheckout(options: {
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated, user, isLoading: authLoading } = useKindeAuth();
+  const { isAuthenticated, isLoading: authLoading } = useKindeAuth();
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
-  const [razorpayKeyId, setRazorpayKeyId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchBillingConfig = async () => {
-      try {
-        const config = await apiService.getPublicBillingConfig();
-        if (config.razorpayKeyId) {
-          setRazorpayKeyId(config.razorpayKeyId);
-        }
-      } catch (err) {
-        console.error('Failed to load billing config', err);
-      }
-    };
-
-    void fetchBillingConfig();
-    void loadRazorpay();
-  }, []);
+    const paymentStatus = searchParams?.get('payment');
+    if (paymentStatus === 'success') {
+      options.onPaymentSuccess();
+    }
+  }, [options, searchParams]);
 
   const requireAuthRedirect = useCallback(
     (plan?: Plan) => {
@@ -78,88 +63,27 @@ export function usePlanCheckout(options: {
           : await apiService.createOrder(plan.planId, checkoutCurrency);
 
         const orderData = order as any;
-        const isSubscription = !isUpgrade && !!orderData.subscriptionId;
 
-        if (isSubscription && orderData.shortUrl) {
-          window.location.assign(orderData.shortUrl);
-          return;
-        }
+        savePendingCheckout({
+          subscriptionId: orderData.subscriptionId,
+          orderId: orderData.orderId,
+          shortUrl: orderData.shortUrl,
+          planId: plan.planId,
+          planName: plan.name,
+          currency: (order.currency as string) || checkoutCurrency,
+          amount: order.amount,
+          isUpgrade,
+        });
 
-        if (!razorpayKeyId) {
-          alert('Payment configuration is missing. Please contact support.');
-          setLoadingPlanId(null);
-          return;
-        }
-
-        const sdkReady = await loadRazorpay();
-        if (!sdkReady) {
-          alert('Razorpay SDK failed to load. Are you online?');
-          setLoadingPlanId(null);
-          return;
-        }
-
-        const dismissCheckout = () => {
-          closeActiveCheckout();
-          cleanupRazorpayModal();
-          setLoadingPlanId(null);
-        };
-
-        const callbackUrl = `${window.location.origin}/api/payments/razorpay/callback?next=${encodeURIComponent('/subscription')}`;
-
-        const paymentOptions: Record<string, any> = {
-          key: razorpayKeyId,
-          name: 'Automica',
-          description: `${isUpgrade ? 'Upgrade to' : ''} ${plan.name} — ${plan.credits.toLocaleString()} Credits/mo`,
-          theme: { color: '#8b5cf6' },
-          prefill: {
-            name: isAuthenticated ? ((user as any)?.given_name || (user as any)?.name || '') : '',
-            email: isAuthenticated ? ((user as any)?.email || '') : '',
-            contact: options.userPhone || '',
-          },
-          callback_url: callbackUrl,
-          redirect: true,
-          modal: {
-            ondismiss: dismissCheckout,
-            escape: true,
-          },
-          handler: async (response: any) => {
-            try {
-              if (isSubscription) {
-                await apiService.verifyPayment({
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_subscription_id: response.razorpay_subscription_id,
-                  razorpay_signature: response.razorpay_signature,
-                });
-              } else {
-                await apiService.verifyPayment({
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_signature: response.razorpay_signature,
-                });
-              }
-              options.onPaymentSuccess();
-            } catch (err) {
-              console.error('Payment verification failed', err);
-              alert('Payment verification failed. Please contact support.');
-            } finally {
-              dismissCheckout();
-            }
-          },
-        };
-
-        if (isSubscription) {
-          paymentOptions.subscription_id = orderData.subscriptionId;
-        } else {
-          paymentOptions.order_id = orderData.orderId;
-          paymentOptions.amount = order.amount;
-          paymentOptions.currency = order.currency;
-        }
-
-        const paymentObject = openRazorpayCheckout(paymentOptions);
-        paymentObject.on('payment.failed', dismissCheckout);
+        const params = new URLSearchParams({
+          plan: plan.planId,
+          currency: checkoutCurrency,
+        });
+        router.push(`/subscription/pay?${params.toString()}`);
       } catch (err) {
         console.error('Failed to process subscription', err);
         alert('Failed to initiate payment. Please try again.');
+      } finally {
         setLoadingPlanId(null);
       }
     },
@@ -168,9 +92,8 @@ export function usePlanCheckout(options: {
       isAuthenticated,
       loadingPlanId,
       options,
-      razorpayKeyId,
       requireAuthRedirect,
-      user,
+      router,
     ]
   );
 
@@ -208,6 +131,6 @@ export function usePlanCheckout(options: {
     loadingPlanId,
     handleSubscribe,
     handleDowngrade,
-    razorpayKeyId,
+    razorpayKeyId: null,
   };
 }

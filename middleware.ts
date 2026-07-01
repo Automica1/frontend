@@ -39,6 +39,7 @@ export default withAuth(
       "/services/[slug]", 
       "/pricing", 
       "/subscription",
+      "/subscription/pay",
       "/about", 
       "/contact", 
       "/blog", 
