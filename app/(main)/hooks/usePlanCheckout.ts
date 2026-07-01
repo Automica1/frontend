@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiService, Plan } from '../lib/apiService';
@@ -18,13 +18,6 @@ export function usePlanCheckout(options: {
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useKindeAuth();
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const paymentStatus = searchParams?.get('payment');
-    if (paymentStatus === 'success') {
-      options.onPaymentSuccess();
-    }
-  }, [options, searchParams]);
 
   const requireAuthRedirect = useCallback(
     (plan?: Plan) => {

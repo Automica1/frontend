@@ -1,10 +1,9 @@
 // app/(main)/subscription/page.tsx
 'use client';
 
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef } from 'react';
 import Script from 'next/script';
 import { useSearchParams } from 'next/navigation';
-import { subscriptionApi } from '../lib/subscriptionApi';
 import { useCredits } from '../hooks/useCredits';
 import SubscriptionCard from '../components/subscription/SubscriptionCard';
 import PricingPlans from '../components/subscription/PricingPlans';
@@ -46,45 +45,70 @@ function PaymentStatusBanner() {
     );
 }
 
-export default function SubscriptionPage() {
+function SubscriptionPageContent() {
+    const searchParams = useSearchParams();
     const { isAuthenticated, isLoading: authLoading } = useKindeAuth();
     const { credits, subscription, loading, refreshCredits } = useCredits();
+    const paymentHandledRef = useRef(false);
+    const paymentStatus = searchParams?.get('payment');
 
-    useEffect(() => {
-        // Always refresh credits and subscription when visiting this page
+    const handlePaymentSuccess = useCallback(() => {
+        refreshCredits();
+    }, [refreshCredits]);
+
+    const handleCancelled = useCallback(() => {
         refreshCredits();
     }, [refreshCredits]);
 
     useEffect(() => {
-        const paymentStatus = new URLSearchParams(window.location.search).get('payment');
+        if (!paymentStatus) {
+            return;
+        }
+
         if (paymentStatus === 'success' || paymentStatus === 'cancelled' || paymentStatus === 'error') {
             clearPendingCheckout();
         }
-        if (paymentStatus === 'success') {
-            refreshCredits();
-        }
 
-        const onVisible = () => {
-            if (document.visibilityState === 'visible') {
-                refreshCredits();
+        if (paymentStatus !== 'success' || paymentHandledRef.current) {
+            return;
+        }
+        paymentHandledRef.current = true;
+
+        let cancelled = false;
+        const pollDelaysMs = [0, 1500, 3000, 6000, 12000];
+
+        const poll = async () => {
+            for (const delay of pollDelaysMs) {
+                if (cancelled) return;
+                if (delay > 0) {
+                    await new Promise((resolve) => setTimeout(resolve, delay));
+                }
+                if (cancelled) return;
+                await refreshCredits();
             }
         };
 
-        window.addEventListener('focus', refreshCredits);
-        document.addEventListener('visibilitychange', onVisible);
+        void poll();
+
         return () => {
-            window.removeEventListener('focus', refreshCredits);
-            document.removeEventListener('visibilitychange', onVisible);
+            cancelled = true;
         };
-    }, [refreshCredits]);
+    }, [paymentStatus, refreshCredits]);
 
-    const handlePaymentSuccess = () => {
-        refreshCredits();
-    };
+    useEffect(() => {
+        if (paymentStatus !== 'success' || !subscription) {
+            return;
+        }
 
-    const handleCancelled = () => {
-        refreshCredits();
-    };
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has('payment')) {
+            return;
+        }
+        url.searchParams.delete('payment');
+        window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+    }, [paymentStatus, subscription]);
+
+    const isActivating = paymentStatus === 'success' && !subscription;
 
     return (
         <>
@@ -173,8 +197,12 @@ export default function SubscriptionPage() {
                     </div>
 
                     {/* Subscription Status Card */}
-                    {loading ? (
+                    {loading && !subscription ? (
                         <div className="h-40 bg-white/5 animate-pulse rounded-2xl" />
+                    ) : isActivating ? (
+                        <div className="bg-white/5 border border-emerald-500/20 rounded-2xl p-6 text-center flex items-center justify-center">
+                            <p className="text-emerald-100/90">Activating your subscription. This usually takes a few seconds.</p>
+                        </div>
                     ) : (
                         <SubscriptionCard subscription={subscription} onCancelled={handleCancelled} />
                     )}
@@ -278,5 +306,23 @@ export default function SubscriptionPage() {
             </div>
         </div>
         </>
+    );
+}
+
+function SubscriptionPageFallback() {
+    return (
+        <div className="min-h-screen pt-32 bg-[#0b0b0d] relative overflow-hidden p-4">
+            <div className="relative z-10 max-w-7xl mx-auto text-center">
+                <p className="text-gray-400 font-light">Loading subscription page...</p>
+            </div>
+        </div>
+    );
+}
+
+export default function SubscriptionPage() {
+    return (
+        <Suspense fallback={<SubscriptionPageFallback />}>
+            <SubscriptionPageContent />
+        </Suspense>
     );
 }

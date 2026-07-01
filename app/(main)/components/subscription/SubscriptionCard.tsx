@@ -44,10 +44,18 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
         }
     };
 
-    if (!subscription || subscription.status === 'created') {
+    if (!subscription) {
         return (
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center flex items-center justify-center">
                 <p className="text-gray-400">You don&apos;t have an active subscription.</p>
+            </div>
+        );
+    }
+
+    if (subscription.status === 'created') {
+        return (
+            <div className="bg-white/5 border border-emerald-500/20 rounded-2xl p-6 text-center flex items-center justify-center">
+                <p className="text-emerald-100/90">Payment received. Your subscription is activating.</p>
             </div>
         );
     }
