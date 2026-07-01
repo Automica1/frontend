@@ -2,19 +2,23 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useKindeAuth } from '@kinde-oss/kinde-auth-nextjs';
 import { HoverBorderGradient } from '../ui/hover-border-gradient';
-import { useDualCurrencyPlans } from '../../hooks/useDualCurrencyPlans';
-import { BillingCurrencyToggle } from '../subscription/BillingCurrencyToggle';
-import { PlanCardGrid } from '../plans/PlanCardGrid';
+import { PlanPickerSection } from '../plans/PlanPickerSection';
+import { useCredits } from '../../hooks/useCredits';
 
 const PricingCards = () => {
-  const {
-    plans,
-    billingCurrency,
-    setCurrency,
-    loading,
-    showCurrencyToggle,
-  } = useDualCurrencyPlans();
+  const { isAuthenticated, isLoading: authLoading } = useKindeAuth();
+  const { subscription, refreshCredits } = useCredits();
+
+  const hasActiveSubscription = subscription?.status === 'active';
+  const signedIn = !authLoading && isAuthenticated;
+
+  const subtitle = signedIn
+    ? hasActiveSubscription
+      ? 'Upgrade, downgrade, or manage your plan below — billing details are on your subscription page.'
+      : 'Choose a plan below to subscribe. You can manage billing anytime from your subscription page.'
+    : 'Compare plans below — sign in to subscribe and manage billing.';
 
   return (
     <div className="relative py-20 px-4">
@@ -31,24 +35,22 @@ const PricingCards = () => {
             Choose Your <span className="text-purple-400">Perfect Plan</span>
           </h2>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto font-light leading-relaxed">
-            Compare plans below — sign in to subscribe and manage billing on your account page
+            {subtitle}
           </p>
-
-          {showCurrencyToggle && (
-            <div className="mt-8 flex justify-center">
-              <BillingCurrencyToggle
-                value={billingCurrency}
-                onChange={setCurrency}
-              />
-            </div>
+          {signedIn && (
+            <p className="mt-4 text-sm text-purple-300/90">
+              <Link href="/subscription" className="underline hover:text-purple-200">
+                View balance &amp; cancel subscription
+              </Link>
+            </p>
           )}
         </div>
 
-        {loading ? (
-          <div className="py-12 text-center text-gray-400 font-light">Loading plans…</div>
-        ) : (
-          <PlanCardGrid mode="marketing" plans={plans} billingCurrency={billingCurrency} />
-        )}
+        <PlanPickerSection
+          currentSubscription={subscription}
+          onPaymentSuccess={refreshCredits}
+          loginReturnPath="/pricing"
+        />
 
         <div className="text-center mt-16">
           <p className="text-gray-400 mb-6 font-light">

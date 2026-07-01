@@ -27,6 +27,7 @@ type PlanCardGridProps = {
   highlightPlanId?: string | null;
   currentSubscription?: any;
   loadingPlanId?: string | null;
+  loginReturnPath?: string;
   onSubscribe?: (plan: Plan) => void;
   onDowngrade?: (plan: Plan) => void;
 };
@@ -38,6 +39,7 @@ export function PlanCardGrid({
   highlightPlanId,
   currentSubscription,
   loadingPlanId = null,
+  loginReturnPath = '/subscription',
   onSubscribe,
   onDowngrade,
 }: PlanCardGridProps) {
@@ -56,7 +58,7 @@ export function PlanCardGrid({
       return;
     }
     persistBillingCurrency(billingCurrency, true);
-    const target = `/subscription?currency=${billingCurrency}&plan=${encodeURIComponent(plan.planId)}`;
+    const target = `${loginReturnPath}?currency=${billingCurrency}&plan=${encodeURIComponent(plan.planId)}`;
     if (!authLoading && isAuthenticated) {
       router.push(target);
       return;
