@@ -1,4 +1,3 @@
-import { getKindeServerSession } from '@kinde-oss/kinde-auth-nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080/api/v1';
@@ -16,16 +15,41 @@ function buildRedirect(req: NextRequest, nextPath: string, params: Record<string
   return NextResponse.redirect(url, 303);
 }
 
-async function handleCallback(req: NextRequest, formData: FormData) {
+async function parseCallbackFields(req: NextRequest): Promise<Record<string, string>> {
+  const contentType = req.headers.get('content-type') || '';
+
+  if (contentType.includes('application/x-www-form-urlencoded')) {
+    const text = await req.text();
+    const params = new URLSearchParams(text);
+    const fields: Record<string, string> = {};
+    params.forEach((value, key) => {
+      fields[key] = value;
+    });
+    return fields;
+  }
+
+  const formData = await req.formData();
+  return {
+    razorpay_payment_id: readField(formData, 'razorpay_payment_id'),
+    razorpay_subscription_id: readField(formData, 'razorpay_subscription_id'),
+    razorpay_order_id: readField(formData, 'razorpay_order_id'),
+    razorpay_signature: readField(formData, 'razorpay_signature'),
+    'error[code]': readField(formData, 'error[code]'),
+    'error[description]': readField(formData, 'error[description]'),
+    error_code: readField(formData, 'error_code'),
+    error_description: readField(formData, 'error_description'),
+  };
+}
+
+async function handleCallback(req: NextRequest, fields: Record<string, string>) {
   const nextPath = req.nextUrl.searchParams.get('next') || '/subscription';
 
-  const paymentId = readField(formData, 'razorpay_payment_id');
-  const subscriptionId = readField(formData, 'razorpay_subscription_id');
-  const orderId = readField(formData, 'razorpay_order_id');
-  const signature = readField(formData, 'razorpay_signature');
-  const errorCode = readField(formData, 'error[code]') || readField(formData, 'error_code');
-  const errorDescription =
-    readField(formData, 'error[description]') || readField(formData, 'error_description');
+  const paymentId = fields.razorpay_payment_id || '';
+  const subscriptionId = fields.razorpay_subscription_id || '';
+  const orderId = fields.razorpay_order_id || '';
+  const signature = fields.razorpay_signature || '';
+  const errorCode = fields['error[code]'] || fields.error_code || '';
+  const errorDescription = fields['error[description]'] || fields.error_description || '';
 
   if (errorCode || errorDescription) {
     return buildRedirect(req, nextPath, { payment: 'cancelled' });
@@ -36,34 +60,29 @@ async function handleCallback(req: NextRequest, formData: FormData) {
   }
 
   try {
-    const { getAccessTokenRaw } = getKindeServerSession();
-    const accessToken = await getAccessTokenRaw();
-    if (!accessToken) {
-      return buildRedirect(req, nextPath, { payment: 'error', reason: 'unauthenticated' });
-    }
-
-    const verifyBody: Record<string, string> = {
+    const body = new URLSearchParams({
       razorpay_payment_id: paymentId,
       razorpay_signature: signature,
-    };
+    });
     if (subscriptionId) {
-      verifyBody.razorpay_subscription_id = subscriptionId;
+      body.set('razorpay_subscription_id', subscriptionId);
     }
     if (orderId) {
-      verifyBody.razorpay_order_id = orderId;
+      body.set('razorpay_order_id', orderId);
     }
 
-    const verifyRes = await fetch(`${BACKEND_URL}/subscription/verify-payment`, {
+    const verifyRes = await fetch(`${BACKEND_URL}/subscription/razorpay/verify-callback`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify(verifyBody),
+      body: body.toString(),
     });
 
     if (!verifyRes.ok) {
-      return buildRedirect(req, nextPath, { payment: 'error', reason: 'verification_failed' });
+      const reason = verifyRes.status === 400 ? 'invalid_signature' : 'verification_failed';
+      console.error('Razorpay verify callback failed', verifyRes.status, await verifyRes.text());
+      return buildRedirect(req, nextPath, { payment: 'error', reason });
     }
 
     return buildRedirect(req, nextPath, { payment: 'success' });
@@ -74,22 +93,33 @@ async function handleCallback(req: NextRequest, formData: FormData) {
 }
 
 export async function POST(req: NextRequest) {
-  let formData: FormData;
   try {
-    formData = await req.formData();
-  } catch {
+    const fields = await parseCallbackFields(req);
+    return await handleCallback(req, fields);
+  } catch (error) {
+    console.error('Razorpay callback parse failed', error);
     const nextPath = req.nextUrl.searchParams.get('next') || '/subscription';
     return buildRedirect(req, nextPath, { payment: 'error', reason: 'invalid_callback' });
   }
-
-  const response = await handleCallback(req, formData);
-  return response;
 }
 
 export async function GET(req: NextRequest) {
   const nextPath = req.nextUrl.searchParams.get('next') || '/subscription';
-  const payment = req.nextUrl.searchParams.get('razorpay_payment_id')
-    ? 'success'
-    : 'cancelled';
-  return buildRedirect(req, nextPath, { payment });
+  const params = req.nextUrl.searchParams;
+  const fields = {
+    razorpay_payment_id: params.get('razorpay_payment_id') || '',
+    razorpay_subscription_id: params.get('razorpay_subscription_id') || '',
+    razorpay_order_id: params.get('razorpay_order_id') || '',
+    razorpay_signature: params.get('razorpay_signature') || '',
+    'error[code]': params.get('error[code]') || '',
+    'error[description]': params.get('error[description]') || '',
+    error_code: '',
+    error_description: '',
+  };
+
+  if (!fields.razorpay_payment_id) {
+    return buildRedirect(req, nextPath, { payment: 'cancelled' });
+  }
+
+  return handleCallback(req, fields);
 }
