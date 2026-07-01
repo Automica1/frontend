@@ -36,6 +36,14 @@ const loadRazorpay = (): Promise<boolean> => {
   });
 };
 
+const cleanupRazorpayModal = () => {
+  if (typeof document === 'undefined') return;
+  document.querySelectorAll('.razorpay-container, .razorpay-backdrop').forEach((node) => node.remove());
+  document.body.style.overflow = '';
+};
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export function usePlanCheckout(options: {
   billingCurrency: BillingCurrency;
   currentSubscription?: any;
@@ -123,9 +131,11 @@ export function usePlanCheckout(options: {
           },
           modal: {
             ondismiss: () => {
+              cleanupRazorpayModal();
               setLoadingPlanId(null);
-              document.querySelectorAll('.razorpay-container').forEach((node) => node.remove());
             },
+            confirm_close: true,
+            escape: true,
           },
           handler: async (response: any) => {
             try {
@@ -161,7 +171,12 @@ export function usePlanCheckout(options: {
         }
 
         const paymentObject = new (window as any).Razorpay(paymentOptions);
-        paymentObject.on('payment.failed', () => setLoadingPlanId(null));
+        paymentObject.on('payment.failed', () => {
+          cleanupRazorpayModal();
+          setLoadingPlanId(null);
+        });
+        cleanupRazorpayModal();
+        await wait(150);
         paymentObject.open();
       } catch (err) {
         console.error('Failed to process subscription', err);
