@@ -4,12 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiService, Plan } from '../lib/apiService';
-import { BillingCurrency, formatCheckoutAmount } from '../lib/billingCurrency';
+import { BillingCurrency } from '../lib/billingCurrency';
 import { buildLoginPath } from '../lib/authPaths';
 
-const loadRazorpay = () => {
-  return new Promise<boolean>((resolve) => {
-    if ((window as any).Razorpay) {
+const loadRazorpay = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined' && (window as any).Razorpay) {
       resolve(true);
       return;
     }
@@ -17,13 +17,20 @@ const loadRazorpay = () => {
     const existingScript = document.querySelector<HTMLScriptElement>(
       'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
     );
+
     if (existingScript) {
-      existingScript.remove();
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+      existingScript.addEventListener('load', () => resolve(Boolean((window as any).Razorpay)), { once: true });
+      existingScript.addEventListener('error', () => resolve(false), { once: true });
+      return;
     }
 
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve(true);
+    script.onload = () => resolve(Boolean((window as any).Razorpay));
     script.onerror = () => resolve(false);
     document.body.appendChild(script);
   });
@@ -79,7 +86,7 @@ export function usePlanCheckout(options: {
       }
 
       setLoadingPlanId(plan.planId);
-      document.querySelectorAll('.razorpay-container').forEach((node) => node.remove());
+
       const sdkReady = await loadRazorpay();
 
       if (!sdkReady) {
@@ -101,17 +108,6 @@ export function usePlanCheckout(options: {
           ? await apiService.createUpgradeOrder(plan.planId)
           : await apiService.createOrder(plan.planId, checkoutCurrency);
 
-        const confirmed = window.confirm(
-          `You will be charged ${formatCheckoutAmount(
-            order.amount,
-            (order.currency as BillingCurrency) || checkoutCurrency
-          )}. Continue to secure checkout?`
-        );
-        if (!confirmed) {
-          setLoadingPlanId(null);
-          return;
-        }
-
         const orderData = order as any;
         const isSubscription = !isUpgrade && !!orderData.subscriptionId;
 
@@ -126,7 +122,10 @@ export function usePlanCheckout(options: {
             contact: options.userPhone || '',
           },
           modal: {
-            ondismiss: () => setLoadingPlanId(null),
+            ondismiss: () => {
+              setLoadingPlanId(null);
+              document.querySelectorAll('.razorpay-container').forEach((node) => node.remove());
+            },
           },
           handler: async (response: any) => {
             try {
@@ -162,7 +161,7 @@ export function usePlanCheckout(options: {
         }
 
         const paymentObject = new (window as any).Razorpay(paymentOptions);
-        setLoadingPlanId(null);
+        paymentObject.on('payment.failed', () => setLoadingPlanId(null));
         paymentObject.open();
       } catch (err) {
         console.error('Failed to process subscription', err);

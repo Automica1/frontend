@@ -31,11 +31,15 @@ export default function PricingPlans({
     showCurrencyToggle,
   } = useDualCurrencyPlans({
     phone: userPhone,
-    subscriptionCurrency: currentSubscription?.currency,
+    subscriptionCurrency:
+      currentSubscription?.status === 'active' ? currentSubscription?.currency : null,
   });
 
+  const checkoutBillingCurrency =
+    currentSubscription?.status === 'active' ? checkoutCurrency : billingCurrency;
+
   const { loadingPlanId, handleSubscribe, handleDowngrade } = usePlanCheckout({
-    billingCurrency: checkoutCurrency,
+    billingCurrency: checkoutBillingCurrency,
     currentSubscription,
     onPaymentSuccess,
     userPhone,
