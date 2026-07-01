@@ -13,6 +13,7 @@ import {
   getPlanIcon,
   isContactSalesPlan,
   isPopularPlan,
+  resolvePlanCardState,
 } from '../../lib/planPresentation';
 import { buildLoginPath } from '../../lib/authPaths';
 import { persistBillingCurrency } from '../../lib/billingCurrency';
@@ -75,22 +76,11 @@ export function PlanCardGrid({
       {plans.map((plan, index) => {
         const isContactSales = isContactSalesPlan(plan);
         const isHighlighted = highlightPlanId === plan.planId;
-        const isCurrent =
-          currentSubscription &&
-          currentSubscription.status === 'active' &&
-          currentSubscription.planId === plan.planId;
-        const sameCurrency =
-          !currentSubscription?.currency || currentSubscription.currency === billingCurrency;
-        const isUpgrade =
-          currentSubscription &&
-          currentSubscription.status === 'active' &&
-          sameCurrency &&
-          plan.price > currentSubscription.amount;
-        const isDowngrade =
-          currentSubscription &&
-          currentSubscription.status === 'active' &&
-          sameCurrency &&
-          plan.price < currentSubscription.amount;
+        const { isCurrent, isUpgrade, isDowngrade } = resolvePlanCardState(
+          plan,
+          currentSubscription,
+          billingCurrency
+        );
 
         const priceLabel = isContactSales
           ? 'Custom'

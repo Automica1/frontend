@@ -27,6 +27,7 @@ interface Props {
 
 export default function SubscriptionCard({ subscription, onCancelled }: Props) {
     const [cancelling, setCancelling] = useState(false);
+    const [resuming, setResuming] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [error, setError] = useState('');
 
@@ -41,6 +42,19 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
             setError(err?.message || 'Failed to cancel subscription. Please try again.');
         } finally {
             setCancelling(false);
+        }
+    };
+
+    const handleResume = async () => {
+        setResuming(true);
+        setError('');
+        try {
+            await subscriptionApi.resumeSubscription();
+            onCancelled?.();
+        } catch (err: any) {
+            setError(err?.message || 'Failed to resume subscription. Please try again.');
+        } finally {
+            setResuming(false);
         }
     };
 
@@ -168,9 +182,18 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                 )}
 
                 {isCancellationScheduled && (
-                    <p className="text-xs text-amber-300/80 text-center mt-2">
-                        Cancellation is scheduled. You keep access until {expiryDate}, then the subscription stops renewing.
-                    </p>
+                    <div className="space-y-3">
+                        <p className="text-xs text-amber-300/80 text-center">
+                            Cancellation is scheduled. You keep access until {expiryDate}, then the subscription stops renewing.
+                        </p>
+                        <button
+                            onClick={handleResume}
+                            disabled={resuming}
+                            className="w-full py-2 text-sm text-emerald-300 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/10 transition-all duration-200 disabled:opacity-50"
+                        >
+                            {resuming ? 'Resuming...' : 'Resume Subscription'}
+                        </button>
+                    </div>
                 )}
 
                 {isCancelled && (

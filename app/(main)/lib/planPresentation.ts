@@ -56,6 +56,40 @@ export function getCheckoutCtaLabel(
   return 'Choose Plan';
 }
 
+export type PlanCardState = {
+  isCurrent: boolean;
+  isUpgrade: boolean;
+  isDowngrade: boolean;
+};
+
+export function resolvePlanCardState(
+  plan: { planId: string; price: number },
+  currentSubscription?: {
+    status: string;
+    planId: string;
+    amount: number;
+    currency?: string;
+  } | null,
+  billingCurrency?: string
+): PlanCardState {
+  const isCurrent = Boolean(
+    currentSubscription?.status === 'active' && currentSubscription.planId === plan.planId
+  );
+  const sameCurrency =
+    !currentSubscription?.currency || currentSubscription.currency === billingCurrency;
+  const isUpgrade = Boolean(
+    currentSubscription?.status === 'active' &&
+      sameCurrency &&
+      plan.price > (currentSubscription?.amount ?? 0)
+  );
+  const isDowngrade = Boolean(
+    currentSubscription?.status === 'active' &&
+      sameCurrency &&
+      plan.price < (currentSubscription?.amount ?? 0)
+  );
+  return { isCurrent, isUpgrade, isDowngrade };
+}
+
 export function sortPlans(plans: Plan[]): Plan[] {
   return [...plans].sort((a, b) => {
     const orderA = a.displayOrder ?? 0;
