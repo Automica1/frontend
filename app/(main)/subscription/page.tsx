@@ -23,6 +23,26 @@ export default function SubscriptionPage() {
         refreshCredits();
     }, [refreshCredits]);
 
+    useEffect(() => {
+        const paymentStatus = new URLSearchParams(window.location.search).get('payment');
+        if (paymentStatus === 'success') {
+            refreshCredits();
+        }
+
+        const onVisible = () => {
+            if (document.visibilityState === 'visible') {
+                refreshCredits();
+            }
+        };
+
+        window.addEventListener('focus', refreshCredits);
+        document.addEventListener('visibilitychange', onVisible);
+        return () => {
+            window.removeEventListener('focus', refreshCredits);
+            document.removeEventListener('visibilitychange', onVisible);
+        };
+    }, [refreshCredits]);
+
     const handlePaymentSuccess = () => {
         refreshCredits();
     };

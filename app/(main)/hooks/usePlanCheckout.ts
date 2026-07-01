@@ -58,24 +58,11 @@ export function usePlanCheckout(options: {
         return;
       }
 
-      if (!razorpayKeyId) {
-        alert('Payment configuration is missing. Please contact support.');
-        return;
-      }
-
       if (loadingPlanId) {
         return;
       }
 
       setLoadingPlanId(plan.planId);
-
-      const sdkReady = await loadRazorpay();
-
-      if (!sdkReady) {
-        alert('Razorpay SDK failed to load. Are you online?');
-        setLoadingPlanId(null);
-        return;
-      }
 
       try {
         const checkoutCurrency = options.billingCurrency;
@@ -93,11 +80,31 @@ export function usePlanCheckout(options: {
         const orderData = order as any;
         const isSubscription = !isUpgrade && !!orderData.subscriptionId;
 
+        if (isSubscription && orderData.shortUrl) {
+          window.location.assign(orderData.shortUrl);
+          return;
+        }
+
+        if (!razorpayKeyId) {
+          alert('Payment configuration is missing. Please contact support.');
+          setLoadingPlanId(null);
+          return;
+        }
+
+        const sdkReady = await loadRazorpay();
+        if (!sdkReady) {
+          alert('Razorpay SDK failed to load. Are you online?');
+          setLoadingPlanId(null);
+          return;
+        }
+
         const dismissCheckout = () => {
           closeActiveCheckout();
           cleanupRazorpayModal();
           setLoadingPlanId(null);
         };
+
+        const callbackUrl = `${window.location.origin}/api/payments/razorpay/callback?next=${encodeURIComponent('/subscription')}`;
 
         const paymentOptions: Record<string, any> = {
           key: razorpayKeyId,
@@ -109,6 +116,8 @@ export function usePlanCheckout(options: {
             email: isAuthenticated ? ((user as any)?.email || '') : '',
             contact: options.userPhone || '',
           },
+          callback_url: callbackUrl,
+          redirect: true,
           modal: {
             ondismiss: dismissCheckout,
             escape: true,

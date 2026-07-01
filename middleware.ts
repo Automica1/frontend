@@ -49,6 +49,7 @@ export default withAuth(
       "/terms-of-service", 
       "/security",
       "/unauthorized",
+      "/api/payments/razorpay/callback",
       "/sitemap.xml",
       "/robots.txt",
     ],
