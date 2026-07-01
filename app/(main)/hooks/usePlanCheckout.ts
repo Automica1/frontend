@@ -6,43 +6,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { apiService, Plan } from '../lib/apiService';
 import { BillingCurrency } from '../lib/billingCurrency';
 import { buildLoginPath } from '../lib/authPaths';
-
-const loadRazorpay = (): Promise<boolean> => {
-  return new Promise((resolve) => {
-    if (typeof window !== 'undefined' && (window as any).Razorpay) {
-      resolve(true);
-      return;
-    }
-
-    const existingScript = document.querySelector<HTMLScriptElement>(
-      'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
-    );
-
-    if (existingScript) {
-      if ((window as any).Razorpay) {
-        resolve(true);
-        return;
-      }
-      existingScript.addEventListener('load', () => resolve(Boolean((window as any).Razorpay)), { once: true });
-      existingScript.addEventListener('error', () => resolve(false), { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve(Boolean((window as any).Razorpay));
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-};
-
-const cleanupRazorpayModal = () => {
-  if (typeof document === 'undefined') return;
-  document.querySelectorAll('.razorpay-container, .razorpay-backdrop').forEach((node) => node.remove());
-  document.body.style.overflow = '';
-};
-
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+import {
+  cleanupRazorpayModal,
+  closeActiveCheckout,
+  loadRazorpay,
+  openRazorpayCheckout,
+} from '../lib/razorpayCheckout';
 
 export function usePlanCheckout(options: {
   billingCurrency: BillingCurrency;
@@ -69,6 +38,7 @@ export function usePlanCheckout(options: {
     };
 
     void fetchBillingConfig();
+    void loadRazorpay();
   }, []);
 
   const requireAuthRedirect = useCallback(
@@ -90,6 +60,10 @@ export function usePlanCheckout(options: {
 
       if (!razorpayKeyId) {
         alert('Payment configuration is missing. Please contact support.');
+        return;
+      }
+
+      if (loadingPlanId) {
         return;
       }
 
@@ -119,6 +93,12 @@ export function usePlanCheckout(options: {
         const orderData = order as any;
         const isSubscription = !isUpgrade && !!orderData.subscriptionId;
 
+        const dismissCheckout = () => {
+          closeActiveCheckout();
+          cleanupRazorpayModal();
+          setLoadingPlanId(null);
+        };
+
         const paymentOptions: Record<string, any> = {
           key: razorpayKeyId,
           name: 'Automica',
@@ -130,11 +110,7 @@ export function usePlanCheckout(options: {
             contact: options.userPhone || '',
           },
           modal: {
-            ondismiss: () => {
-              cleanupRazorpayModal();
-              setLoadingPlanId(null);
-            },
-            confirm_close: true,
+            ondismiss: dismissCheckout,
             escape: true,
           },
           handler: async (response: any) => {
@@ -157,7 +133,7 @@ export function usePlanCheckout(options: {
               console.error('Payment verification failed', err);
               alert('Payment verification failed. Please contact support.');
             } finally {
-              setLoadingPlanId(null);
+              dismissCheckout();
             }
           },
         };
@@ -170,14 +146,8 @@ export function usePlanCheckout(options: {
           paymentOptions.currency = order.currency;
         }
 
-        const paymentObject = new (window as any).Razorpay(paymentOptions);
-        paymentObject.on('payment.failed', () => {
-          cleanupRazorpayModal();
-          setLoadingPlanId(null);
-        });
-        cleanupRazorpayModal();
-        await wait(150);
-        paymentObject.open();
+        const paymentObject = openRazorpayCheckout(paymentOptions);
+        paymentObject.on('payment.failed', dismissCheckout);
       } catch (err) {
         console.error('Failed to process subscription', err);
         alert('Failed to initiate payment. Please try again.');
@@ -187,6 +157,7 @@ export function usePlanCheckout(options: {
     [
       authLoading,
       isAuthenticated,
+      loadingPlanId,
       options,
       razorpayKeyId,
       requireAuthRedirect,

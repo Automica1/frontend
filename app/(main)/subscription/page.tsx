@@ -2,6 +2,7 @@
 'use client';
 
 import React, { Suspense, useEffect } from 'react';
+import Script from 'next/script';
 import { subscriptionApi } from '../lib/subscriptionApi';
 import { useCredits } from '../hooks/useCredits';
 import SubscriptionCard from '../components/subscription/SubscriptionCard';
@@ -31,6 +32,11 @@ export default function SubscriptionPage() {
     };
 
     return (
+        <>
+        <Script
+            src="https://checkout.razorpay.com/v1/checkout.js"
+            strategy="afterInteractive"
+        />
         <div className="min-h-screen pt-32 bg-[#0b0b0d] relative overflow-hidden p-4">
             {/* Background gradients from Hero */}
             <div className="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-black to-black pointer-events-none z-0"></div>
@@ -213,5 +219,6 @@ export default function SubscriptionPage() {
                 </div>
             </div>
         </div>
+        </>
     );
 }
