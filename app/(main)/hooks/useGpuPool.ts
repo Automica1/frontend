@@ -11,10 +11,40 @@ export function deriveGpuCeremonyMode(
   opts?: { poolWasProvisioning?: boolean }
 ): GpuStartMode {
   if (status.state === 'ready') return 'warm_ready';
+  if (status.state === 'draining' && status.drainReason === 'user_grace') return 'warm_ready';
   if (status.state === 'provisioning') {
     if (opts?.poolWasProvisioning || status.refCount > 1) return 'warm_join';
   }
   return 'cold';
+}
+
+export function canStartGpuSession(input: {
+  available: boolean;
+  loading: boolean;
+  userActive: boolean;
+  isDraining: boolean;
+  isUserGraceDraining: boolean;
+  hasEnoughCreditsToStart: boolean;
+  state?: GPUPoolStatus['state'];
+  refCount?: number;
+  hasStatus: boolean;
+}): boolean {
+  const canJoinPoolBoot =
+    input.state === 'provisioning' && (input.refCount ?? 0) > 0 && !input.userActive;
+
+  return (
+    input.available &&
+    !input.loading &&
+    !input.userActive &&
+    (!input.isDraining || input.isUserGraceDraining) &&
+    input.hasEnoughCreditsToStart &&
+    (input.state === 'idle' ||
+      input.state === 'failed' ||
+      input.state === 'ready' ||
+      input.isUserGraceDraining ||
+      canJoinPoolBoot ||
+      !input.hasStatus)
+  );
 }
 
 interface UseGpuPoolOptions {
@@ -77,8 +107,10 @@ export function useGpuPool({ serviceTag, available, creditBalance = null, refres
     if (!serviceTag) return null;
     const poolWasProvisioning =
       status?.state === 'provisioning' && (status?.refCount ?? 0) > 0 && !status?.userActive;
+    const isGraceReuse =
+      status?.state === 'draining' && status?.drainReason === 'user_grace';
     const optimisticMode: GpuStartMode | null =
-      status?.state === 'ready'
+      status?.state === 'ready' || isGraceReuse
         ? 'warm_ready'
         : poolWasProvisioning || (status?.state === 'provisioning' && (status?.refCount ?? 0) > 0)
           ? 'warm_join'
@@ -156,20 +188,17 @@ export function useGpuPool({ serviceTag, available, creditBalance = null, refres
   const hasEnoughCreditsToStart =
     creditBalance === null || creditBalance === undefined || creditBalance >= minCreditsToStart;
 
-  const canJoinPoolBoot =
-    isStarting && (status?.refCount ?? 0) > 0 && !userActive;
-
-  const canStart =
-    available &&
-    !loading &&
-    !userActive &&
-    (!isDraining || isUserGraceDraining) &&
-    hasEnoughCreditsToStart &&
-    (status?.state === 'idle' ||
-      status?.state === 'failed' ||
-      status?.state === 'ready' ||
-      canJoinPoolBoot ||
-      !status);
+  const canStart = canStartGpuSession({
+    available,
+    loading,
+    userActive,
+    isDraining,
+    isUserGraceDraining,
+    hasEnoughCreditsToStart,
+    state: status?.state,
+    refCount: status?.refCount,
+    hasStatus: Boolean(status),
+  });
 
   const canStop = available && !loading && userActive;
 

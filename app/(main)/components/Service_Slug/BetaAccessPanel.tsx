@@ -12,8 +12,6 @@ interface BetaAccessPanelProps {
   keyResolving?: boolean;
   keyResolveError?: string | null;
   gpuPanel?: React.ReactNode;
-  /** Omit long pricing paragraph when GPU panel is shown nearby. */
-  hideCreditsExplainer?: boolean;
 }
 
 export default function BetaAccessPanel({
@@ -25,7 +23,6 @@ export default function BetaAccessPanel({
   keyResolving = false,
   keyResolveError = null,
   gpuPanel = null,
-  hideCreditsExplainer = false,
 }: BetaAccessPanelProps) {
   const [open, setOpen] = useState(variant === 'embedded');
 
@@ -79,13 +76,6 @@ export default function BetaAccessPanel({
 
         {enabled && (
           <>
-            {!hideCreditsExplainer && (
-              <p className="text-xs text-gray-500 pl-11">
-                Need 30 credits to start (20 charged when you start). Then 2 credits/min while the session is
-                active and 2 credits per comparison. Submit feedback to earn comparison credits back (up to 50 per
-                30 days). GPU session time is not refunded.
-              </p>
-            )}
             <input
               type="password"
               value={betaKey}
@@ -121,13 +111,6 @@ export default function BetaAccessPanel({
 
       {enabled && (
         <>
-          {!hideCreditsExplainer && (
-            <p className="text-[10px] text-gray-500 leading-snug">
-              Need 30 credits to start (20 charged when you start). Then 2 credits/min while the session is active
-              and 2 credits per comparison. Submit feedback to earn comparison credits back (up to 50 per 30 days).
-              GPU session time is not refunded.
-            </p>
-          )}
           <input
             type="password"
             value={betaKey}

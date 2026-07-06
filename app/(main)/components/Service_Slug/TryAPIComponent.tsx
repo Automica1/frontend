@@ -483,7 +483,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
     gracePeriodSec: gpuPool.gracePeriodSec,
   };
 
-  const gpuPanel = needsGpu ? <GpuPoolPanel {...gpuPanelProps} hidePricingStrip /> : null;
+  const gpuPanel = needsGpu ? <GpuPoolPanel {...gpuPanelProps} /> : null;
   const gpuPanelCompact = needsGpu ? <GpuPoolPanel {...gpuPanelProps} compact /> : null;
 
   const setupCard = (
@@ -511,7 +511,6 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
             keyResolving={betaResolve.loading}
             keyResolveError={betaResolve.error}
             gpuPanel={gpuPanel}
-            hideCreditsExplainer={Boolean(gpuPanel)}
           />
         ) : undefined
       }

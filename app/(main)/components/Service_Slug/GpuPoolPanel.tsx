@@ -8,7 +8,7 @@ import type { GpuCeremonyStep, GpuStartMode } from '../../hooks/useGpuStartCerem
 import type { CeremonyStepView } from '../../hooks/gpuCeremonyState';
 import { formatCeremonyElapsed } from '../../hooks/gpuCeremonyState';
 import GpuCeremonyStepper from './GpuCeremonyStepper';
-import { isPriorProvisionFailed, sharedPoolJoinMode, poolPanelHeadline, poolPanelDetailLine } from './gpuPoolPanelCopy';
+import { isPriorProvisionFailed, sharedPoolJoinMode, poolPanelHeadline, poolPanelDetailLine, GPU_BETA_PRICING_HINT } from './gpuPoolPanelCopy';
 
 interface GpuPoolPanelProps {
   status: GPUPoolStatus | null;
@@ -32,7 +32,6 @@ interface GpuPoolPanelProps {
   canRunTests?: boolean;
   isAdmin?: boolean;
   compact?: boolean;
-  hidePricingStrip?: boolean;
   minCreditsToStart?: number;
   startupCredits?: number;
   creditsPerMinute?: number;
@@ -60,6 +59,7 @@ function headline(
   copyInput?: {
     sessionEndReason?: string | null;
     refCount?: number;
+    drainReason?: GPUPoolStatus['drainReason'];
   }
 ): string {
   return poolPanelHeadline({
@@ -96,7 +96,6 @@ export default function GpuPoolPanel({
   canRunTests = false,
   isAdmin = false,
   compact = false,
-  hidePricingStrip = false,
   minCreditsToStart = 30,
   startupCredits = 20,
   creditsPerMinute = 2,
@@ -171,6 +170,7 @@ export default function GpuPoolPanel({
     sessionEndReason,
     state: status?.state,
     refCount: status?.refCount,
+    drainReason,
   };
   const sharedJoin = sharedPoolJoinMode(copyInput);
   const priorProvisionFailed = isPriorProvisionFailed(copyInput);
@@ -224,7 +224,9 @@ export default function GpuPoolPanel({
         ? ceremonySubline
         : ceremonyComplete && userActive
           ? 'Compare below when you are ready. Stop session when finished.'
-          : isDraining
+          : isDraining && drainReason === 'user_grace'
+            ? 'Start session again to keep this GPU running.'
+            : isDraining
             ? 'GPU shutdown scheduled.'
             : showUserFailure
               ? 'Please try Start session again in a few minutes.'
@@ -241,11 +243,8 @@ export default function GpuPoolPanel({
 
   return (
     <div className={`rounded-lg border px-3 py-2 text-sm ${compact ? '' : 'mb-0'} ${borderClass} ${textClass}`}>
-      {!hidePricingStrip && !compact && (
-        <p className="mb-2 text-xs opacity-75">
-          {startupCredits} credits when you start · then {creditsPerMinute}/min while active ·{' '}
-          {comparisonCost} per comparison · need {minCreditsToStart} credits to start
-        </p>
+      {!compact && (
+        <p className="mb-2 text-xs opacity-75">{GPU_BETA_PRICING_HINT}</p>
       )}
 
       <div className="space-y-2">
@@ -261,7 +260,7 @@ export default function GpuPoolPanel({
                   ceremonyComplete,
                   showUserFailure && userActive,
                   isResume,
-                  { sessionEndReason, refCount: status?.refCount }
+                  { sessionEndReason, refCount: status?.refCount, drainReason }
                 )}
               </p>
               {showStaleInsufficientCredits ? (

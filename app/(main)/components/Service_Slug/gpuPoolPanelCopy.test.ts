@@ -42,6 +42,16 @@ describe('gpuPoolPanelCopy', () => {
     expect(poolPanelDetailLine(input)).toBeNull();
   });
 
+  it('shows standby headline during user-grace drain', () => {
+    expect(
+      poolPanelHeadline({
+        userActive: false,
+        state: 'draining',
+        drainReason: 'user_grace',
+      })
+    ).toBe('GPU on standby');
+  });
+
   it('shows refund copy only when pool is failed after provision_failed', () => {
     const input = {
       userActive: false,

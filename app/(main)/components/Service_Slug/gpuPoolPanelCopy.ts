@@ -1,10 +1,15 @@
 import type { GPUPoolStatus } from '../../lib/apiService';
 
+/** Shown only after a GPU beta key is validated (GpuPoolPanel visible). */
+export const GPU_BETA_PRICING_HINT =
+  '30 to start (20 upfront) · 2/min active · 2/compare · feedback refunds compares, not GPU time';
+
 export type GpuPoolPanelCopyInput = {
   userActive: boolean;
   sessionEndReason?: string | null;
   state?: GPUPoolStatus['state'];
   refCount?: number;
+  drainReason?: GPUPoolStatus['drainReason'];
 };
 
 /** Internal: pool is live with another session; used to suppress stale errors, not for user-facing copy. */
@@ -67,7 +72,9 @@ export function poolPanelHeadline(
   if (inCeremony) return 'Starting GPU session…';
   if (state === 'ready' && userActive && ceremonyComplete) return 'AI Ready';
   if (userActive && !ceremonyComplete) return 'Starting GPU session…';
-  if (state === 'draining') return 'Ending GPU session…';
+  if (state === 'draining') {
+    return input.drainReason === 'user_grace' ? 'GPU on standby' : 'Ending GPU session…';
+  }
   if (showActiveFailure) return 'Could not start GPU session';
   if (userActive) return 'GPU session active';
   return 'GPU session';
