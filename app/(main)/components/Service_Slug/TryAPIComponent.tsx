@@ -33,6 +33,7 @@ import { useGpuPool } from '../../hooks/useGpuPool';
 import { useBetaKeyResolve } from '../../hooks/useBetaKeyResolve';
 import { useGpuStartCeremony } from '../../hooks/useGpuStartCeremony';
 import { sharedPoolJoinMode } from './gpuPoolPanelCopy';
+import { getExtraResourceCopy } from '../../lib/extraResourceCopy';
 
 interface TryAPIComponentProps {
   solution: Solution;
@@ -73,6 +74,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
       betaResolve.result?.valid &&
       betaResolve.result.requiresGpuPool
   );
+  const resourceCopy = getExtraResourceCopy();
 
   const gpuServiceTag = needsGpu ? (betaResolve.result?.betaServiceTag ?? '') : '';
 
@@ -286,9 +288,9 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
               !gpuPool.status)
           ? undefined
         : needsGpu && !gpuPool.userActive
-          ? 'Start a GPU session first, then compare below.'
+          ? resourceCopy.compareGate
         : needsGpu && !gpuPool.isReady
-          ? gpuPool.error ?? 'Starting GPU session…'
+          ? gpuPool.error ?? resourceCopy.startingSession
         : undefined;
 
   const handleFileUpload = (uploadedFiles: File[]) => {
@@ -324,7 +326,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
     }
 
     if (needsGpu && !gpuReadyForCompare) {
-      setSubmitValidationError('Start a GPU session first, then compare.');
+      setSubmitValidationError(resourceCopy.compareGateShort);
       return;
     }
 
@@ -482,6 +484,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
     destroyAt: gpuPool.destroyAt,
     gracePeriodSec: gpuPool.gracePeriodSec,
     reconnectEligible: gpuPool.reconnectEligible,
+    reconnectUntil: gpuPool.reconnectUntil,
   };
 
   const gpuPanel = needsGpu ? <GpuPoolPanel {...gpuPanelProps} /> : null;

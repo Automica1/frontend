@@ -1,10 +1,14 @@
+import { getExtraResourceCopy } from '../lib/extraResourceCopy';
+
 export type GpuStartMode = 'cold' | 'warm_join' | 'warm_ready' | 'resume';
 export type GpuCeremonyStep = 0 | 1 | 2 | 3 | 4 | 5;
 export type CeremonyStepState = 'pending' | 'active' | 'done';
 
+const resourceCopy = getExtraResourceCopy();
+
 export const STEP_LABELS = [
   'Requesting session',
-  'Allocating GPU',
+  resourceCopy.allocateStep,
   'Preparing environment',
   'Starting AI',
   'AI Ready',

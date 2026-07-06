@@ -2,6 +2,7 @@
 import React from 'react';
 import { Send, FileImage, Users, QrCode, UserCheck, Crop, Shield } from 'lucide-react';
 import { Solution, SolutionType } from '../../types/solution';
+import { getExtraResourceCopy } from '../../lib/extraResourceCopy';
 
 interface ProcessingActionCardProps {
   solution: Solution;
@@ -82,7 +83,7 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
         : files.length >= 1;
 
     if (gpuSessionPending && filesReady) {
-      return 'Start GPU session above, then compare';
+      return getExtraResourceCopy().compareGatePending;
     }
 
     if (solutionType === 'signature-verification') {

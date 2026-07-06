@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiService, type GPUPoolStatus } from '../lib/apiService';
 import type { GpuStartMode } from './gpuCeremonyState';
+import { getExtraResourceCopy } from '../lib/extraResourceCopy';
 
 const POLL_MS = 4000;
 
@@ -110,7 +111,7 @@ export function useGpuPool({ serviceTag, available, creditBalance = null, refres
       void refreshCredits?.();
       return next;
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load GPU session status';
+      const message = err instanceof Error ? err.message : getExtraResourceCopy().failedLoadStatus;
       setError(message);
       return null;
     }
@@ -148,7 +149,7 @@ export function useGpuPool({ serviceTag, available, creditBalance = null, refres
     } catch (err) {
       userInitiatedStartRef.current = false;
       setCeremonyMode(null);
-      const message = err instanceof Error ? err.message : 'Failed to start GPU session';
+      const message = err instanceof Error ? err.message : getExtraResourceCopy().failedStart;
       setError(message);
       return null;
     } finally {
@@ -167,7 +168,7 @@ export function useGpuPool({ serviceTag, available, creditBalance = null, refres
       setStatus(next);
       void refreshCredits?.();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to stop GPU session';
+      const message = err instanceof Error ? err.message : getExtraResourceCopy().failedStop;
       setError(message);
       console.error('gpu pool stop:', err);
     } finally {

@@ -27,7 +27,7 @@ describe('gpuPoolPanelCopy', () => {
     };
     expect(isPriorProvisionFailed(input)).toBe(false);
     expect(sharedPoolJoinMode(input)).toBe('provisioning');
-    expect(poolPanelHeadline(input)).toBe('GPU session');
+    expect(poolPanelHeadline(input)).toBe('Resource session');
     expect(poolPanelDetailLine(input)).toBeNull();
   });
 
@@ -38,7 +38,7 @@ describe('gpuPoolPanelCopy', () => {
       refCount: 1,
     };
     expect(sharedPoolJoinMode(input)).toBe('ready');
-    expect(poolPanelHeadline(input)).toBe('GPU session');
+    expect(poolPanelHeadline(input)).toBe('Resource session');
     expect(poolPanelDetailLine(input)).toBeNull();
   });
 
@@ -49,24 +49,24 @@ describe('gpuPoolPanelCopy', () => {
         state: 'draining',
         drainReason: 'user_grace',
       })
-    ).toBe('GPU on standby');
+    ).toBe('Resource on standby');
   });
 
-  it('shows orphan-boot reconnect headline', () => {
+  it('shows A1 idle copy for early-stop reconnect (not continuing setup)', () => {
     expect(
       poolPanelHeadline({
         userActive: false,
         state: 'provisioning',
         refCount: 0,
       })
-    ).toBe('Continuing setup…');
+    ).toBe('Resource session');
     expect(
       poolPanelDetailLine({
         userActive: false,
         state: 'provisioning',
         refCount: 0,
       })
-    ).toContain('no extra startup charge');
+    ).toBeNull();
   });
 
   it('shows refund copy only when pool is failed after provision_failed', () => {
@@ -77,7 +77,7 @@ describe('gpuPoolPanelCopy', () => {
       refCount: 0,
     };
     expect(isPriorProvisionFailed(input)).toBe(true);
-    expect(poolPanelHeadline(input)).toBe('GPUs busy — try again soon');
+    expect(poolPanelHeadline(input)).toBe('Resources busy — try again soon');
     expect(poolPanelDetailLine(input)).toContain('15 minutes');
   });
 });
