@@ -53,6 +53,23 @@ export interface IdCropResponse {
   processedAt: string; // ISO 8601 date string
 }
 
+export interface EnhanceResult {
+  req_id: string;
+  success: boolean;
+  status: 'completed' | 'processing' | 'failed';
+  result?: string;
+  message: string;
+  data?: Record<string, unknown>;
+}
+
+export interface DocumentEnhancementResponse {
+  message: string;
+  userId: string;
+  remainingCredits: number;
+  enhanceResult: EnhanceResult;
+  processedAt: string;
+}
+
 export interface FaceVerificationResponse extends ApiResponse {
   data?: {
     similarity_percentage: number;

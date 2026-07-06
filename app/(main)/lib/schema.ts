@@ -184,6 +184,7 @@ function getServiceSpecificSchema(slug: string, solution: SerializableSolution, 
       break;
 
     case 'id-crop':
+    case 'document-enhancement':
     case 'face-cropping':
       schemas.push({
         '@context': 'https://schema.org',
@@ -290,6 +291,7 @@ function getKeywordsForService(slug: string): string {
     'signature-verification': 'signature verification, AI authentication, fraud detection, document security, digital signatures, handwritten signatures, API integration',
     'qr-extract': 'QR code extraction, QR decoder, QR reader API, batch QR processing, data extraction, inventory management, QR scanning',
     'id-crop': 'ID cropping, document cropping, identity document processing, passport cropping, driver license, document verification, precision cropping',
+    'document-enhancement': 'document enhancement, signature enhancement, image restoration, Real-ESRGAN, scan cleanup, signature verification prep',
     'qr-masking': 'QR masking, QR privacy, data protection, QR obfuscation, document privacy, sensitive data masking, compliance',
     'face-verify': 'face verification, facial recognition, identity authentication, biometric verification, KYC verification, fraud prevention',
     'face-cropping': 'face cropping, face detection, facial region extraction, image processing, auto-alignment, profile pictures'

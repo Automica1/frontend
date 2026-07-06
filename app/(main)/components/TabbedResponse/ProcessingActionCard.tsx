@@ -14,6 +14,10 @@ interface ProcessingActionCardProps {
   submitBlockedMessage?: string;
   validationMessage?: string;
   embedded?: boolean;
+  /** Slim upload hint while GPU session is starting (saves vertical space). */
+  compactRequirements?: boolean;
+  /** GPU beta: compare blocked until session ceremony completes. */
+  gpuSessionPending?: boolean;
 }
 
 export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
@@ -27,12 +31,15 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
   submitBlockedMessage,
   validationMessage,
   embedded = false,
+  compactRequirements = false,
+  gpuSessionPending = false,
 }) => {
   const getButtonText = (type: SolutionType) => {
     switch (type) {
       case 'signature-verification': return 'Compare Signatures';
       case 'qr-extract': return 'Extract QR Code';
       case 'id-crop': return 'Crop ID Document';
+      case 'document-enhancement': return 'Enhance Document';
       case 'face-verify': return 'Verify Face';
       case 'face-cropping': return 'Crop Face';
       case 'qr-mask': return 'Mask QR Code';
@@ -45,6 +52,7 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
       case 'signature-verification': return Users;
       case 'qr-extract': return QrCode;
       case 'id-crop': return Crop;
+      case 'document-enhancement': return FileImage;
       case 'face-verify': return UserCheck;
       case 'face-cropping': return Crop;
       case 'qr-mask': return Shield;
@@ -66,6 +74,15 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
   const getStatusMessage = () => {
     if (files.length === 0) {
       return 'Upload files to get started';
+    }
+
+    const filesReady =
+      solutionType === 'signature-verification' || solutionType === 'face-verify'
+        ? files.length === 2
+        : files.length >= 1;
+
+    if (gpuSessionPending && filesReady) {
+      return 'Start GPU session above, then compare';
     }
 
     if (solutionType === 'signature-verification') {
@@ -95,6 +112,91 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
   const shellClass = embedded
     ? 'h-full flex flex-col overflow-hidden'
     : 'bg-gray-900 rounded-lg border border-gray-700 h-full flex flex-col overflow-hidden';
+
+  const requirementsBlock = (() => {
+    if (compactRequirements) {
+      if (solutionType === 'signature-verification') {
+        return (
+          <p className={`text-xs ${files.length === 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+            2 signatures required · {files.length}/2 uploaded
+          </p>
+        );
+      }
+      if (solutionType === 'face-verify') {
+        return (
+          <p className={`text-xs ${files.length === 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+            2 face images required · {files.length}/2 uploaded
+          </p>
+        );
+      }
+      return (
+        <p className={`text-xs ${files.length === 1 ? 'text-green-400' : 'text-yellow-400'}`}>
+          1 image required · {files.length}/1 uploaded
+        </p>
+      );
+    }
+
+    if (solutionType === 'signature-verification') {
+      return (
+        <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-3">
+          <div className="flex items-center space-x-2 mb-1">
+            <div className="w-3 h-3 bg-blue-500 rounded-full" />
+            <h4 className="text-sm font-semibold text-blue-400">Requirements</h4>
+          </div>
+          <ul className="text-blue-300 space-y-0.5 list-disc list-inside text-xs">
+            <li>Upload exactly 2 signature images</li>
+            <li>Clear, well-lit images · JPG, PNG, JPEG</li>
+          </ul>
+          <div className="mt-1 text-center">
+            <span className={`text-xs font-medium ${files.length === 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+              {files.length}/2 signatures uploaded{files.length === 2 ? ' ✓' : ''}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    if (solutionType === 'face-verify') {
+      return (
+        <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-3">
+          <div className="flex items-center space-x-2 mb-1">
+            <div className="w-3 h-3 bg-blue-500 rounded-full" />
+            <h4 className="text-sm font-semibold text-blue-400">Requirements</h4>
+          </div>
+          <ul className="text-blue-300 text-xs space-y-0.5 list-disc list-inside">
+            <li>Upload exactly 2 face images</li>
+            <li>Images should be clear and well-lit</li>
+            <li>Supported formats: JPG, PNG, JPEG</li>
+          </ul>
+          <div className="mt-1 text-center">
+            <span className={`text-xs font-medium ${files.length === 2 ? 'text-green-400' : 'text-yellow-400'}`}>
+              {files.length}/2 face images uploaded{files.length === 2 ? ' ✓' : ''}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-4">
+        <div className="flex items-center space-x-2 mb-2">
+          <div className="w-4 h-4 bg-blue-500 rounded-full" />
+          <h4 className="font-semibold text-blue-400">Requirements</h4>
+        </div>
+        <ul className="text-blue-300 text-sm space-y-1 list-disc list-inside">
+          <li>Upload exactly one image</li>
+          <li>Images should be clear and well-lit</li>
+          <li>Supported formats: JPG, PNG, JPEG</li>
+          <li>The file must be less than 10MB</li>
+        </ul>
+        <div className="mt-2 text-center">
+          <span className={`text-sm font-medium ${files.length === 1 ? 'text-green-400' : 'text-yellow-400'}`}>
+            {files.length}/1 image uploaded{files.length === 1 ? ' ✓' : ''}
+          </span>
+        </div>
+      </div>
+    );
+  })();
 
   return (
     <div className={shellClass}>
@@ -136,62 +238,7 @@ export const ProcessingActionCard: React.FC<ProcessingActionCardProps> = ({
           </div>
         )}
 
-        {solutionType === 'signature-verification' && (
-          <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-3">
-            <div className="flex items-center space-x-2 mb-1">
-              <div className="w-3 h-3 bg-blue-500 rounded-full" />
-              <h4 className="text-sm font-semibold text-blue-400">Requirements</h4>
-            </div>
-            <ul className="text-blue-300 space-y-0.5 list-disc list-inside text-xs">
-              <li>Upload exactly 2 signature images</li>
-              <li>Clear, well-lit images · JPG, PNG, JPEG</li>
-            </ul>
-            <div className="mt-1 text-center">
-              <span className={`text-xs font-medium ${files.length === 2 ? 'text-green-400' : 'text-yellow-400'}`}>
-                {files.length}/2 signatures uploaded{files.length === 2 ? ' ✓' : ''}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {solutionType === 'face-verify' && (
-          <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-3">
-            <div className="flex items-center space-x-2 mb-1">
-              <div className="w-3 h-3 bg-blue-500 rounded-full" />
-              <h4 className="text-sm font-semibold text-blue-400">Requirements</h4>
-            </div>
-            <ul className="text-blue-300 text-xs space-y-0.5 list-disc list-inside">
-              <li>Upload exactly 2 face images</li>
-              <li>Images should be clear and well-lit</li>
-              <li>Supported formats: JPG, PNG, JPEG</li>
-            </ul>
-            <div className="mt-1 text-center">
-              <span className={`text-xs font-medium ${files.length === 2 ? 'text-green-400' : 'text-yellow-400'}`}>
-                {files.length}/2 face images uploaded{files.length === 2 ? ' ✓' : ''}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {solutionType !== 'signature-verification' && solutionType !== 'face-verify' && (
-          <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="w-4 h-4 bg-blue-500 rounded-full" />
-              <h4 className="font-semibold text-blue-400">Requirements</h4>
-            </div>
-            <ul className="text-blue-300 text-sm space-y-1 list-disc list-inside">
-              <li>Upload exactly one image</li>
-              <li>Images should be clear and well-lit</li>
-              <li>Supported formats: JPG, PNG, JPEG</li>
-              <li>The file must be less than 10MB</li>
-            </ul>
-            <div className="mt-2 text-center">
-              <span className={`text-sm font-medium ${files.length === 1 ? 'text-green-400' : 'text-yellow-400'}`}>
-                {files.length}/1 image uploaded{files.length === 1 ? ' ✓' : ''}
-              </span>
-            </div>
-          </div>
-        )}
+        {requirementsBlock}
       </div>
 
       <div className="flex-shrink-0 space-y-2 p-4 pt-3">

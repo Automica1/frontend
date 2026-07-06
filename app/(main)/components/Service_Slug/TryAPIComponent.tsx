@@ -1,11 +1,12 @@
 // Fixed TryAPIComponent.tsx with proper face verification support
 "use client";
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Solution, SolutionType } from '../../types/solution';
 import { useSolutionType } from '../../hooks/useSolutionType';
 import { useSolutionApi } from '../../hooks/useSolutionApi';
 import { useCredits } from '../../hooks/useCredits';
 import { fileToBase64, filesToBase64 } from '../../../utils/fileUtils';
+import { extractProcessedImageBase64 } from '../../../utils/solutionHelpers';
 import { FileUpload2 } from '../ui/file-upload2';
 import { FileUpload } from '../ui/file-upload';
 import { TabbedResponseSection } from '../TabbedResponse/index';
@@ -14,6 +15,7 @@ import { loadBetaKeyPrefs, storeBetaKeyPrefs } from '../../lib/betaKeyStorage';
 import { clearGuestPassKey, loadGuestPassKey, normalizeGuestPassKey, storeGuestPassKey } from '../../lib/guestPassStorage';
 import { getServiceRunCost } from '../../lib/serviceRunCosts';
 import BetaAccessPanel from './BetaAccessPanel';
+import GpuPoolPanel from './GpuPoolPanel';
 import TryAPISetupPanel from './TryAPISetupPanel';
 import BetaFeedbackPanel from './BetaFeedbackPanel';
 import {
@@ -26,15 +28,19 @@ import {
   loadBetaSessionCache,
   saveBetaSessionCache,
 } from '../../lib/betaSessionCache';
-import { extractVerificationFromApiResponse } from '../../lib/betaFeedbackConfig';
 import { useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs';
+import { useGpuPool } from '../../hooks/useGpuPool';
+import { useBetaKeyResolve } from '../../hooks/useBetaKeyResolve';
+import { useGpuStartCeremony } from '../../hooks/useGpuStartCeremony';
+import { sharedPoolJoinMode } from './gpuPoolPanelCopy';
 
 interface TryAPIComponentProps {
   solution: Solution;
   initialAccessCode?: string;
+  isAdmin?: boolean;
 }
 
-export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIComponentProps) {
+export default function TryAPIComponent({ solution, initialAccessCode, isAdmin = false }: TryAPIComponentProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [hasStartedProcessing, setHasStartedProcessing] = useState(false);
   const [uploadKey, setUploadKey] = useState(0);
@@ -50,10 +56,50 @@ export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIC
   const { isAuthenticated } = useKindeBrowserClient();
   const solutionType = useSolutionType(solution);
   const currentApi = useSolutionApi(solutionType);
-  const { credits, updateCredits } = useCredits();
+  const { credits, updateCredits, refreshCredits } = useCredits();
   const runCost = getServiceRunCost(solutionType);
-
   const serviceSlug = solution.slug || solutionType;
+
+  const betaResolve = useBetaKeyResolve({
+    serviceName: serviceSlug,
+    betaKey,
+    enabled: Boolean(isAuthenticated && solution.hasBeta && betaEnabled),
+  });
+
+  const needsGpu = Boolean(
+    isAuthenticated &&
+      solution.hasBeta &&
+      betaEnabled &&
+      betaResolve.result?.valid &&
+      betaResolve.result.requiresGpuPool
+  );
+
+  const gpuServiceTag = needsGpu ? (betaResolve.result?.betaServiceTag ?? '') : '';
+
+  const gpuPool = useGpuPool({
+    serviceTag: gpuServiceTag,
+    available: needsGpu,
+    creditBalance: credits,
+    refreshCredits,
+  });
+
+  const ceremony = useGpuStartCeremony({
+    sessionActive: gpuPool.userActive && gpuPool.ceremonyMode !== null,
+    backendReady: gpuPool.isReady,
+    startMode: gpuPool.ceremonyMode ?? 'cold',
+    startupCredits: gpuPool.startupCredits,
+  });
+
+  const gpuReadyForCompare = !needsGpu || ceremony.canRunTests;
+
+  const betaKeyBlocked =
+    Boolean(
+      solution.hasBeta &&
+        betaEnabled &&
+        betaKey.trim() &&
+        !betaResolve.loading &&
+        (betaResolve.error || (betaResolve.result && !betaResolve.result.valid))
+    );
 
   const validateGuestAccess = useCallback(async (code: string) => {
     const trimmed = normalizeGuestPassKey(code);
@@ -170,47 +216,32 @@ export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIC
   const guestCreditsPending = !isAuthenticated && guestPassReady && credits === null;
   const guestBlocked = !isAuthenticated && guestServiceAllowed === false;
   const submitBlocked =
-    guestNeedsLink || guestValidating || guestCreditsPending || guestBlocked || insufficientCredits;
+    guestNeedsLink ||
+    guestValidating ||
+    guestCreditsPending ||
+    guestBlocked ||
+    insufficientCredits ||
+    betaKeyBlocked ||
+    (needsGpu && !gpuReadyForCompare);
   const canShowFeedback = Boolean(
-    isAuthenticated && solution.hasBeta && betaEnabled && pendingSession && pendingThumbnails.length > 0
+    isAuthenticated &&
+      solution.hasBeta &&
+      betaEnabled &&
+      pendingSession &&
+      (insufficientCredits || hasStartedProcessing)
   );
   const postRunShowFeedback = Boolean(canShowFeedback && !currentApi.loading);
-
-  const feedbackSession = useMemo(() => {
-    if (!pendingSession) return null;
-
-    const responseSessionId =
-      (currentApi.data as { beta_feedback_session_id?: string } | null)?.beta_feedback_session_id ??
-      (currentApi.errorData?.beta_feedback_session_id as string | undefined);
-
-    if (!responseSessionId || responseSessionId !== pendingSession.id) {
-      return pendingSession;
-    }
-
-    const liveResult = extractVerificationFromApiResponse(currentApi.data, solutionType);
-    if (!liveResult?.classification) {
-      return pendingSession;
-    }
-
-    return {
-      ...pendingSession,
-      actualResult: {
-        classification: liveResult.classification,
-        similarity_percentage: liveResult.similarity_percentage ?? pendingSession.actualResult?.similarity_percentage,
-      },
-    };
-  }, [currentApi.data, currentApi.errorData, pendingSession, solutionType]);
 
   const feedbackBadge = pendingSession ? `+${pendingSession.creditsCharged}` : undefined;
   const setupDefaultTab = insufficientCredits && canShowFeedback ? 'feedback' : 'setup';
 
   const feedbackPanel = (panelContext: 'setup' | 'post-run') =>
-    canShowFeedback && feedbackSession ? (
+    canShowFeedback && pendingSession ? (
       <BetaFeedbackPanel
-        key={feedbackSession.id}
+        key={pendingSession.id}
         serviceSlug={serviceSlug}
         solutionType={solutionType}
-        session={feedbackSession}
+        session={pendingSession}
         thumbnails={pendingThumbnails}
         insufficientCredits={insufficientCredits}
         onSubmitted={handleFeedbackSubmitted}
@@ -218,6 +249,15 @@ export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIC
         fillHeight={panelContext === 'post-run'}
       />
     ) : null;
+
+  const gpuSharedJoin = needsGpu
+    ? sharedPoolJoinMode({
+        userActive: gpuPool.userActive,
+        state: gpuPool.status?.state,
+        refCount: gpuPool.status?.refCount,
+        sessionEndReason: gpuPool.sessionEndReason,
+      })
+    : false;
 
   const submitBlockedMessage =
     guestValidating
@@ -229,11 +269,26 @@ export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIC
       : guestBlocked
       ? 'This access link does not include this service.'
       : insufficientCredits && canShowFeedback && pendingSession
-      ? `Not enough credits to run again. Submit feedback to earn up to ${pendingSession.creditsCharged} credits back, or buy more credits.`
+      ? `Not enough credits to compare again. Submit feedback to earn up to ${pendingSession.creditsCharged} credits back, or buy more credits.`
       : insufficientCredits
         ? !isAuthenticated
           ? 'No credits remain on this access link.'
-          : 'Not enough credits to run this test.'
+          : 'Not enough credits for a comparison (2 credits).'
+        : betaKeyBlocked
+          ? betaResolve.error ?? 'This beta key is invalid for your account.'
+        : needsGpu && ceremony.inCeremony
+          ? undefined
+        : needsGpu && gpuSharedJoin
+          ? undefined
+        : needsGpu && !gpuPool.userActive &&
+            (gpuPool.status?.state === 'idle' ||
+              gpuPool.status?.state === 'failed' ||
+              !gpuPool.status)
+          ? undefined
+        : needsGpu && !gpuPool.userActive
+          ? 'Start a GPU session first, then compare below.'
+        : needsGpu && !gpuPool.isReady
+          ? gpuPool.error ?? 'Starting GPU session…'
         : undefined;
 
   const handleFileUpload = (uploadedFiles: File[]) => {
@@ -252,7 +307,7 @@ export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIC
     if (files.length === 0) return;
 
     if (solution.hasBeta && betaEnabled && !betaKey.trim()) {
-      setSubmitValidationError('Enter your beta key to use your custom model.');
+      setSubmitValidationError('Enter your beta key to continue.');
       return;
     }
 
@@ -264,12 +319,16 @@ export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIC
     }
 
     if (insufficientCredits) {
-      setSubmitValidationError('Not enough credits to run this test.');
+      setSubmitValidationError('Not enough credits for a comparison (2 credits).');
+      return;
+    }
+
+    if (needsGpu && !gpuReadyForCompare) {
+      setSubmitValidationError('Start a GPU session first, then compare.');
       return;
     }
 
     setSubmitValidationError(null);
-    setPendingThumbnails([]);
     setHasStartedProcessing(true);
 
     try {
@@ -308,6 +367,11 @@ export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIC
           await currentApi.execute(idBase64);
           break;
 
+        case 'document-enhancement':
+          const enhanceBase64 = await fileToBase64(files[0]);
+          await currentApi.execute(enhanceBase64);
+          break;
+
         case 'face-cropping':
           const faceCropBase64 = await fileToBase64(files[0]);
           await currentApi.execute(faceCropBase64);
@@ -335,8 +399,8 @@ export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIC
           capturedAt: new Date().toISOString(),
           creditsCharged: runCost,
         });
-        await refreshPendingFeedback();
         setPendingThumbnails(thumbnails);
+        await refreshPendingFeedback();
       } catch (error) {
         console.error('Failed to cache beta session thumbnails:', error);
       }
@@ -376,91 +440,55 @@ export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIC
     setSubmitValidationError(null);
   };
 
-  const getMaskedBase64 = () => {
-    const data = currentApi.data;
-
-    if (solutionType === 'face-verify' || solutionType === 'face-cropping') {
-      if (data && typeof data === 'object' && 'faceResult' in data) {
-        const faceResult = (data as any).faceResult;
-        if (faceResult && typeof faceResult === 'object' && 'data' in faceResult && Array.isArray(faceResult.data) && faceResult.data.length > 0) {
-          return faceResult.data[0];
-        }
-      }
-
-      if (data && typeof data === 'object') {
-        if ('processed_image' in data && typeof (data as any).processed_image === 'string') {
-          return (data as any).processed_image;
-        }
-        if ('result_image' in data && typeof (data as any).result_image === 'string') {
-          return (data as any).result_image;
-        }
-        if ('cropped_face' in data && typeof (data as any).cropped_face === 'string') {
-          return (data as any).cropped_face;
-        }
-      }
-      return undefined;
-    }
-
-    const hasCropResult = (obj: any): obj is { cropResult: { result?: string } } =>
-      obj && typeof obj === 'object' && 'cropResult' in obj;
-
-    if (solutionType === 'qr-extract') {
-      if (data && typeof data === 'object' && 'masked_base64' in data) {
-        return (data as any).masked_base64;
-      }
-      return undefined;
-    }
-
-    if (solutionType === 'qr-mask') {
-      if (data && typeof data === 'object' && 'qrResult' in data) {
-        const qrResult = (data as any).qrResult;
-        if (qrResult && typeof qrResult === 'object' && 'masked_base64' in qrResult) {
-          return qrResult.masked_base64;
-        }
-      }
-
-      if (data && typeof data === 'object' && 'masked_base64' in data) {
-        return (data as any).masked_base64;
-      }
-
-      if (data && typeof data === 'object' && 'result' in data) {
-        return (data as any).result;
-      }
-      if (data && typeof data === 'object' && 'processed_image' in data) {
-        return (data as any).processed_image;
-      }
-      return undefined;
-    }
-
-    if (solutionType === 'id-crop') {
-      if (hasCropResult(data) && data.cropResult?.result) {
-        return data.cropResult.result;
-      }
-      return (data && 'result' in data && data.result)
-        || (data && 'processed_image' in data && (data as any).processed_image);
-    }
-
-    if (data && typeof data === 'object') {
-      if ('processed_image' in data && typeof (data as any).processed_image === 'string') {
-        return (data as any).processed_image;
-      }
-      if ('result_image' in data && typeof (data as any).result_image === 'string') {
-        return (data as any).result_image;
-      }
-      if ('masked_base64' in data && typeof (data as any).masked_base64 === 'string') {
-        return (data as any).masked_base64;
-      }
-    }
-    return undefined;
-  };
-
-  const maskedBase64 = getMaskedBase64();
+  const maskedBase64 = extractProcessedImageBase64(solutionType, currentApi.data);
   const shouldUseFileUpload2 = solutionType === 'signature-verification' || solutionType === 'face-verify';
-  const containerHeight = 'h-[500px]';
+  const containerHeight = 'min-h-[560px] lg:h-[560px]';
   const uploadShellClass = `w-full max-w-4xl mx-auto ${containerHeight}`;
 
+  const gpuPanelProps = {
+    status: gpuPool.status,
+    loading: gpuPool.loading,
+    error: gpuPool.error,
+    isReady: gpuPool.isReady,
+    isStarting: gpuPool.isStarting,
+    isFailed: gpuPool.isFailed,
+    isDraining: gpuPool.isDraining,
+    userActive: gpuPool.userActive,
+    canStart: gpuPool.canStart,
+    canStop: gpuPool.canStop,
+    onStart: () => { void gpuPool.start(); },
+    onStop: () => { void gpuPool.stop(); },
+    ceremonyStep: ceremony.step,
+    ceremonySteps: ceremony.steps,
+    ceremonySubline: ceremony.subline,
+    ceremonyElapsedMs: ceremony.elapsedMs,
+    ceremonyStartMode: ceremony.startMode,
+    inCeremony: ceremony.inCeremony,
+    canRunTests: ceremony.canRunTests,
+    isAdmin,
+    minCreditsToStart: gpuPool.minCreditsToStart,
+    startupCredits: gpuPool.startupCredits,
+    creditsPerMinute: gpuPool.creditsPerMinute,
+    comparisonCost: runCost,
+    creditsChargedSession: gpuPool.creditsChargedSession,
+    creditsStartupChargedSession: gpuPool.creditsStartupChargedSession,
+    creditsGpuTimeSession: gpuPool.creditsGpuTimeSession,
+    billingActive: gpuPool.billingActive,
+    creditBalance: credits,
+    hasEnoughCreditsToStart: gpuPool.hasEnoughCreditsToStart,
+    nextMeterChargeAt: gpuPool.nextMeterChargeAt,
+    sessionEndReason: gpuPool.sessionEndReason,
+    drainReason: gpuPool.drainReason,
+    destroyAt: gpuPool.destroyAt,
+    gracePeriodSec: gpuPool.gracePeriodSec,
+  };
+
+  const gpuPanel = needsGpu ? <GpuPoolPanel {...gpuPanelProps} hidePricingStrip /> : null;
+  const gpuPanelCompact = needsGpu ? <GpuPoolPanel {...gpuPanelProps} compact /> : null;
+
   const setupCard = (
-    <ProcessingActionCard
+    <>
+      <ProcessingActionCard
       solution={solution}
       solutionType={solutionType}
       files={files}
@@ -470,6 +498,8 @@ export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIC
       submitBlockedMessage={submitBlockedMessage}
       validationMessage={submitValidationError ?? undefined}
       embedded={canShowFeedback}
+      compactRequirements={needsGpu && (gpuPool.userActive || ceremony.inCeremony)}
+      gpuSessionPending={needsGpu && !gpuPool.userActive && !gpuReadyForCompare}
       betaControls={
         isAuthenticated && solution.hasBeta && solution.slug ? (
           <BetaAccessPanel
@@ -478,10 +508,15 @@ export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIC
             onEnabledChange={handleBetaEnabledChange}
             onBetaKeyChange={handleBetaKeyChange}
             variant="embedded"
+            keyResolving={betaResolve.loading}
+            keyResolveError={betaResolve.error}
+            gpuPanel={gpuPanel}
+            hideCreditsExplainer={Boolean(gpuPanel)}
           />
         ) : undefined
       }
     />
+    </>
   );
 
   return (
@@ -514,23 +549,30 @@ export default function TryAPIComponent({ solution, initialAccessCode }: TryAPIC
                 insufficientCredits={insufficientCredits}
               />
             ) : (
-              <TabbedResponseSection
-                solution={solution}
-                solutionType={solutionType}
-                data={currentApi.data}
-                loading={currentApi.loading}
-                error={currentApi.error}
-                errorDetails={currentApi.errorData}
-                maskedBase64={maskedBase64}
-                fileName={files[0]?.name}
-                onRetry={handleRetry}
-                onReset={handleReset}
-                hideRetry={Boolean(canShowFeedback && insufficientCredits)}
-                showFeedbackTab={Boolean(solution.hasBeta && betaEnabled && postRunShowFeedback)}
-                feedbackTab={feedbackPanel('post-run')}
-                feedbackTabBadge={feedbackBadge}
-                defaultTab={postRunShowFeedback ? 'feedback' : 'result'}
-              />
+              <div className="h-full min-h-0 flex flex-col gap-2">
+                {gpuPanelCompact && (
+                  <div className="flex-shrink-0 px-1 pt-1">{gpuPanelCompact}</div>
+                )}
+                <div className="flex-1 min-h-0">
+                  <TabbedResponseSection
+                    solution={solution}
+                    solutionType={solutionType}
+                    data={currentApi.data}
+                    loading={currentApi.loading}
+                    error={currentApi.error}
+                    errorDetails={currentApi.errorData}
+                    maskedBase64={maskedBase64}
+                    fileName={files[0]?.name}
+                    onRetry={handleRetry}
+                    onReset={handleReset}
+                    hideRetry={Boolean(canShowFeedback && insufficientCredits)}
+                    showFeedbackTab={Boolean(solution.hasBeta && betaEnabled && postRunShowFeedback)}
+                    feedbackTab={feedbackPanel('post-run')}
+                    feedbackTabBadge={feedbackBadge}
+                    defaultTab={postRunShowFeedback ? 'feedback' : 'result'}
+                  />
+                </div>
+              </div>
             )}
           </div>
         </div>

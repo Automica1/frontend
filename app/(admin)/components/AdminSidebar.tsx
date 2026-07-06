@@ -17,6 +17,7 @@ import {
   FlaskConical,
   KeyRound,
   MessageSquareText,
+  Cpu,
   LucideIcon,
 } from "lucide-react";
 
@@ -46,6 +47,16 @@ const navigationItems: NavItem[] = [
     name: 'Services',
     href: '/admin/services',
     icon: Database,
+  },
+  {
+    name: 'Beta Services',
+    href: '/admin/beta-services',
+    icon: Database,
+  },
+  {
+    name: 'GPU Pools',
+    href: '/admin/gpu-pools',
+    icon: Cpu,
   },
   {
     name: 'Beta Keys',

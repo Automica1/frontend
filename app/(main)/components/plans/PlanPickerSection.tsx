@@ -8,6 +8,7 @@ import { BillingCurrencyToggle } from '../subscription/BillingCurrencyToggle';
 import { useDualCurrencyPlans } from '../../hooks/useDualCurrencyPlans';
 import { usePlanCheckout } from '../../hooks/usePlanCheckout';
 import { PlanCardGrid } from './PlanCardGrid';
+import { ConfirmModal } from '../ui/ConfirmModal';
 
 type PlanPickerSectionProps = {
   currentSubscription?: any;
@@ -47,7 +48,17 @@ export function PlanPickerSection({
   const checkoutBillingCurrency =
     currentSubscription?.status === 'active' ? checkoutCurrency : billingCurrency;
 
-  const { loadingPlanId, handleSubscribe, handleDowngrade } = usePlanCheckout({
+  const {
+    loadingPlanId,
+    handleSubscribe,
+    requestDowngrade,
+    downgradeConfirmPlan,
+    downgradeSuccessPlan,
+    downgradeRenewedSubscription,
+    cancelDowngradeRequest,
+    confirmDowngrade,
+    dismissDowngradeSuccess,
+  } = usePlanCheckout({
     billingCurrency: checkoutBillingCurrency,
     currentSubscription,
     onPaymentSuccess: onPaymentSuccess ?? (() => {}),
@@ -55,6 +66,10 @@ export function PlanPickerSection({
   });
 
   const useCheckoutMode = !authLoading && isAuthenticated;
+
+  const cancelScheduled = Boolean(
+    currentSubscription?.status === 'active' && currentSubscription?.cancelAtCycleEnd
+  );
 
   if (loading) {
     return (
@@ -81,7 +96,53 @@ export function PlanPickerSection({
         loadingPlanId={loadingPlanId}
         loginReturnPath={loginReturnPath}
         onSubscribe={handleSubscribe}
-        onDowngrade={handleDowngrade}
+        onDowngrade={requestDowngrade}
+      />
+
+      <ConfirmModal
+        open={Boolean(downgradeConfirmPlan)}
+        title="Schedule downgrade?"
+        description={
+          downgradeConfirmPlan ? (
+            <>
+              Are you sure you want to downgrade to{' '}
+              <span className="font-medium text-white">{downgradeConfirmPlan.name}</span>? The change
+              will take effect at the end of your current billing cycle.
+              {cancelScheduled && (
+                <>
+                  {' '}
+                  This also renews your subscription — scheduled cancellation will be removed.
+                </>
+              )}
+            </>
+          ) : null
+        }
+        confirmLabel="Schedule downgrade"
+        cancelLabel="Keep current plan"
+        onConfirm={confirmDowngrade}
+        onCancel={cancelDowngradeRequest}
+        loading={Boolean(downgradeConfirmPlan && loadingPlanId === downgradeConfirmPlan.planId)}
+        variant="danger"
+      />
+
+      <ConfirmModal
+        open={Boolean(downgradeSuccessPlan)}
+        title="Downgrade scheduled"
+        description={
+          downgradeSuccessPlan ? (
+            <>
+              Your downgrade to{' '}
+              <span className="font-medium text-white">{downgradeSuccessPlan.name}</span> has been
+              scheduled for the end of your current billing cycle.
+              {downgradeRenewedSubscription && ' Your subscription will continue renewing.'}
+            </>
+          ) : null
+        }
+        confirmLabel="Done"
+        onConfirm={dismissDowngradeSuccess}
+        onCancel={dismissDowngradeSuccess}
+        singleAction
+        variant="default"
       />
     </>
   );

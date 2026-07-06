@@ -1,5 +1,5 @@
 // x:\Web Dev\Automica\frontend\app\(main)\lib\apiService.ts
-import { ApiResponse, QRExtractResponse, SignatureVerificationResponse, FaceDetectionResponse, FaceVerificationResponse, IdCropResponse } from '../types/api';
+import { ApiResponse, QRExtractResponse, SignatureVerificationResponse, FaceDetectionResponse, FaceVerificationResponse, IdCropResponse, DocumentEnhancementResponse } from '../types/api';
 import { useCreditsStore } from '../stores/creditsStore';
 import { loadGuestPassKey, normalizeGuestPassKey } from './guestPassStorage';
 
@@ -66,6 +66,44 @@ export interface SubmitBetaFeedbackResponse {
   remainingCredits: number;
 }
 
+export type GPUPoolState = 'idle' | 'provisioning' | 'ready' | 'draining' | 'failed';
+
+export interface GPUPoolStatus {
+  serviceTag: string;
+  serviceName: string;
+  state: GPUPoolState;
+  refCount: number;
+  publicIp?: string;
+  nodeId?: string;
+  readyAt?: string;
+  drainStartedAt?: string;
+  drainReason?: 'user_grace' | 'admin_grace';
+  destroyAt?: string;
+  gracePeriodSec?: number;
+  lastError?: string;
+  pollUrl: string;
+  userActive: boolean;
+  creditsChargedSession?: number;
+  creditsStartupChargedSession?: number;
+  creditsGpuTimeSession?: number;
+  creditsPerMinute?: number;
+  startupCredits?: number;
+  minCreditsToStart?: number;
+  meterIntervalSec?: number;
+  nextMeterChargeAt?: string;
+  billingActive?: boolean;
+  reattachedSession?: boolean;
+  sessionEndReason?: string;
+}
+
+export interface BetaKeyResolveResponse {
+  valid: boolean;
+  betaServiceTag?: string;
+  label?: string;
+  requiresGpuPool: boolean;
+  keyPrefix?: string;
+}
+
 interface FaceDetectionResponseWithCredits extends FaceDetectionResponse {
   remainingCredits?: number;
   userId?: string;
@@ -77,6 +115,11 @@ interface FaceVerificationResponseWithCredits extends FaceVerificationResponse {
 }
 
 interface IdCropResponseWithCredits extends IdCropResponse {
+  remainingCredits: number;
+  userId: string;
+}
+
+interface DocumentEnhancementResponseWithCredits extends DocumentEnhancementResponse {
   remainingCredits: number;
   userId: string;
 }
@@ -337,11 +380,13 @@ class ApiService {
           const contentType = response.headers.get('content-type');
           if (contentType && contentType.includes('application/json')) {
             errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
+            errorMessage = errorData.message || errorData.error || errorData.user_message || errorMessage;
+            if (errorData.technical_message) {
+              errorMessage = `${errorMessage} (${errorData.technical_message})`;
+            }
           } else {
-            // If response is not JSON, get text content
             const textContent = await response.text();
-            console.error('Non-JSON error response:', textContent);
+            console.error('Non-JSON error response:', textContent.slice(0, 500));
             errorMessage = `${errorMessage} - ${textContent.slice(0, 200)}`;
           }
         } catch (parseError) {
@@ -495,6 +540,13 @@ class ApiService {
     });
   }
 
+  async clearPendingPlanChange(): Promise<{ message: string }> {
+    return this.makeRequest('/subscription/clear-pending-change', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  }
+
   // Token redemption
   async redeemToken(token: string): Promise<{
     success: boolean;
@@ -643,6 +695,24 @@ class ApiService {
     });
   }
 
+  async processDocumentEnhancement(base64Image: string): Promise<DocumentEnhancementResponseWithCredits> {
+    const reqId = this.generateReqId('document-enhance');
+
+    if (!base64Image || typeof base64Image !== 'string') {
+      throw new Error('Invalid base64 image data');
+    }
+
+    const cleanBase64 = base64Image.replace(/^data:image\/[a-z]+;base64,/, '');
+
+    return this.makeRequest<DocumentEnhancementResponseWithCredits>('/document-enhancement', {
+      method: 'POST',
+      body: JSON.stringify({
+        req_id: reqId,
+        doc_base64: cleanBase64,
+      }),
+    });
+  }
+
   // Signature verification with enhanced validation
   async verifySignatures(
     base64Images: string[],
@@ -750,6 +820,41 @@ class ApiService {
     return this.makeRequest<BetaFeedbackPendingResponse>(
       `/beta-feedback/pending?service=${encodeURIComponent(service)}`
     );
+  }
+
+  async resolveBetaKey(serviceName: string, betaKey: string): Promise<BetaKeyResolveResponse> {
+    return this.makeRequest<BetaKeyResolveResponse>('/beta/keys/resolve', {
+      method: 'POST',
+      body: JSON.stringify({ serviceName, betaKey }),
+    });
+  }
+
+  async startGpuPool(serviceTag: string): Promise<GPUPoolStatus> {
+    return this.makeRequest<GPUPoolStatus>('/gpu-pool/start', {
+      method: 'POST',
+      body: JSON.stringify({ serviceTag }),
+    });
+  }
+
+  async stopGpuPool(serviceTag: string): Promise<GPUPoolStatus> {
+    return this.makeRequest<GPUPoolStatus>('/gpu-pool/stop', {
+      method: 'POST',
+      body: JSON.stringify({ serviceTag }),
+    });
+  }
+
+  async getGpuPoolStatus(serviceTag: string): Promise<GPUPoolStatus> {
+    return this.makeRequest<GPUPoolStatus>(
+      `/gpu-pool/status?serviceTag=${encodeURIComponent(serviceTag)}`
+    );
+  }
+
+  /** Admin: schedule GPU node teardown (grace period then destroy). */
+  async adminShutdownGpuPool(serviceTag: string): Promise<unknown> {
+    return this.makeRequest('/admin/gpu-pools/shutdown', {
+      method: 'POST',
+      body: JSON.stringify({ serviceTag }),
+    });
   }
 
   async submitBetaFeedback(

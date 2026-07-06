@@ -37,7 +37,11 @@ html {
   scrollbar-color: #000000 #0f0f0f;
 }
 
-/* For better mobile experience */
+@keyframes ceremony-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
 @media (max-width: 768px) {
   ::-webkit-scrollbar {
     width: 8px;

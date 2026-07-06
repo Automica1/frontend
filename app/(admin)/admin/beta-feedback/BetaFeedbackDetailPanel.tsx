@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { Loader2, X, ZoomIn } from 'lucide-react';
+import { Download, Loader2, X, ZoomIn } from 'lucide-react';
 import type { BetaFeedbackSessionDetail } from '../../lib/apiService';
 import {
   classificationsMatch,
   formatClassificationLabel,
 } from '../../../(main)/lib/betaFeedbackConfig';
+import BetaFeedbackRefundBudgetPanel from './BetaFeedbackRefundBudgetPanel';
 
 interface BetaFeedbackDetailPanelProps {
   sessionId: string;
@@ -14,6 +15,8 @@ interface BetaFeedbackDetailPanelProps {
   detailLoading: boolean;
   detailError: string | null;
   onClose: () => void;
+  onExport?: () => void;
+  exportDisabled?: boolean;
 }
 
 function formatDate(value?: string) {
@@ -49,6 +52,8 @@ export default function BetaFeedbackDetailPanel({
   detailLoading,
   detailError,
   onClose,
+  onExport,
+  exportDisabled = false,
 }: BetaFeedbackDetailPanelProps) {
   const [zoomSrc, setZoomSrc] = React.useState<string | null>(null);
 
@@ -97,14 +102,27 @@ export default function BetaFeedbackDetailPanel({
                 <p className="text-xs text-gray-500 mt-1 truncate">{sessionDetail.reqId}</p>
               )}
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-              aria-label="Close"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              {onExport && (
+                <button
+                  type="button"
+                  onClick={onExport}
+                  disabled={exportDisabled}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-blue-400/20 bg-blue-500/10 px-4 py-2.5 text-sm font-semibold text-blue-100 transition-colors hover:bg-blue-500/20 disabled:opacity-50"
+                >
+                  <Download className="h-4 w-4" />
+                  Export ZIP
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
@@ -162,6 +180,11 @@ export default function BetaFeedbackDetailPanel({
                   />
                   <DetailTile label="Created" value={formatDate(sessionDetail.createdAt)} />
                 </div>
+
+                <BetaFeedbackRefundBudgetPanel
+                  userId={sessionDetail.userId}
+                  email={sessionDetail.email}
+                />
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4">

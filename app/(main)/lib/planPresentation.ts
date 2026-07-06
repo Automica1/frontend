@@ -47,11 +47,16 @@ export function getCheckoutCtaLabel(
     isCurrent?: boolean;
     isUpgrade?: boolean;
     isDowngrade?: boolean;
+    isPendingTarget?: boolean;
+    cancelScheduled?: boolean;
+    wouldUpgrade?: boolean;
+    wouldDowngrade?: boolean;
   } = {}
 ): string {
   if (options.isCurrent) return 'Current Plan';
-  if (options.isUpgrade) return 'Upgrade Plan';
-  if (options.isDowngrade) return 'Downgrade Plan';
+  if (options.isPendingTarget) return 'Scheduled';
+  if (options.isUpgrade) return options.cancelScheduled ? 'Upgrade & renew' : 'Upgrade Plan';
+  if (options.isDowngrade) return options.cancelScheduled ? 'Downgrade & renew' : 'Downgrade Plan';
   if (plan.ctaLabel?.trim() && !isContactSalesPlan(plan)) return plan.ctaLabel.trim();
   return 'Choose Plan';
 }
@@ -60,6 +65,10 @@ export type PlanCardState = {
   isCurrent: boolean;
   isUpgrade: boolean;
   isDowngrade: boolean;
+  isPendingTarget: boolean;
+  cancelScheduled: boolean;
+  wouldUpgrade: boolean;
+  wouldDowngrade: boolean;
 };
 
 export function resolvePlanCardState(
@@ -69,25 +78,35 @@ export function resolvePlanCardState(
     planId: string;
     amount: number;
     currency?: string;
+    cancelAtCycleEnd?: boolean;
+    pendingPlanId?: string;
   } | null,
   billingCurrency?: string
 ): PlanCardState {
-  const isCurrent = Boolean(
-    currentSubscription?.status === 'active' && currentSubscription.planId === plan.planId
-  );
+  const isActive = currentSubscription?.status === 'active';
+  const cancelScheduled = Boolean(isActive && currentSubscription?.cancelAtCycleEnd);
+  const pendingPlanId = currentSubscription?.pendingPlanId;
+  const isPendingTarget = Boolean(isActive && pendingPlanId === plan.planId && !cancelScheduled);
+  const isCurrent = Boolean(isActive && currentSubscription!.planId === plan.planId);
   const sameCurrency =
     !currentSubscription?.currency || currentSubscription.currency === billingCurrency;
-  const isUpgrade = Boolean(
-    currentSubscription?.status === 'active' &&
-      sameCurrency &&
-      plan.price > (currentSubscription?.amount ?? 0)
+  const wouldUpgrade = Boolean(
+    isActive && sameCurrency && plan.price > (currentSubscription?.amount ?? 0)
   );
-  const isDowngrade = Boolean(
-    currentSubscription?.status === 'active' &&
-      sameCurrency &&
-      plan.price < (currentSubscription?.amount ?? 0)
+  const wouldDowngrade = Boolean(
+    isActive && sameCurrency && plan.price < (currentSubscription?.amount ?? 0)
   );
-  return { isCurrent, isUpgrade, isDowngrade };
+  const isUpgrade = wouldUpgrade && !isPendingTarget;
+  const isDowngrade = wouldDowngrade && !isPendingTarget;
+  return {
+    isCurrent,
+    isUpgrade,
+    isDowngrade,
+    isPendingTarget,
+    cancelScheduled,
+    wouldUpgrade,
+    wouldDowngrade,
+  };
 }
 
 export function sortPlans(plans: Plan[]): Plan[] {

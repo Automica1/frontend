@@ -2,9 +2,10 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
-import { getSolution, generateSolutionStaticParams, getAvailableSolutions } from '@/app/(main)/lib/solutions';
+import { getSolution, generateSolutionStaticParams, getAvailableSolutions, isSolutionCatalogVisible } from '@/app/(main)/lib/solutions';
 import { generateSolutionSchema } from '@/app/(main)/lib/schema';
 import { SchemaMarkup } from '../../components/SchemaMarkup';
+import { getKindeServerSession } from '@kinde-oss/kinde-auth-nextjs/server';
 import SolutionPageClient from './SolutionPageClient1';
 
 interface SolutionPageProps {
@@ -16,7 +17,7 @@ export async function generateMetadata({ params }: SolutionPageProps): Promise<M
   const { slug } = await params;
   const solution = getSolution(slug);
 
-  if (!solution) {
+  if (!solution || !isSolutionCatalogVisible(solution)) {
     return {
       title: 'Solution Not Found',
       description: 'The requested solution could not be found.',
@@ -95,6 +96,30 @@ export async function generateMetadata({ params }: SolutionPageProps): Promise<M
         title: 'ID Crop API | Precision Document Cropping',
         description: 'Instant ID cropping for flawless verification. Automatically locate and crop identity documents with pinpoint precision.',
         images: ['/images/id-crop-twitter.jpg'],
+      },
+    },
+    'document-enhancement': {
+      title: 'Document Enhancement API | Signature and Scan Restoration',
+      description: 'Enhance blurry signature crops and document scans using hybrid VLM analysis and Real-ESRGAN restoration for clearer downstream verification.',
+      keywords: 'document enhancement, signature enhancement, image restoration, Real-ESRGAN, scan cleanup, signature verification prep, GPU image processing',
+      openGraph: {
+        title: 'Document Enhancement API - Restore Signatures and Scans',
+        description: 'Hybrid VLM + Real-ESRGAN pipeline to improve signature and document image quality.',
+        type: 'website',
+        images: [
+          {
+            url: '/images/document-enhancement-og.jpg',
+            width: 1200,
+            height: 630,
+            alt: 'Document Enhancement API Dashboard',
+          },
+        ],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: 'Document Enhancement API | Restore Signatures and Scans',
+        description: 'Improve blurry signatures and scans for reliable verification workflows.',
+        images: ['/images/document-enhancement-twitter.jpg'],
       },
     },
     'qr-masking': {
@@ -214,7 +239,7 @@ export default async function SolutionPage({ params }: SolutionPageProps) {
   const { slug } = await params;
   const solution = getSolution(slug);
 
-  if (!solution) {
+  if (!solution || !isSolutionCatalogVisible(solution)) {
     notFound();
   }
 
@@ -242,6 +267,8 @@ export default async function SolutionPage({ params }: SolutionPageProps) {
     documentation: solution.documentation,
     heroImage: solution.heroImage,
     hasBeta: solution.hasBeta ?? false,
+    requiresGpuPool: solution.requiresGpuPool ?? false,
+    betaServiceTag: solution.betaServiceTag,
   };
 
   // Extract serializable services data (exclude icons, will be resolved client-side)
@@ -251,6 +278,10 @@ export default async function SolutionPage({ params }: SolutionPageProps) {
     gradient: sol.gradient,
     // Icon will be resolved on client side based on slug
   }));
+
+  const { getRoles } = getKindeServerSession();
+  const roles = await getRoles();
+  const isAdmin = roles?.some((role) => role.key === 'admin') ?? false;
 
   // Pass both solution and services data to the Client Component
   return (
@@ -262,6 +293,7 @@ export default async function SolutionPage({ params }: SolutionPageProps) {
       <SolutionPageClient 
         solution={solutionData} 
         services={servicesData}
+        isAdmin={isAdmin}
       />
     </>
   );

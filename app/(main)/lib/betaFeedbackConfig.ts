@@ -40,6 +40,7 @@ export function normalizeClassificationForSubmit(value: string): string {
     match: 'Genuine',
     no_match: 'Forged',
     uncertain: 'Manual Review',
+    failed: 'Not-Detected',
   };
   const lower = trimmed.toLowerCase();
   if (legacyMap[lower]) return legacyMap[lower];

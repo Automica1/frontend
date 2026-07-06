@@ -48,6 +48,8 @@ interface SerializableSolution {
   documentation?: any;
   heroImage?: string;
   hasBeta?: boolean;
+  requiresGpuPool?: boolean;
+  betaServiceTag?: string;
 }
 
 interface SerializableService {
@@ -61,6 +63,7 @@ interface SolutionPageClientProps {
   solution: SerializableSolution;
   services: SerializableService[];
   onServiceChange?: (slug: string) => void;
+  isAdmin?: boolean;
 }
 
 type ActiveSection = 'about' | 'try-api' | 'documentation';
@@ -71,6 +74,7 @@ const getIconForSolution = (slug: string) => {
     'qr-extract': QrCode,
     'signature-verification': PenTool,
     'id-crop': Table,
+    'document-enhancement': FileText,
     'qr-masking': QrCode,
     'face-verify': User,
     'face-cropping': Scissors,
@@ -114,7 +118,8 @@ const getUseCaseIcon = (title: string) => {
 export default function SolutionPageClient({ 
   solution, 
   services,
-  onServiceChange 
+  onServiceChange,
+  isAdmin = false,
 }: SolutionPageClientProps) {
   const searchParams = useSearchParams();
   const accessFromUrl = searchParams?.get('access')?.trim() ?? '';
@@ -177,13 +182,21 @@ export default function SolutionPageClient({
       apiEndpoint: solution.apiEndpoint,
       slug: solution.slug,
       hasBeta: solution.hasBeta,
+      requiresGpuPool: solution.requiresGpuPool,
+      betaServiceTag: solution.betaServiceTag,
     };
 
     switch (activeSection) {
       case 'about':
         return <AboutComponent solution={solutionWithIcon} onSectionChange={setActiveSection} />;
       case 'try-api':
-        return <TryAPIComponent solution={tryApiSolution} initialAccessCode={accessFromUrl || undefined} />;
+        return (
+          <TryAPIComponent
+            solution={tryApiSolution}
+            initialAccessCode={accessFromUrl || undefined}
+            isAdmin={isAdmin}
+          />
+        );
       case 'documentation':
         return <DocumentationComponent solution={solutionWithIcon} />;
       default:

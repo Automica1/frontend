@@ -280,7 +280,7 @@ export const FileUpload = ({
                   <p className="relative z-20 font-sans font-normal text-neutral-400 text-xs sm:text-base mt-2">
                     {canUpload 
                       ? allowGuestAccess && !isAuthenticated
-                        ? 'Drag or drop files here, then run your test'
+                        ? 'Drag or drop files here, then compare'
                         : 'Drag or drop your files here or click to upload'
                       : 'Please sign in to start uploading files'
                     }

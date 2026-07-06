@@ -37,4 +37,8 @@ export const subscriptionApi = {
     async downgradeSubscription(planId: string) {
         return apiService.downgradeSubscription(planId);
     },
+
+    async clearPendingPlanChange() {
+        return apiService.clearPendingPlanChange();
+    },
 };

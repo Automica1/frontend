@@ -9,6 +9,11 @@ interface BetaAccessPanelProps {
   onEnabledChange: (enabled: boolean) => void;
   onBetaKeyChange: (key: string) => void;
   variant?: 'card' | 'inline' | 'embedded';
+  keyResolving?: boolean;
+  keyResolveError?: string | null;
+  gpuPanel?: React.ReactNode;
+  /** Omit long pricing paragraph when GPU panel is shown nearby. */
+  hideCreditsExplainer?: boolean;
 }
 
 export default function BetaAccessPanel({
@@ -17,8 +22,26 @@ export default function BetaAccessPanel({
   onEnabledChange,
   onBetaKeyChange,
   variant = 'inline',
+  keyResolving = false,
+  keyResolveError = null,
+  gpuPanel = null,
+  hideCreditsExplainer = false,
 }: BetaAccessPanelProps) {
   const [open, setOpen] = useState(variant === 'embedded');
+
+  const keyFeedback = (
+    <>
+      {keyResolving && enabled && betaKey.trim() && (
+        <p className="text-xs text-gray-500 pl-11">Checking beta key…</p>
+      )}
+      {keyResolveError && enabled && (
+        <p className="text-xs text-red-300 pl-11">{keyResolveError}</p>
+      )}
+      {!keyResolveError && enabled && betaKey.trim() && !keyResolving && (
+        <p className="text-xs text-emerald-400/90 pl-11">Beta access confirmed</p>
+      )}
+    </>
+  );
 
   if (variant === 'embedded') {
     if (!open) {
@@ -32,7 +55,7 @@ export default function BetaAccessPanel({
             <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
               <FlaskConical className="h-4 w-4 text-blue-400" />
             </div>
-            <span className="text-sm text-gray-300 truncate">Use my custom model (beta)</span>
+            <span className="text-sm text-gray-300 truncate">Use beta access key</span>
           </span>
           <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
         </button>
@@ -45,7 +68,7 @@ export default function BetaAccessPanel({
           <div className="w-8 h-8 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
             <FlaskConical className="h-4 w-4 text-blue-400" />
           </div>
-          <span className="text-sm text-gray-300 flex-1">Use my custom model (beta)</span>
+          <span className="text-sm text-gray-300 flex-1">Use beta access key</span>
           <input
             type="checkbox"
             checked={enabled}
@@ -56,9 +79,13 @@ export default function BetaAccessPanel({
 
         {enabled && (
           <>
-            <p className="text-xs text-gray-500 pl-11">
-              2 credits per test, refundable when you submit feedback.
-            </p>
+            {!hideCreditsExplainer && (
+              <p className="text-xs text-gray-500 pl-11">
+                Need 30 credits to start (20 charged when you start). Then 2 credits/min while the session is
+                active and 2 credits per comparison. Submit feedback to earn comparison credits back (up to 50 per
+                30 days). GPU session time is not refunded.
+              </p>
+            )}
             <input
               type="password"
               value={betaKey}
@@ -67,6 +94,8 @@ export default function BetaAccessPanel({
               className="w-full rounded-lg border border-gray-700 bg-gray-900/60 px-3 py-2 text-sm text-gray-200 placeholder:text-gray-500 focus:border-blue-500/40 focus:outline-none"
               autoComplete="off"
             />
+            {keyFeedback}
+            {gpuPanel && <div className="pt-1">{gpuPanel}</div>}
           </>
         )}
       </div>
@@ -87,14 +116,18 @@ export default function BetaAccessPanel({
           onChange={(e) => onEnabledChange(e.target.checked)}
           className="h-3.5 w-3.5 rounded border-gray-600 bg-gray-800 text-blue-500 focus:ring-0 focus:ring-offset-0"
         />
-        <span>Use my custom model (beta)</span>
+        <span>Use beta access key</span>
       </label>
 
       {enabled && (
         <>
-          <p className="text-[10px] text-gray-500 leading-snug">
-            2 credits per test, refundable when you submit feedback.
-          </p>
+          {!hideCreditsExplainer && (
+            <p className="text-[10px] text-gray-500 leading-snug">
+              Need 30 credits to start (20 charged when you start). Then 2 credits/min while the session is active
+              and 2 credits per comparison. Submit feedback to earn comparison credits back (up to 50 per 30 days).
+              GPU session time is not refunded.
+            </p>
+          )}
           <input
             type="password"
             value={betaKey}
@@ -103,6 +136,8 @@ export default function BetaAccessPanel({
             className="w-full rounded-md border border-gray-700 bg-gray-900/60 px-2.5 py-1.5 text-xs text-gray-200 placeholder:text-gray-500 focus:border-blue-500/40 focus:outline-none"
             autoComplete="off"
           />
+          {keyFeedback}
+          {gpuPanel}
         </>
       )}
     </div>

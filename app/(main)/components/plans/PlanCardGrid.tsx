@@ -76,11 +76,12 @@ export function PlanCardGrid({
       {plans.map((plan, index) => {
         const isContactSales = isContactSalesPlan(plan);
         const isHighlighted = highlightPlanId === plan.planId;
-        const { isCurrent, isUpgrade, isDowngrade } = resolvePlanCardState(
+        const cardState = resolvePlanCardState(
           plan,
           currentSubscription,
           billingCurrency
         );
+        const { isCurrent, isPendingTarget } = cardState;
 
         const priceLabel = isContactSales
           ? 'Custom'
@@ -91,7 +92,11 @@ export function PlanCardGrid({
         const buttonText =
           mode === 'marketing'
             ? getMarketingCtaLabel(plan)
-            : getCheckoutCtaLabel(plan, { isCurrent, isUpgrade, isDowngrade });
+            : getCheckoutCtaLabel(plan, cardState);
+
+        const checkoutDisabled =
+          mode === 'checkout' &&
+          (isCurrent || isPendingTarget || !!loadingPlanId);
 
         return (
           <div
@@ -120,14 +125,14 @@ export function PlanCardGrid({
               index={index}
               buttonText={buttonText}
               isLoading={loadingPlanId === plan.planId}
-              disabled={mode === 'checkout' && (isCurrent || !!loadingPlanId)}
+              disabled={checkoutDisabled}
               onButtonClick={() => {
                 if (mode === 'marketing') {
                   handleMarketingClick(plan);
                   return;
                 }
-                if (isCurrent) return;
-                if (isDowngrade) {
+                if (isCurrent || isPendingTarget) return;
+                if (cardState.isDowngrade) {
                   onDowngrade?.(plan);
                   return;
                 }

@@ -6,6 +6,7 @@ export type SolutionKey =
   | 'signature-verification'
   | 'qr-extract'
   | 'id-crop'
+  | 'document-enhancement'
   | 'qr-masking'
   | 'face-verify'
   | 'face-cropping'
@@ -38,6 +39,8 @@ export interface Solution {
   available?: boolean;
   soon?: boolean;
   hasBeta?: boolean;
+  requiresGpuPool?: boolean;
+  betaServiceTag?: string;
   tagline: string;
   description: string;
   icon: LucideIcon;
@@ -168,6 +171,42 @@ export const rawSolutions: Record<SolutionKey, Solution> = {
 
     apiEndpoint: "https://api.yourcompany.com/v1/id-crop",
     documentation: "/docs/id-crop"
+  },
+  'document-enhancement': {
+    title: "Document Enhancement",
+    slug: "document-enhancement",
+    tagline: "Restore blurry signatures and scans for reliable verification.",
+    available: false,
+    soon: false,
+    description: "Enhance signature crops and document scans using a hybrid vision-language model and Real-ESRGAN restoration. Improves clarity for downstream signature verification and OCR workflows.",
+    icon: FileCheck,
+    gradient: "from-indigo-600 to-violet-600",
+    heroImage: "/api/placeholder/800/400",
+    features: [
+      "Hybrid VLM + Real-ESRGAN pipeline",
+      "Degradation-aware enhancement",
+      "Signature and document crop support",
+      "GPU-accelerated processing"
+    ],
+    useCases: [
+      {
+        title: "Signature Verification Prep",
+        description: "Clean up blurry or low-res signature crops before matching",
+        icon: Shield
+      },
+      {
+        title: "Scan Restoration",
+        description: "Reduce noise and improve contrast on phone photos of documents",
+        icon: Zap
+      },
+      {
+        title: "Compliance Workflows",
+        description: "Standardize image quality for audit-ready document pipelines",
+        icon: Globe
+      }
+    ],
+    apiEndpoint: "https://api.yourcompany.com/v1/document-enhancement",
+    documentation: "/docs/document-enhancement"
   },
   'qr-masking': {
     title: "QR Masking",
@@ -384,11 +423,18 @@ export const getSolutionKeys = (): SolutionKey[] => {
   return Object.keys(solutions) as SolutionKey[];
 };
 
+export const isSolutionCatalogVisible = (solution: Solution): boolean => {
+  if (solution.soon === true) return false;
+  if (solution.available === false) return false;
+  if (solution.slug === 'speech-to-text' || solution.slug === 'text-to-speech') return false;
+  return solution.available === true || solution.popular === true;
+};
+
 export const getSolutionsByCategory = (category: 'qr' | 'face' | 'document' | 'signature'): Solution[] => {
   const categoryMap = {
     qr: ['qr-extract', 'qr-masking'],
     face: ['face-verify', 'face-cropping'],
-    document: ['id-crop'],
+    document: ['id-crop', 'document-enhancement'],
     signature: ['signature-verification']
   };
   
@@ -397,9 +443,14 @@ export const getSolutionsByCategory = (category: 'qr' | 'face' | 'document' | 's
 
 // Example usage for generating static params in Next.js
 export const generateSolutionStaticParams = () => {
-  return getSolutionKeys().map((slug) => ({
-    slug: slug,
-  }));
+  return getSolutionKeys()
+    .filter((slug) => {
+      const solution = solutions[slug];
+      return solution ? isSolutionCatalogVisible(solution) : false;
+    })
+    .map((slug) => ({
+      slug: slug,
+    }));
 };
 
 export const getPopularSolutions = (): Solution[] => {

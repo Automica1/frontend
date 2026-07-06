@@ -351,7 +351,7 @@ export const FileUpload2 = ({
                   <p className="relative z-20 font-sans font-normal text-neutral-400 text-sm mt-2">
                     {canUpload 
                       ? allowGuestAccess && !isAuthenticated
-                        ? `Upload up to ${maxFiles} files, then run your test`
+                        ? `Upload up to ${maxFiles} files, then compare`
                         : `Upload up to ${maxFiles} files (JPEG, JPG, PNG, PDF - Max 10MB each)`
                       : 'Please sign in to start uploading files'
                     }

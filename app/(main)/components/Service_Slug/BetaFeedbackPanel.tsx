@@ -173,8 +173,8 @@ export default function BetaFeedbackPanel({
 
   const thumbnailCaption =
     context === 'setup'
-      ? 'Previews from your last test — saved on this device only. Documents are not stored on our servers.'
-      : 'Input previews from this test — kept on this device only, not on our servers.';
+      ? 'Previews from your last comparison — saved on this device only. Documents are not stored on our servers.'
+      : 'Input previews from this comparison — kept on this device only, not on our servers.';
 
   const correctSubmitBar = (
     <div className={`flex items-center justify-between gap-2 ${fillHeight ? '' : 'pt-2'}`}>
@@ -211,12 +211,12 @@ export default function BetaFeedbackPanel({
         )}
 
         {context === 'setup' && (
-          <p className="text-sm font-medium text-gray-300">Your last test</p>
+          <p className="text-sm font-medium text-gray-300">Your last comparison</p>
         )}
 
         {!insufficientCredits && context === 'setup' && (
           <p className="text-sm text-gray-400">
-            Rate your previous test · earn {refundAmount} credits back.
+            Rate your previous comparison · earn {refundAmount} credits back.
           </p>
         )}
 
@@ -230,7 +230,7 @@ export default function BetaFeedbackPanel({
                 >
                   <img
                     src={thumb.startsWith('data:') ? thumb : `data:image/jpeg;base64,${thumb}`}
-                    alt={`Test input ${index + 1}`}
+                    alt={`Comparison input ${index + 1}`}
                     className="w-full h-28 object-contain bg-gray-900"
                   />
                 </div>
@@ -238,6 +238,15 @@ export default function BetaFeedbackPanel({
             </div>
             <p className="text-xs text-gray-500 leading-relaxed">{thumbnailCaption}</p>
           </div>
+        )}
+
+        {thumbnails.length === 0 && step !== 'correct' && (
+          <p className="text-xs text-gray-500 leading-relaxed">
+            Preview images are not stored on our servers
+            {hasActual || isFailedRun
+              ? ' — use the result below to submit feedback.'
+              : ' — open this page on the device where you ran the comparison, or submit from memory.'}
+          </p>
         )}
 
         {hasActual && actualLabel && (

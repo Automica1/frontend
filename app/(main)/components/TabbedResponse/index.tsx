@@ -8,7 +8,10 @@ import { ProcessedImageTab } from './ProcessedImageTab';
 import { ResultTab } from './ResultTab';
 import { RotateCcw, Undo2 } from 'lucide-react';
 import { useClipboard } from '../../hooks/useClipboard';
-import '../terminal.css';
+import {
+  extractProcessedImageBase64,
+  isImageOutputSolution,
+} from '../../../utils/solutionHelpers';
 
 interface TabbedResponseSectionProps {
   solution: Solution;
@@ -47,13 +50,14 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
 }) => {
   const isVerificationSolution = solutionType === 'face-verify' || solutionType === 'signature-verification';
   const isQrExtractSolution = solutionType === 'qr-extract';
+  const showProcessedImageTab = !isVerificationSolution && !isQrExtractSolution && !isImageOutputSolution(solutionType);
+  const showResultTab = isVerificationSolution || isQrExtractSolution || isImageOutputSolution(solutionType);
 
   const resolveInitialTab = (): TabType => {
     if (loading) return 'result';
     if (defaultTab) return defaultTab;
     if (showFeedbackTab) return 'feedback';
-    if (isVerificationSolution || isQrExtractSolution) return 'result';
-    return 'processed-image';
+    return 'result';
   };
 
   const [activeTab, setActiveTab] = useState<TabType>(resolveInitialTab);
@@ -109,15 +113,13 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   const fileType = detectFileType();
   const mimeType = fileType === 'pdf' ? 'application/pdf' : 'image/png';
 
-  const showProcessedImageTab = !isVerificationSolution && !isQrExtractSolution;
-  const showResultTab = isVerificationSolution || isQrExtractSolution;
-
   const hasProcessedImage = Boolean(
-    maskedBase64 && maskedBase64.length > 0 ||
+    (maskedBase64 && maskedBase64.length > 0) ||
+    (extractProcessedImageBase64(solutionType, data)?.length ?? 0) > 0 ||
     (data && data.result && typeof data.result === 'string' && data.result.length > 0)
   );
 
-  const imageBase64 = maskedBase64 || (data && data.result) || '';
+  const imageBase64 = maskedBase64 || extractProcessedImageBase64(solutionType, data) || (data && data.result) || '';
   const isProcessedImageTabDisabled = false;
   const isResultTabDisabled = false;
   const showRetry = Boolean(onRetry && !hideRetry);
@@ -158,6 +160,12 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
               solution={solution}
               error={error}
               errorDetails={errorDetails}
+              processedImageBase64={imageBase64}
+              fileName={fileName}
+              copiedBase64={copiedBase64}
+              onCopyBase64={copyBase64}
+              fileType={fileType}
+              mimeType={mimeType}
             />
           </div>
         )}

@@ -14,6 +14,14 @@ export const configs: Record<string, ApiConfig> = {
     },
     description: "Crop and extract ID documents from images"
   },
+  'document-enhancement': {
+    endpoint: 'https://automica.ai/go/api/v1/document-enhancement',
+    requestBody: {
+      req_id: "123",
+      doc_base64: "/9j/4AAQSkZJRgABAQAAAQABAAD..."
+    },
+    description: "Enhance signature crops and document scans for clearer verification"
+  },
   'face-cropping': {
     endpoint: 'https://automica.ai/go/api/v1/face-detect',
     requestBody: {

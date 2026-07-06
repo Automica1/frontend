@@ -2,18 +2,21 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs';
-import { Copy, FlaskConical, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { Copy, Check, FlaskConical, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import {
   apiService,
   type BetaKeyInfo,
+  type BetaServiceInfo,
   type UserInfo,
 } from '../../lib/apiService';
 
 export default function BetaKeysPage() {
   const { isAuthenticated, isLoading: authLoading } = useKindeBrowserClient();
   const [keys, setKeys] = useState<BetaKeyInfo[]>([]);
+  const [betaServices, setBetaServices] = useState<BetaServiceInfo[]>([]);
   const [services, setServices] = useState<string[]>(['signature-verification']);
   const [selectedService, setSelectedService] = useState('signature-verification');
+  const [selectedBetaServiceTag, setSelectedBetaServiceTag] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
@@ -25,6 +28,7 @@ export default function BetaKeysPage() {
   const [userResults, setUserResults] = useState<UserInfo[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserInfo | null>(null);
   const [isSearchingUsers, setIsSearchingUsers] = useState(false);
+  const [keyCopied, setKeyCopied] = useState(false);
 
   const loadKeys = useCallback(async () => {
     try {
@@ -40,6 +44,23 @@ export default function BetaKeysPage() {
     }
   }, [selectedService]);
 
+  const loadBetaServices = useCallback(async () => {
+    try {
+      const response = await apiService.listBetaServices(selectedService, true);
+      const items = response.services || [];
+      setBetaServices(items);
+      setSelectedBetaServiceTag((current) => {
+        if (current && items.some((item) => item.tag === current)) {
+          return current;
+        }
+        return items[0]?.tag || '';
+      });
+    } catch {
+      setBetaServices([]);
+      setSelectedBetaServiceTag('');
+    }
+  }, [selectedService]);
+
   useEffect(() => {
     if (authLoading || !isAuthenticated) return;
 
@@ -51,6 +72,11 @@ export default function BetaKeysPage() {
       })
       .catch(() => undefined);
   }, [authLoading, isAuthenticated]);
+
+  useEffect(() => {
+    if (authLoading || !isAuthenticated) return;
+    loadBetaServices();
+  }, [authLoading, isAuthenticated, loadBetaServices]);
 
   useEffect(() => {
     if (authLoading || !isAuthenticated) return;
@@ -88,17 +114,19 @@ export default function BetaKeysPage() {
     setUserResults([]);
     setSelectedUser(null);
     setGeneratedKey(null);
+    setKeyCopied(false);
   };
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!label.trim() || !selectedUser?.email) return;
+    if (!label.trim() || !selectedUser?.email || !selectedBetaServiceTag) return;
 
     try {
       setIsGenerating(true);
       setError(null);
       const response = await apiService.generateBetaKey({
         serviceName: selectedService,
+        betaServiceTag: selectedBetaServiceTag,
         label: label.trim(),
         assignedUserEmail: selectedUser.email,
         expiresInDays: expiresInDays === '' ? undefined : Number(expiresInDays),
@@ -129,7 +157,13 @@ export default function BetaKeysPage() {
   };
 
   const copyToClipboard = async (value: string) => {
-    await navigator.clipboard.writeText(value);
+    try {
+      await navigator.clipboard.writeText(value);
+      setKeyCopied(true);
+      setTimeout(() => setKeyCopied(false), 2000);
+    } catch {
+      // ignore
+    }
   };
 
   const formatDate = (value?: string) => {
@@ -200,6 +234,7 @@ export default function BetaKeysPage() {
           <thead className="bg-white/5 text-left text-gray-400">
             <tr>
               <th className="px-4 py-3">Prefix</th>
+              <th className="px-4 py-3">Beta service</th>
               <th className="px-4 py-3">Assigned user</th>
               <th className="px-4 py-3">Label</th>
               <th className="px-4 py-3">Status</th>
@@ -212,11 +247,11 @@ export default function BetaKeysPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading beta keys...</td>
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading beta keys...</td>
               </tr>
             ) : keys.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-gray-400">No beta keys yet for this service.</td>
+                <td colSpan={9} className="px-4 py-8 text-center text-gray-400">No beta keys yet for this service.</td>
               </tr>
             ) : (
               keys.map((key) => {
@@ -225,6 +260,7 @@ export default function BetaKeysPage() {
                 return (
                   <tr key={key.id} className="border-t border-white/5 text-gray-200">
                     <td className="px-4 py-3 font-mono text-xs">{key.keyPrefix}...</td>
+                    <td className="px-4 py-3 text-xs">{key.betaServiceTag || '—'}</td>
                     <td className="px-4 py-3 text-xs">{key.assignedUserEmail || '—'}</td>
                     <td className="px-4 py-3">{key.label}</td>
                     <td className="px-4 py-3">{status}</td>
@@ -260,16 +296,44 @@ export default function BetaKeysPage() {
                 <p className="text-sm text-amber-200">
                   Copy this key now. It will not be shown again.
                 </p>
-                <div className="rounded-xl border border-white/10 bg-black/40 p-3 font-mono text-xs break-all text-green-300">
+                <div className="relative rounded-xl border border-white/10 bg-black/40 p-3 pr-12 font-mono text-xs break-all text-green-300">
                   {generatedKey}
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(generatedKey)}
+                    aria-label={keyCopied ? 'Copied' : 'Copy beta key'}
+                    className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-lg border border-white/10 px-2 py-1 text-xs text-gray-200 hover:bg-white/10"
+                  >
+                    {keyCopied ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-400" />
+                        <span className="text-emerald-400">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
                 </div>
                 <div className="flex gap-2">
                   <button
+                    type="button"
                     onClick={() => copyToClipboard(generatedKey)}
                     className="inline-flex items-center gap-2 rounded-2xl border border-white/10 px-4 py-2 text-sm text-white hover:bg-white/5"
                   >
-                    <Copy className="h-4 w-4" />
-                    Copy key
+                    {keyCopied ? (
+                      <>
+                        <Check className="h-4 w-4 text-emerald-400" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        Copy key
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={() => {
@@ -291,6 +355,25 @@ export default function BetaKeysPage() {
                     disabled
                     className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-gray-400"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2">Beta service</label>
+                  <select
+                    value={selectedBetaServiceTag}
+                    onChange={(e) => setSelectedBetaServiceTag(e.target.value)}
+                    className="w-full rounded-2xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+                    required
+                  >
+                    {betaServices.length === 0 ? (
+                      <option value="">No active beta services — register one first</option>
+                    ) : (
+                      betaServices.map((service) => (
+                        <option key={service.tag} value={service.tag}>
+                          {service.label} ({service.tag})
+                        </option>
+                      ))
+                    )}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-300 mb-2">Assigned user</label>

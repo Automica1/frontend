@@ -50,4 +50,35 @@ describe('subscription plan UI cases', () => {
     expect(state.isUpgrade).toBe(false);
     expect(state.isDowngrade).toBe(false);
   });
+
+  // I7 — pending downgrade target shows Scheduled
+  it('I7 marks pending downgrade target plan as scheduled', () => {
+    const state = resolvePlanCardState(starter, {
+      ...activeStarter,
+      planId: 'pro',
+      amount: 799900,
+      pendingPlanId: 'starter',
+    }, 'INR');
+    expect(state.isPendingTarget).toBe(true);
+    expect(getCheckoutCtaLabel(starter, state)).toBe('Scheduled');
+  });
+
+  // I8 — cancel scheduled still allows upgrade/downgrade (implicit renew)
+  it('I8 allows upgrade and downgrade while cancellation is scheduled', () => {
+    const cancelPending = {
+      status: 'active',
+      planId: 'pro',
+      amount: 799900,
+      currency: 'INR',
+      cancelAtCycleEnd: true,
+    };
+    const downgradeState = resolvePlanCardState(starter, cancelPending, 'INR');
+    expect(downgradeState.isDowngrade).toBe(true);
+    expect(downgradeState.cancelScheduled).toBe(true);
+    expect(getCheckoutCtaLabel(starter, downgradeState)).toBe('Downgrade & renew');
+
+    const upgradeState = resolvePlanCardState(pro, { ...activeStarter, cancelAtCycleEnd: true }, 'INR');
+    expect(upgradeState.isUpgrade).toBe(true);
+    expect(getCheckoutCtaLabel(pro, upgradeState)).toBe('Upgrade & renew');
+  });
 });

@@ -25,6 +25,10 @@ export const useSolutionType = (solution: Solution): SolutionType => {
       console.log('Detected: ID Crop');
       return 'id-crop';
     }
+    if (slug === 'document-enhancement' || title.includes('document enhancement')) {
+      console.log('Detected: Document Enhancement');
+      return 'document-enhancement';
+    }
     if (slug === 'face-verify' || slug === 'face-verification' || title.includes('face verify')) {
       console.log('Detected: Face Verify');
       return 'face-verify';

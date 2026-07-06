@@ -18,6 +18,9 @@ export function usePlanCheckout(options: {
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useKindeAuth();
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [downgradeConfirmPlan, setDowngradeConfirmPlan] = useState<Plan | null>(null);
+  const [downgradeSuccessPlan, setDowngradeSuccessPlan] = useState<Plan | null>(null);
+  const [downgradeRenewedSubscription, setDowngradeRenewedSubscription] = useState(false);
 
   const requireAuthRedirect = useCallback(
     (plan?: Plan) => {
@@ -90,40 +93,58 @@ export function usePlanCheckout(options: {
     ]
   );
 
-  const handleDowngrade = useCallback(
-    async (plan: Plan) => {
+  const requestDowngrade = useCallback(
+    (plan: Plan) => {
       if (!authLoading && !isAuthenticated) {
         requireAuthRedirect(plan);
         return;
       }
-
-      if (
-        !confirm(
-          `Are you sure you want to downgrade to ${plan.name}? The change will take effect at the end of your current billing cycle.`
-        )
-      ) {
-        return;
-      }
-
-      setLoadingPlanId(plan.planId);
-      try {
-        await apiService.downgradeSubscription(plan.planId);
-        alert(`Your downgrade to ${plan.name} has been scheduled.`);
-        options.onPaymentSuccess();
-      } catch (err) {
-        console.error('Failed to downgrade', err);
-        alert('Failed to schedule downgrade. Please try again.');
-      } finally {
-        setLoadingPlanId(null);
-      }
+      setDowngradeConfirmPlan(plan);
+      setDowngradeRenewedSubscription(Boolean(options.currentSubscription?.cancelAtCycleEnd));
     },
-    [authLoading, isAuthenticated, options, requireAuthRedirect]
+    [authLoading, isAuthenticated, requireAuthRedirect]
   );
+
+  const cancelDowngradeRequest = useCallback(() => {
+    if (loadingPlanId) return;
+    setDowngradeConfirmPlan(null);
+  }, [loadingPlanId]);
+
+  const confirmDowngrade = useCallback(async () => {
+    if (!downgradeConfirmPlan) return;
+
+    setLoadingPlanId(downgradeConfirmPlan.planId);
+    try {
+      await apiService.downgradeSubscription(downgradeConfirmPlan.planId);
+      setDowngradeSuccessPlan(downgradeConfirmPlan);
+      setDowngradeConfirmPlan(null);
+      options.onPaymentSuccess();
+    } catch (err) {
+      console.error('Failed to downgrade', err);
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : 'Failed to schedule downgrade. Please try again.';
+      alert(message);
+    } finally {
+      setLoadingPlanId(null);
+    }
+  }, [downgradeConfirmPlan, options]);
+
+  const dismissDowngradeSuccess = useCallback(() => {
+    setDowngradeSuccessPlan(null);
+    setDowngradeRenewedSubscription(false);
+  }, []);
 
   return {
     loadingPlanId,
     handleSubscribe,
-    handleDowngrade,
-    razorpayKeyId: null,
+    requestDowngrade,
+    downgradeConfirmPlan,
+    downgradeSuccessPlan,
+    downgradeRenewedSubscription,
+    cancelDowngradeRequest,
+    confirmDowngrade,
+    dismissDowngradeSuccess,
   };
 }

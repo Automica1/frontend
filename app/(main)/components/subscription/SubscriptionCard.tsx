@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { subscriptionApi } from '../../lib/subscriptionApi';
 import { BillingCurrency, formatPlanPrice, normalizeBillingCurrency } from '../../lib/billingCurrency';
+import { resolveSubscriptionPresentation } from '../../lib/subscriptionPresentation';
 
 interface Subscription {
     status: string;
@@ -25,9 +26,18 @@ interface Props {
     onCancelled?: () => void;
 }
 
+const statusColors: Record<string, string> = {
+    active: 'bg-green-500/10 text-green-400 border border-green-500/20',
+    cancelled: 'bg-red-500/10 text-red-400 border border-red-500/20',
+    past_due: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
+    expired: 'bg-gray-500/10 text-gray-400 border border-gray-500/20',
+    scheduled: 'bg-amber-500/10 text-amber-300 border border-amber-500/20',
+};
+
 export default function SubscriptionCard({ subscription, onCancelled }: Props) {
     const [cancelling, setCancelling] = useState(false);
     const [resuming, setResuming] = useState(false);
+    const [clearingChange, setClearingChange] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
     const [error, setError] = useState('');
 
@@ -58,6 +68,19 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
         }
     };
 
+    const handleClearDowngrade = async () => {
+        setClearingChange(true);
+        setError('');
+        try {
+            await subscriptionApi.clearPendingPlanChange();
+            onCancelled?.();
+        } catch (err: any) {
+            setError(err?.message || 'Failed to cancel scheduled change. Please try again.');
+        } finally {
+            setClearingChange(false);
+        }
+    };
+
     if (!subscription) {
         return (
             <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center flex items-center justify-center">
@@ -66,7 +89,9 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
         );
     }
 
-    if (subscription.status === 'created') {
+    const presentation = resolveSubscriptionPresentation(subscription);
+
+    if (presentation?.state === 'activating') {
         return (
             <div className="bg-white/5 border border-emerald-500/20 rounded-2xl p-6 text-center flex items-center justify-center">
                 <p className="text-emerald-100/90">Payment received. Your subscription is activating.</p>
@@ -74,22 +99,10 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
         );
     }
 
-    const isActive = subscription.status === 'active';
-    const isCancelled = subscription.status === 'cancelled';
-    const isCancellationScheduled = isActive && (!!subscription.cancelAtCycleEnd || !!subscription.cancelScheduledAt);
-    const expiryDate = subscription.currentPeriodEnd
-        ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
-        : '—';
+    if (!presentation) {
+        return null;
+    }
 
-    const statusColors: Record<string, string> = {
-        active: 'bg-green-500/10 text-green-400 border border-green-500/20',
-        cancelled: 'bg-red-500/10 text-red-400 border border-red-500/20',
-        past_due: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
-        expired: 'bg-gray-500/10 text-gray-400 border border-gray-500/20',
-        scheduled: 'bg-amber-500/10 text-amber-300 border border-amber-500/20',
-    };
-    const statusLabel = isCancellationScheduled ? 'scheduled' : subscription.status;
-    const statusText = isCancellationScheduled ? 'cancellation scheduled' : subscription.status;
     const billingCurrency = (normalizeBillingCurrency(subscription.currency) || 'USD') as BillingCurrency;
     const formattedPrice = formatPlanPrice(subscription.amount, billingCurrency);
 
@@ -103,7 +116,6 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                 `,
             }}
         >
-            {/* Subtle inner glow */}
             <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10">
                 <div className="flex items-center justify-between mb-8">
@@ -113,15 +125,15 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                             {subscription.planName || subscription.planId.replace(/-/g, ' ')}
                         </h3>
                     </div>
-                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${statusColors[statusLabel] || statusColors.expired}`}>
-                        {statusText}
+                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border transition-colors ${statusColors[presentation.statusBadgeKey] || statusColors.expired}`}>
+                        {presentation.statusBadgeLabel}
                     </span>
                 </div>
 
                 <div className="space-y-4 mb-8">
                     <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-400 font-light">{isCancelled || isCancellationScheduled ? 'Access Until' : 'Next Billing Date'}</span>
-                        <span className="text-white font-light tracking-tight">{expiryDate}</span>
+                        <span className="text-gray-400 font-light">{presentation.dateLabel}</span>
+                        <span className="text-white font-light tracking-tight">{presentation.formattedPeriodEnd}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm border-t border-white/5 pt-4">
                         <span className="text-gray-400 font-light">Price</span>
@@ -130,23 +142,30 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                             <span className="text-gray-500 font-light ml-1">/ month</span>
                         </span>
                     </div>
-                    {subscription.pendingPlanId && (
-                        <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                            <p className="text-xs text-blue-400 font-medium uppercase tracking-wider mb-1">Scheduled Change</p>
-                            <p className="text-sm text-gray-300">
-                                Switching to <span className="text-white font-medium uppercase">{subscription.pendingPlanName || subscription.pendingPlanId.replace(/-/g, ' ')}</span> on {new Date(subscription.planChangeDate).toLocaleDateString()}
-                            </p>
+                    {presentation.showScheduledDowngrade && (
+                        <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl space-y-3">
+                            <div>
+                                <p className="text-xs text-blue-400 font-medium uppercase tracking-wider mb-1">Scheduled Change</p>
+                                <p className="text-sm text-gray-300">{presentation.scheduledDowngradeMessage}</p>
+                            </div>
+                            {presentation.showClearDowngradeButton && (
+                                <button
+                                    onClick={handleClearDowngrade}
+                                    disabled={clearingChange}
+                                    className="w-full py-2 text-xs text-blue-200 border border-blue-500/30 rounded-lg hover:bg-blue-500/10 transition-all disabled:opacity-50"
+                                >
+                                    {clearingChange ? 'Cancelling change...' : 'Cancel scheduled change'}
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
 
-                {/* Error message */}
                 {error && (
                     <p className="text-red-400 text-xs mb-3 p-2 bg-red-500/10 rounded-lg border border-red-500/20">{error}</p>
                 )}
 
-                {/* Cancel button — only show for active subscriptions */}
-                {isActive && !showConfirm && !isCancellationScheduled && (
+                {presentation.showCancelButton && !showConfirm && (
                     <button
                         onClick={() => setShowConfirm(true)}
                         className="w-full py-2 text-sm text-red-400 border border-red-500/20 rounded-xl hover:bg-red-500/10 transition-all duration-200"
@@ -155,12 +174,11 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                     </button>
                 )}
 
-                {/* Confirmation dialog */}
                 {showConfirm && (
                     <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-4">
                         <p className="text-sm text-gray-300 mb-1 font-medium">Cancel your subscription?</p>
                         <p className="text-xs text-gray-500 mb-4">
-                            This will cancel at the end of the current billing period on <span className="text-gray-300">{expiryDate}</span>. Your remaining credits won&apos;t be affected.
+                            This will cancel at the end of the current billing period on <span className="text-gray-300">{presentation.formattedPeriodEnd}</span>. Your remaining credits won&apos;t be affected.
                         </p>
                         <div className="flex gap-2">
                             <button
@@ -181,24 +199,24 @@ export default function SubscriptionCard({ subscription, onCancelled }: Props) {
                     </div>
                 )}
 
-                {isCancellationScheduled && (
+                {presentation.showCancelScheduled && (
                     <div className="space-y-3">
                         <p className="text-xs text-amber-300/80 text-center">
-                            Cancellation is scheduled. You keep access until {expiryDate}, then the subscription stops renewing.
+                            {presentation.cancelScheduledMessage}
                         </p>
                         <button
                             onClick={handleResume}
                             disabled={resuming}
                             className="w-full py-2 text-sm text-emerald-300 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/10 transition-all duration-200 disabled:opacity-50"
                         >
-                            {resuming ? 'Resuming...' : 'Resume Subscription'}
+                            {resuming ? 'Renewing...' : 'Renew Subscription'}
                         </button>
                     </div>
                 )}
 
-                {isCancelled && (
+                {presentation.state === 'cancelled' && (
                     <p className="text-xs text-gray-500 text-center mt-2">
-                        Your subscription has been cancelled on Razorpay. Credits remain available until the end of the billing period.
+                        Your subscription has been cancelled. Credits remain available until the end of the billing period.
                     </p>
                 )}
             </div>

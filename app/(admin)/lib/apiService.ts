@@ -40,6 +40,7 @@ interface BetaKeyInfo {
   id: string;
   keyPrefix: string;
   serviceName: string;
+  betaServiceTag: string;
   label: string;
   assignedUserEmail: string;
   createdBy: string;
@@ -53,6 +54,7 @@ interface BetaKeyInfo {
 
 interface BetaKeyGenerateRequest {
   serviceName: string;
+  betaServiceTag: string;
   label: string;
   assignedUserEmail: string;
   expiresInDays?: number;
@@ -63,6 +65,7 @@ interface BetaKeyGenerateResponse {
   betaKey: string;
   keyPrefix: string;
   serviceName: string;
+  betaServiceTag: string;
   label: string;
   assignedUserEmail: string;
   expiresAt?: string;
@@ -78,6 +81,62 @@ interface BetaKeyListResponse {
 interface BetaKeyRevokeResponse {
   message: string;
   id: string;
+}
+
+interface BetaServiceInfo {
+  id: string;
+  tag: string;
+  serviceName: string;
+  label: string;
+  apiUrl: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface BetaServiceListResponse {
+  message: string;
+  services: BetaServiceInfo[];
+  total: number;
+}
+
+interface BetaServiceCreateRequest {
+  tag: string;
+  serviceName: string;
+  label: string;
+  apiUrl: string;
+  isActive?: boolean;
+}
+
+interface BetaServiceUpdateRequest {
+  label?: string;
+  apiUrl?: string;
+  isActive?: boolean;
+}
+
+type GPUPoolAdminState = 'idle' | 'provisioning' | 'ready' | 'draining' | 'failed';
+
+interface GPUPoolAdminInfo {
+  id?: string;
+  serviceTag: string;
+  serviceName: string;
+  state: GPUPoolAdminState;
+  refCount: number;
+  nodeOwner?: 'user' | 'admin';
+  nodeId?: string;
+  publicIp?: string;
+  previousPublicIp?: string;
+  readyAt?: string;
+  drainStartedAt?: string;
+  drainReason?: 'user_grace' | 'admin_grace';
+  adminWarmHold?: boolean;
+  lastError?: string;
+  updatedAt?: string;
+  createdAt?: string;
+}
+
+interface GPUPoolListResponse {
+  pools: GPUPoolAdminInfo[];
 }
 
 interface GuestPassInfo {
@@ -149,6 +208,7 @@ interface BetaFeedbackSessionInfo {
   creditsCharged: number;
   creditsRefunded?: number;
   betaKeyPrefix?: string;
+  betaServiceTag?: string;
   actualResult?: {
     similarity_percentage?: number;
     classification?: string;
@@ -172,6 +232,26 @@ interface BetaFeedbackSessionDetail extends BetaFeedbackSessionInfo {
 interface BetaFeedbackSessionDetailResponse {
   message: string;
   session: BetaFeedbackSessionDetail;
+}
+
+interface BetaFeedbackRefundBudget {
+  userId: string;
+  email: string;
+  globalCap: number;
+  capOverride?: number | null;
+  effectiveCap: number;
+  rollingWindowDays: number;
+  windowStart: string;
+  creditsUsed: number;
+  creditsRemaining: number;
+  capExhausted: boolean;
+  refundSessionsCount: number;
+  budgetResetAt?: string;
+}
+
+interface BetaFeedbackRefundBudgetResponse {
+  message: string;
+  budget: BetaFeedbackRefundBudget;
 }
 
 interface BetaFeedbackSessionListResponse {
@@ -1273,6 +1353,48 @@ class ApiService {
     });
   }
 
+  async listBetaServices(service?: string, activeOnly = false): Promise<BetaServiceListResponse> {
+    const params = new URLSearchParams();
+    if (service) params.set('service', service);
+    if (activeOnly) params.set('active', 'true');
+    const query = params.toString();
+    return this.makeAuthenticatedRequest<BetaServiceListResponse>(
+      `/admin/beta-services${query ? `?${query}` : ''}`
+    );
+  }
+
+  async createBetaService(payload: BetaServiceCreateRequest): Promise<{ message: string; service: BetaServiceInfo }> {
+    return this.makeAuthenticatedRequest('/admin/beta-services', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateBetaService(tag: string, payload: BetaServiceUpdateRequest): Promise<{ message: string; service: BetaServiceInfo }> {
+    return this.makeAuthenticatedRequest(`/admin/beta-services/${encodeURIComponent(tag)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async listGpuPools(): Promise<GPUPoolListResponse> {
+    return this.makeAuthenticatedRequest<GPUPoolListResponse>('/admin/gpu-pools');
+  }
+
+  async shutdownGpuPool(serviceTag: string, immediate = false): Promise<GPUPoolAdminInfo> {
+    return this.makeAuthenticatedRequest<GPUPoolAdminInfo>('/admin/gpu-pools/shutdown', {
+      method: 'POST',
+      body: JSON.stringify({ serviceTag, immediate }),
+    });
+  }
+
+  async cancelGpuPoolGrace(serviceTag: string): Promise<GPUPoolAdminInfo> {
+    return this.makeAuthenticatedRequest<GPUPoolAdminInfo>('/admin/gpu-pools/cancel-grace', {
+      method: 'POST',
+      body: JSON.stringify({ serviceTag }),
+    });
+  }
+
   async getSupportedGuestPassServices(): Promise<{ message: string; services: string[] }> {
     return this.makeAuthenticatedRequest('/admin/guest-passes/services');
   }
@@ -1314,6 +1436,35 @@ class ApiService {
   async getBetaFeedbackSession(sessionId: string): Promise<BetaFeedbackSessionDetailResponse> {
     return this.makeAuthenticatedRequest<BetaFeedbackSessionDetailResponse>(
       `/admin/beta-feedback/sessions/${encodeURIComponent(sessionId)}`
+    );
+  }
+
+  async getBetaFeedbackRefundBudget(userId: string): Promise<BetaFeedbackRefundBudgetResponse> {
+    return this.makeAuthenticatedRequest<BetaFeedbackRefundBudgetResponse>(
+      `/admin/beta-feedback/users/${encodeURIComponent(userId)}/refund-budget`
+    );
+  }
+
+  async setBetaFeedbackRefundCapOverride(
+    userId: string,
+    cap: number | null
+  ): Promise<BetaFeedbackRefundBudgetResponse> {
+    return this.makeAuthenticatedRequest<BetaFeedbackRefundBudgetResponse>(
+      `/admin/beta-feedback/users/${encodeURIComponent(userId)}/refund-cap-override`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ cap }),
+      }
+    );
+  }
+
+  async resetBetaFeedbackRefundBudget(userId: string): Promise<BetaFeedbackRefundBudgetResponse> {
+    return this.makeAuthenticatedRequest<BetaFeedbackRefundBudgetResponse>(
+      `/admin/beta-feedback/users/${encodeURIComponent(userId)}/reset-refund-budget`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ confirm: 'RESET' }),
+      }
     );
   }
 }
@@ -1363,6 +1514,12 @@ export type {
   BetaKeyGenerateResponse,
   BetaKeyListResponse,
   BetaKeyRevokeResponse,
+  BetaServiceInfo,
+  BetaServiceListResponse,
+  BetaServiceCreateRequest,
+  BetaServiceUpdateRequest,
+  GPUPoolAdminInfo,
+  GPUPoolAdminState,
   GuestPassInfo,
   GuestPassCreateRequest,
   GuestPassCreateResponse,
@@ -1373,4 +1530,6 @@ export type {
   BetaFeedbackSessionDetail,
   BetaFeedbackSessionDetailResponse,
   BetaFeedbackSessionListResponse,
+  BetaFeedbackRefundBudget,
+  BetaFeedbackRefundBudgetResponse,
 };

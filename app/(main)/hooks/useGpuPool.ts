@@ -1,0 +1,205 @@
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiService, type GPUPoolStatus } from '../lib/apiService';
+import type { GpuStartMode } from './gpuCeremonyState';
+
+const POLL_MS = 4000;
+
+export function deriveGpuCeremonyMode(
+  status: GPUPoolStatus,
+  opts?: { poolWasProvisioning?: boolean }
+): GpuStartMode {
+  if (status.state === 'ready') return 'warm_ready';
+  if (status.state === 'provisioning') {
+    if (opts?.poolWasProvisioning || status.refCount > 1) return 'warm_join';
+  }
+  return 'cold';
+}
+
+interface UseGpuPoolOptions {
+  serviceTag: string;
+  available: boolean;
+  creditBalance?: number | null;
+  refreshCredits?: () => Promise<void>;
+}
+
+export function useGpuPool({ serviceTag, available, creditBalance = null, refreshCredits }: UseGpuPoolOptions) {
+  const [status, setStatus] = useState<GPUPoolStatus | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  /** Locked once per session: from start() click or page-load reattach (resume). */
+  const [ceremonyMode, setCeremonyMode] = useState<GpuStartMode | null>(null);
+  const userInitiatedStartRef = useRef(false);
+
+  const minCreditsToStart = status?.minCreditsToStart ?? 30;
+  const startupCredits = status?.startupCredits ?? 20;
+  const creditsPerMinute = status?.creditsPerMinute ?? 2;
+  const creditsChargedSession = status?.creditsChargedSession ?? 0;
+  const creditsStartupChargedSession = status?.creditsStartupChargedSession ?? 0;
+  const creditsGpuTimeSession = status?.creditsGpuTimeSession ?? 0;
+  const billingActive = Boolean(status?.billingActive);
+  const nextMeterChargeAt = status?.nextMeterChargeAt ?? null;
+  const sessionEndReason = status?.sessionEndReason ?? null;
+  const drainReason = status?.drainReason ?? null;
+  const destroyAt = status?.destroyAt ?? null;
+  const gracePeriodSec = status?.gracePeriodSec ?? 300;
+
+  const applyStatus = useCallback((next: GPUPoolStatus) => {
+    setStatus(next);
+    setError(null);
+    if (next.userActive) {
+      if (userInitiatedStartRef.current) {
+        return;
+      }
+      setCeremonyMode((prev) => prev ?? 'resume');
+    } else {
+      userInitiatedStartRef.current = false;
+      setCeremonyMode(null);
+    }
+  }, []);
+
+  const refresh = useCallback(async () => {
+    if (!serviceTag) return null;
+    try {
+      const next = await apiService.getGpuPoolStatus(serviceTag);
+      applyStatus(next);
+      void refreshCredits?.();
+      return next;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load GPU session status';
+      setError(message);
+      return null;
+    }
+  }, [serviceTag, refreshCredits, applyStatus]);
+
+  const start = useCallback(async () => {
+    if (!serviceTag) return null;
+    const poolWasProvisioning =
+      status?.state === 'provisioning' && (status?.refCount ?? 0) > 0 && !status?.userActive;
+    const optimisticMode: GpuStartMode | null =
+      status?.state === 'ready'
+        ? 'warm_ready'
+        : poolWasProvisioning || (status?.state === 'provisioning' && (status?.refCount ?? 0) > 0)
+          ? 'warm_join'
+          : 'cold';
+
+    setLoading(true);
+    setError(null);
+    userInitiatedStartRef.current = true;
+    setCeremonyMode(optimisticMode);
+    try {
+      const next = await apiService.startGpuPool(serviceTag);
+      const mode = deriveGpuCeremonyMode(next, { poolWasProvisioning });
+      setCeremonyMode(mode);
+      setStatus(next);
+      setError(null);
+      void refreshCredits?.();
+      return next;
+    } catch (err) {
+      userInitiatedStartRef.current = false;
+      setCeremonyMode(null);
+      const message = err instanceof Error ? err.message : 'Failed to start GPU session';
+      setError(message);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [serviceTag, refreshCredits, status]);
+
+  const stop = useCallback(async () => {
+    if (!serviceTag) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const next = await apiService.stopGpuPool(serviceTag);
+      userInitiatedStartRef.current = false;
+      setCeremonyMode(null);
+      setStatus(next);
+      void refreshCredits?.();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to stop GPU session';
+      setError(message);
+      console.error('gpu pool stop:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [serviceTag, refreshCredits]);
+
+  useEffect(() => {
+    if (!available || !serviceTag) {
+      setStatus(null);
+      setError(null);
+      userInitiatedStartRef.current = false;
+      setCeremonyMode(null);
+      return;
+    }
+    void refresh();
+  }, [available, serviceTag, refresh]);
+
+  const shouldPoll = available && Boolean(serviceTag);
+
+  useEffect(() => {
+    if (!shouldPoll) return;
+    const id = window.setInterval(() => {
+      void refresh();
+    }, POLL_MS);
+    return () => window.clearInterval(id);
+  }, [shouldPoll, refresh]);
+
+  const isReady = status?.state === 'ready';
+  const isStarting = status?.state === 'provisioning';
+  const isFailed = status?.state === 'failed';
+  const userActive = Boolean(status?.userActive);
+  const isDraining = status?.state === 'draining';
+  const isUserGraceDraining = isDraining && drainReason === 'user_grace';
+  const hasEnoughCreditsToStart =
+    creditBalance === null || creditBalance === undefined || creditBalance >= minCreditsToStart;
+
+  const canJoinPoolBoot =
+    isStarting && (status?.refCount ?? 0) > 0 && !userActive;
+
+  const canStart =
+    available &&
+    !loading &&
+    !userActive &&
+    (!isDraining || isUserGraceDraining) &&
+    hasEnoughCreditsToStart &&
+    (status?.state === 'idle' ||
+      status?.state === 'failed' ||
+      status?.state === 'ready' ||
+      canJoinPoolBoot ||
+      !status);
+
+  const canStop = available && !loading && userActive;
+
+  return {
+    status,
+    loading,
+    error,
+    isReady,
+    isStarting,
+    isFailed,
+    isDraining,
+    userActive,
+    canStart,
+    canStop,
+    ceremonyMode,
+    minCreditsToStart,
+    startupCredits,
+    creditsPerMinute,
+    creditsChargedSession,
+    creditsStartupChargedSession,
+    creditsGpuTimeSession,
+    billingActive,
+    nextMeterChargeAt,
+    sessionEndReason,
+    drainReason,
+    destroyAt,
+    gracePeriodSec,
+    hasEnoughCreditsToStart,
+    refresh,
+    start,
+    stop,
+  };
+}

@@ -6,11 +6,12 @@ export interface Solution {
   apiEndpoint?: string;
   slug?: string;
   hasBeta?: boolean;
+  requiresGpuPool?: boolean;
+  betaServiceTag?: string;
 }
 
-export type SolutionType = 'qr-extract' | 'signature-verification' | 'id-crop' | 'face-verify' | 'face-cropping' | 'qr-mask' | 'unknown';
+export type SolutionType = 'qr-extract' | 'signature-verification' | 'id-crop' | 'document-enhancement' | 'face-verify' | 'face-cropping' | 'qr-mask' | 'unknown';
 
-// types/solution.ts
 export interface SerializableSolution {
   title: string;
   slug: string;
@@ -27,6 +28,8 @@ export interface SerializableSolution {
   documentation?: any;
   heroImage?: string;
   hasBeta?: boolean;
+  requiresGpuPool?: boolean;
+  betaServiceTag?: string;
 }
 
 export interface SerializableService {

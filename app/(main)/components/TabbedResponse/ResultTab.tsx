@@ -1,10 +1,16 @@
 // components/TabbedResponseSection/ResultTab.tsx
 import React from 'react';
-import { QrCode, Shield, AlertCircle, Info  } from 'lucide-react';
+import { QrCode, Shield, AlertCircle } from 'lucide-react';
 import { Solution, SolutionType } from '../../types/solution';
-import { getFileRequirementText, getProcessingMessage } from '../../../utils/solutionHelpers';
+import {
+  extractProcessedImageBase64,
+  getFileRequirementText,
+  getProcessingMessage,
+  isImageOutputSolution,
+} from '../../../utils/solutionHelpers';
 import { QrExtractionResult } from './QrExtractionResult';
 import { VerificationResult } from './VerificationResult';
+import { ProcessedImageTab } from './ProcessedImageTab';
 
 interface ResultTabProps {
   solutionType: SolutionType;
@@ -14,6 +20,12 @@ interface ResultTabProps {
   error?: string | null;
   errorDetails?: any | null;
   compactResult?: boolean;
+  processedImageBase64?: string;
+  fileName?: string;
+  copiedBase64?: boolean;
+  onCopyBase64?: (base64: string) => void;
+  fileType?: 'image' | 'pdf';
+  mimeType?: string;
 }
 
 export const ResultTab: React.FC<ResultTabProps> = ({
@@ -24,17 +36,23 @@ export const ResultTab: React.FC<ResultTabProps> = ({
   error,
   errorDetails,
   compactResult = false,
+  processedImageBase64,
+  fileName,
+  copiedBase64 = false,
+  onCopyBase64,
+  fileType = 'image',
+  mimeType,
 }) => {
-  // Determine if this is a verification solution type or QR extract
   const isVerificationSolution = solutionType === 'face-verify' || solutionType === 'signature-verification';
   const isQrExtractSolution = solutionType === 'qr-extract';
+  const imageBase64 = processedImageBase64 || extractProcessedImageBase64(solutionType, data);
 
   if (error) {
     return (
       <div className="space-y-4 h-full flex flex-col">
         <div className="text-center mb-4">
           <h3 className="text-xl font-semibold text-white mb-2">
-            {isQrExtractSolution ? 'QR Code Extraction Failed' : 
+            {isQrExtractSolution ? 'QR Code Extraction Failed' :
              isVerificationSolution ? 'Verification Failed' : 'Processing Failed'}
           </h3>
         </div>
@@ -45,16 +63,10 @@ export const ResultTab: React.FC<ResultTabProps> = ({
             <div className="flex-1">
               <h4 className="font-semibold text-red-400 mb-3 text-lg">Technical Error</h4>
               <p className="text-red-300 mb-4 leading-relaxed">{error}</p>
-              
+
               {errorDetails?.technical_message && (
-                <div className="">
-                  {/* <div className="flex items-start space-x-2"> */}
-                    {/* <Info className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" /> */}
-                    <div>
-                      {/* <h5 className="font-medium text-blue-400 mb-2">Technical Details</h5> */}
-                      <p className="text-gray-300 text-sm">{errorDetails.technical_message}</p>
-                    </div>
-                  {/* </div> */}
+                <div>
+                  <p className="text-gray-300 text-sm">{errorDetails.technical_message}</p>
                 </div>
               )}
 
@@ -67,16 +79,9 @@ export const ResultTab: React.FC<ResultTabProps> = ({
             </div>
           </div>
         </div>
-
-        {/* <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-          <p className="text-gray-400 text-sm text-center">
-            For the complete API response details, please check the <span className="text-purple-400 font-medium">API Response</span> tab.
-          </p>
-        </div> */}
       </div>
     );
   }
-
 
   if (loading) {
     return (
@@ -105,7 +110,7 @@ export const ResultTab: React.FC<ResultTabProps> = ({
           )}
         </div>
         <p className="text-gray-400">
-          {`${getFileRequirementText(solutionType)} to see the ${isQrExtractSolution ? 'extraction' : 'verification'} result`}
+          {`${getFileRequirementText(solutionType)} to see the ${isQrExtractSolution ? 'extraction' : isImageOutputSolution(solutionType) ? 'processed' : 'verification'} result`}
         </p>
       </div>
     );
@@ -121,6 +126,24 @@ export const ResultTab: React.FC<ResultTabProps> = ({
         solutionType={solutionType}
         data={data}
         compact={compactResult}
+      />
+    );
+  }
+
+  if (isImageOutputSolution(solutionType)) {
+    return (
+      <ProcessedImageTab
+        solutionType={solutionType}
+        loading={loading}
+        maskedBase64={imageBase64}
+        fileName={fileName}
+        hasProcessedImage={Boolean(imageBase64 && imageBase64.length > 0)}
+        copiedBase64={copiedBase64}
+        onCopyBase64={onCopyBase64 || (() => undefined)}
+        error={error}
+        errorDetails={errorDetails}
+        fileType={fileType}
+        mimeType={mimeType}
       />
     );
   }

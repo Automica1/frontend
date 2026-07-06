@@ -7,6 +7,7 @@ const SERVICE_RUN_COSTS: Record<SolutionType, number> = {
   'qr-extract': 1,
   'qr-mask': 1,
   'id-crop': 1,
+  'document-enhancement': 1,
   'face-cropping': 1,
   unknown: 1,
 };

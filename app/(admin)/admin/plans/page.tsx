@@ -184,7 +184,7 @@ export default function AdminPlansPage() {
                 <div>
                     <h1 className="text-3xl font-extrabold tracking-tight text-white">Subscription Plans</h1>
                     <p className="mt-1 font-medium text-gray-400">
-                        Manage catalog pricing, Razorpay plan IDs, and customer-facing plan copy.
+                        Manage catalog pricing and plan copy. Razorpay plan IDs are created automatically when prices are set.
                     </p>
                 </div>
                 <button
@@ -351,23 +351,23 @@ export default function AdminPlansPage() {
                                     />
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">USD Razorpay Plan ID</label>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">USD Razorpay Plan ID (optional)</label>
                                     <input
                                         type="text"
                                         value={formData.razorpayPlanIdUsd}
                                         onChange={(e) => setFormData({ ...formData, razorpayPlanIdUsd: e.target.value })}
                                         className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 font-medium text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
-                                        placeholder="plan_... (USD)"
+                                        placeholder="Auto-created from USD price if left blank"
                                     />
                                 </div>
                                 <div className="space-y-2 md:col-span-2">
-                                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">INR Razorpay Plan ID</label>
+                                    <label className="text-xs font-bold uppercase tracking-wider text-gray-500">INR Razorpay Plan ID (optional)</label>
                                     <input
                                         type="text"
                                         value={formData.razorpayPlanIdInr}
                                         onChange={(e) => setFormData({ ...formData, razorpayPlanIdInr: e.target.value })}
                                         className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 font-medium text-white outline-none transition-all focus:border-purple-400/40 focus:ring-2 focus:ring-purple-500/10"
-                                        placeholder="plan_... (INR)"
+                                        placeholder="Auto-created from INR price if left blank"
                                     />
                                 </div>
                             </div>
