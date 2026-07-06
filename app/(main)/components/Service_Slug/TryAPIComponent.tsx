@@ -481,6 +481,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
     drainReason: gpuPool.drainReason,
     destroyAt: gpuPool.destroyAt,
     gracePeriodSec: gpuPool.gracePeriodSec,
+    reconnectEligible: gpuPool.reconnectEligible,
   };
 
   const gpuPanel = needsGpu ? <GpuPoolPanel {...gpuPanelProps} /> : null;

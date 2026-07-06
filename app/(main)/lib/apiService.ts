@@ -94,6 +94,8 @@ export interface GPUPoolStatus {
   billingActive?: boolean;
   reattachedSession?: boolean;
   sessionEndReason?: string;
+  reconnectEligible?: boolean;
+  reconnectUntil?: string;
 }
 
 export interface BetaKeyResolveResponse {

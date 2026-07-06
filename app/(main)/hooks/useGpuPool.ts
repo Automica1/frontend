@@ -8,14 +8,24 @@ const POLL_MS = 4000;
 
 export function deriveGpuCeremonyMode(
   status: GPUPoolStatus,
-  opts?: { poolWasProvisioning?: boolean }
+  opts?: { poolWasProvisioning?: boolean; orphanBootReconnect?: boolean }
 ): GpuStartMode {
   if (status.state === 'ready') return 'warm_ready';
   if (status.state === 'draining' && status.drainReason === 'user_grace') return 'warm_ready';
   if (status.state === 'provisioning') {
+    if (opts?.orphanBootReconnect) return 'warm_join';
     if (opts?.poolWasProvisioning || status.refCount > 1) return 'warm_join';
   }
   return 'cold';
+}
+
+export function isOrphanBootReconnectStatus(status: GPUPoolStatus | null, userActive: boolean): boolean {
+  return Boolean(
+    status &&
+      !userActive &&
+      status.state === 'provisioning' &&
+      (status.refCount ?? 0) === 0
+  );
 }
 
 export function canStartGpuSession(input: {
@@ -31,6 +41,8 @@ export function canStartGpuSession(input: {
 }): boolean {
   const canJoinPoolBoot =
     input.state === 'provisioning' && (input.refCount ?? 0) > 0 && !input.userActive;
+  const orphanBootReconnect =
+    input.state === 'provisioning' && (input.refCount ?? 0) === 0 && !input.userActive;
 
   return (
     input.available &&
@@ -42,6 +54,7 @@ export function canStartGpuSession(input: {
       input.state === 'failed' ||
       input.state === 'ready' ||
       input.isUserGraceDraining ||
+      orphanBootReconnect ||
       canJoinPoolBoot ||
       !input.hasStatus)
   );
@@ -107,12 +120,13 @@ export function useGpuPool({ serviceTag, available, creditBalance = null, refres
     if (!serviceTag) return null;
     const poolWasProvisioning =
       status?.state === 'provisioning' && (status?.refCount ?? 0) > 0 && !status?.userActive;
+    const orphanBootReconnect = isOrphanBootReconnectStatus(status, Boolean(status?.userActive));
     const isGraceReuse =
       status?.state === 'draining' && status?.drainReason === 'user_grace';
     const optimisticMode: GpuStartMode | null =
       status?.state === 'ready' || isGraceReuse
         ? 'warm_ready'
-        : poolWasProvisioning || (status?.state === 'provisioning' && (status?.refCount ?? 0) > 0)
+        : orphanBootReconnect || poolWasProvisioning || (status?.state === 'provisioning' && (status?.refCount ?? 0) > 0)
           ? 'warm_join'
           : 'cold';
 
@@ -122,7 +136,10 @@ export function useGpuPool({ serviceTag, available, creditBalance = null, refres
     setCeremonyMode(optimisticMode);
     try {
       const next = await apiService.startGpuPool(serviceTag);
-      const mode = deriveGpuCeremonyMode(next, { poolWasProvisioning });
+      const mode = deriveGpuCeremonyMode(next, {
+        poolWasProvisioning,
+        orphanBootReconnect: isOrphanBootReconnectStatus(status, false),
+      });
       setCeremonyMode(mode);
       setStatus(next);
       setError(null);
@@ -185,8 +202,15 @@ export function useGpuPool({ serviceTag, available, creditBalance = null, refres
   const userActive = Boolean(status?.userActive);
   const isDraining = status?.state === 'draining';
   const isUserGraceDraining = isDraining && drainReason === 'user_grace';
+  const reconnectEligible = Boolean(status?.reconnectEligible);
+  const reconnectUntil = status?.reconnectUntil ?? null;
+  const minRequiredCredits = reconnectEligible
+    ? (status?.creditsPerMinute ?? creditsPerMinute)
+    : minCreditsToStart;
   const hasEnoughCreditsToStart =
-    creditBalance === null || creditBalance === undefined || creditBalance >= minCreditsToStart;
+    creditBalance === null ||
+    creditBalance === undefined ||
+    creditBalance >= minRequiredCredits;
 
   const canStart = canStartGpuSession({
     available,
@@ -230,5 +254,7 @@ export function useGpuPool({ serviceTag, available, creditBalance = null, refres
     refresh,
     start,
     stop,
+    reconnectEligible,
+    reconnectUntil,
   };
 }

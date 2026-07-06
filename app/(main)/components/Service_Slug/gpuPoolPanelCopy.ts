@@ -4,6 +4,12 @@ import type { GPUPoolStatus } from '../../lib/apiService';
 export const GPU_BETA_PRICING_HINT =
   '30 to start (20 upfront) · 2/min active · 2/compare · feedback refunds compares, not GPU time';
 
+export const GPU_BUSY_RETRY_HINT =
+  'All test GPUs are busy right now. Try again in about 15 minutes.';
+
+export const GPU_RECONNECT_HINT =
+  'Tap Start to continue — no extra startup charge within 5 minutes.';
+
 export type GpuPoolPanelCopyInput = {
   userActive: boolean;
   sessionEndReason?: string | null;
@@ -11,6 +17,10 @@ export type GpuPoolPanelCopyInput = {
   refCount?: number;
   drainReason?: GPUPoolStatus['drainReason'] | null;
 };
+
+export function isOrphanBootReconnect(input: GpuPoolPanelCopyInput): boolean {
+  return !input.userActive && input.state === 'provisioning' && (input.refCount ?? 0) === 0;
+}
 
 /** Internal: pool is live with another session; used to suppress stale errors, not for user-facing copy. */
 export function sharedPoolJoinMode(
@@ -57,17 +67,18 @@ export function poolPanelHeadline(
   const priorInsufficientCredits =
     !userActive && sessionEndReason === 'insufficient_credits' && !sharedJoin;
 
-  if (priorProvisionFailed) return 'Start failed — credits refunded';
+  if (priorProvisionFailed) return 'GPUs busy — try again soon';
   if (
     !userActive &&
     sessionEndReason === 'provision_failed' &&
     !sharedJoin &&
     (state === 'provisioning' || state === 'draining')
   ) {
-    return 'Start failed — credits refunded';
+    return 'GPUs busy — try again soon';
   }
   if (priorPoolNotLive) return 'GPU is not running';
   if (priorInsufficientCredits) return 'Session ended — low credits';
+  if (isOrphanBootReconnect(input)) return 'Continuing setup…';
   if (isResume && !ceremonyComplete) return 'Resuming GPU session…';
   if (inCeremony) return 'Starting GPU session…';
   if (state === 'ready' && userActive && ceremonyComplete) return 'AI Ready';
@@ -81,8 +92,11 @@ export function poolPanelHeadline(
 }
 
 export function poolPanelDetailLine(input: GpuPoolPanelCopyInput): string | null {
+  if (isOrphanBootReconnect(input)) {
+    return GPU_RECONNECT_HINT;
+  }
   if (isPriorProvisionFailed(input)) {
-    return 'Credits refunded — tap Start to try again.';
+    return GPU_BUSY_RETRY_HINT;
   }
   return null;
 }

@@ -52,6 +52,23 @@ describe('gpuPoolPanelCopy', () => {
     ).toBe('GPU on standby');
   });
 
+  it('shows orphan-boot reconnect headline', () => {
+    expect(
+      poolPanelHeadline({
+        userActive: false,
+        state: 'provisioning',
+        refCount: 0,
+      })
+    ).toBe('Continuing setup…');
+    expect(
+      poolPanelDetailLine({
+        userActive: false,
+        state: 'provisioning',
+        refCount: 0,
+      })
+    ).toContain('no extra startup charge');
+  });
+
   it('shows refund copy only when pool is failed after provision_failed', () => {
     const input = {
       userActive: false,
@@ -60,7 +77,7 @@ describe('gpuPoolPanelCopy', () => {
       refCount: 0,
     };
     expect(isPriorProvisionFailed(input)).toBe(true);
-    expect(poolPanelHeadline(input)).toBe('Start failed — credits refunded');
-    expect(poolPanelDetailLine(input)).toContain('refunded');
+    expect(poolPanelHeadline(input)).toBe('GPUs busy — try again soon');
+    expect(poolPanelDetailLine(input)).toContain('15 minutes');
   });
 });

@@ -8,7 +8,7 @@ import type { GpuCeremonyStep, GpuStartMode } from '../../hooks/useGpuStartCerem
 import type { CeremonyStepView } from '../../hooks/gpuCeremonyState';
 import { formatCeremonyElapsed } from '../../hooks/gpuCeremonyState';
 import GpuCeremonyStepper from './GpuCeremonyStepper';
-import { isPriorProvisionFailed, sharedPoolJoinMode, poolPanelHeadline, poolPanelDetailLine, GPU_BETA_PRICING_HINT } from './gpuPoolPanelCopy';
+import { isPriorProvisionFailed, isOrphanBootReconnect, sharedPoolJoinMode, poolPanelHeadline, poolPanelDetailLine, GPU_BETA_PRICING_HINT } from './gpuPoolPanelCopy';
 
 interface GpuPoolPanelProps {
   status: GPUPoolStatus | null;
@@ -47,6 +47,7 @@ interface GpuPoolPanelProps {
   drainReason?: 'user_grace' | 'admin_grace' | null;
   destroyAt?: string | null;
   gracePeriodSec?: number;
+  reconnectEligible?: boolean;
 }
 
 function headline(
@@ -111,6 +112,7 @@ export default function GpuPoolPanel({
   drainReason = null,
   destroyAt = null,
   gracePeriodSec = 300,
+  reconnectEligible = false,
 }: GpuPoolPanelProps) {
   const [secondsToNextCharge, setSecondsToNextCharge] = useState<number | null>(null);
   const [secondsToDestroy, setSecondsToDestroy] = useState<number | null>(null);
@@ -238,7 +240,9 @@ export default function GpuPoolPanel({
 
   const startBlockedReason =
     !hasEnoughCreditsToStart && creditBalance !== null && creditBalance !== undefined
-      ? `Need ${minCreditsToStart} credits to start a session (you have ${creditBalance}).`
+      ? reconnectEligible
+        ? `Need at least ${creditsPerMinute} credits to continue (you have ${creditBalance}).`
+        : `Need ${minCreditsToStart} credits to start a session (you have ${creditBalance}).`
       : null;
 
   return (
@@ -277,6 +281,8 @@ export default function GpuPoolPanel({
                 </p>
               ) : priorProvisionFailed && detailLine ? (
                 <p className="text-xs opacity-80">{detailLine}</p>
+              ) : isOrphanBootReconnect(copyInput) && detailLine ? (
+                <p className="text-xs opacity-80">{detailLine}</p>
               ) : priorPoolNotLive ? (
                 <p className="text-xs opacity-80">
                   Previous session ended — GPU is not running. Start again when ready.
@@ -300,7 +306,7 @@ export default function GpuPoolPanel({
                   </Link>
                 </p>
               )}
-              {startBlockedReason && !userActive && !isStarting && (
+              {startBlockedReason && !userActive && (
                 <p className="mt-1 text-xs text-red-200">{startBlockedReason}</p>
               )}
             </div>

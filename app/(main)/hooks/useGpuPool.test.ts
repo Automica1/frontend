@@ -3,6 +3,32 @@ import { canStartGpuSession, deriveGpuCeremonyMode } from './useGpuPool';
 import type { GPUPoolStatus } from '../lib/apiService';
 
 describe('useGpuPool helpers', () => {
+  it('allows start during orphan-boot reconnect', () => {
+    expect(
+      canStartGpuSession({
+        available: true,
+        loading: false,
+        userActive: false,
+        isDraining: false,
+        isUserGraceDraining: false,
+        hasEnoughCreditsToStart: true,
+        state: 'provisioning',
+        refCount: 0,
+        hasStatus: true,
+      })
+    ).toBe(true);
+  });
+
+  it('treats orphan-boot reconnect as warm_join for ceremony timing', () => {
+    const status = {
+      state: 'provisioning',
+      refCount: 0,
+      userActive: false,
+    } as GPUPoolStatus;
+
+    expect(deriveGpuCeremonyMode(status, { orphanBootReconnect: true })).toBe('warm_join');
+  });
+
   it('allows start during user-grace drain when the node still exists', () => {
     expect(
       canStartGpuSession({
