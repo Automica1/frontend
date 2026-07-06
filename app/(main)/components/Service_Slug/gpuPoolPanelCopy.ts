@@ -9,7 +9,7 @@ export type GpuPoolPanelCopyInput = {
   sessionEndReason?: string | null;
   state?: GPUPoolStatus['state'];
   refCount?: number;
-  drainReason?: GPUPoolStatus['drainReason'];
+  drainReason?: GPUPoolStatus['drainReason'] | null;
 };
 
 /** Internal: pool is live with another session; used to suppress stale errors, not for user-facing copy. */
