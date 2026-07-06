@@ -59,7 +59,7 @@ function headline(
   copyInput?: {
     sessionEndReason?: string | null;
     refCount?: number;
-    drainReason?: GPUPoolStatus['drainReason'];
+    drainReason?: GPUPoolStatus['drainReason'] | null;
   }
 ): string {
   return poolPanelHeadline({
