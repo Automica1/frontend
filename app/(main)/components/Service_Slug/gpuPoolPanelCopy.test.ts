@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  isEarlyStopReconnect,
+  isFreshGpuVisitor,
   isPoolBootInProgress,
   isPriorProvisionFailed,
+  isUserGraceStandby,
   poolPanelDetailLine,
   poolPanelHeadline,
   sharedPoolJoinMode,
+  showGpuIdleIntroPanel,
 } from './gpuPoolPanelCopy';
 
 describe('gpuPoolPanelCopy', () => {
@@ -31,42 +35,86 @@ describe('gpuPoolPanelCopy', () => {
     expect(poolPanelDetailLine(input)).toBeNull();
   });
 
-  it('shows generic idle copy when pool is ready with another session (no infra leak)', () => {
+  it('shows beta intro when another user has the pool (no reserve/join copy)', () => {
     const input = {
       userActive: false,
       state: 'ready' as const,
       refCount: 1,
     };
     expect(sharedPoolJoinMode(input)).toBe('ready');
-    expect(poolPanelHeadline(input)).toBe('Resource session');
-    expect(poolPanelDetailLine(input)).toBeNull();
+    expect(showGpuIdleIntroPanel(input)).toBe(true);
   });
 
-  it('shows standby headline during user-grace drain', () => {
+  it('shows beta intro after prior stop when reconnect expired (A6)', () => {
+    const input = {
+      userActive: false,
+      sessionEndReason: 'user_stop',
+      reconnectEligible: false,
+      state: 'idle' as const,
+      refCount: 0,
+    };
+    expect(isFreshGpuVisitor(input)).toBe(false);
+    expect(showGpuIdleIntroPanel(input)).toBe(true);
+  });
+
+  it('shows standby headline during user-grace drain for returning user (A4)', () => {
+    expect(isUserGraceStandby({
+      userActive: false,
+      state: 'draining',
+      drainReason: 'user_grace',
+      sessionEndReason: 'user_stop',
+    })).toBe(true);
     expect(
       poolPanelHeadline({
         userActive: false,
         state: 'draining',
         drainReason: 'user_grace',
+        sessionEndReason: 'user_stop',
       })
     ).toBe('Resource on standby');
+    expect(showGpuIdleIntroPanel({
+      userActive: false,
+      state: 'draining',
+      drainReason: 'user_grace',
+      sessionEndReason: 'user_stop',
+    })).toBe(false);
   });
 
-  it('shows A1 idle copy for early-stop reconnect (not continuing setup)', () => {
-    expect(
-      poolPanelHeadline({
-        userActive: false,
-        state: 'provisioning',
-        refCount: 0,
-      })
-    ).toBe('Resource session');
-    expect(
-      poolPanelDetailLine({
-        userActive: false,
-        state: 'provisioning',
-        refCount: 0,
-      })
-    ).toBeNull();
+  it('shows beta intro for fresh visitor during another user grace drain', () => {
+    expect(isFreshGpuVisitor({ userActive: false, state: 'draining', drainReason: 'user_grace' })).toBe(true);
+    expect(showGpuIdleIntroPanel({ userActive: false, state: 'draining', drainReason: 'user_grace' })).toBe(true);
+  });
+
+  it('detects fresh visitor only before any session', () => {
+    expect(isFreshGpuVisitor({ userActive: false })).toBe(true);
+    expect(isFreshGpuVisitor({ userActive: false, reconnectEligible: true })).toBe(false);
+    expect(isFreshGpuVisitor({ userActive: false, sessionEndReason: 'user_stop' })).toBe(false);
+  });
+
+  it('shows A1 idle intro for early-stop reconnect (A3), not generic reserve copy', () => {
+    const input = {
+      userActive: false,
+      reconnectEligible: true,
+      state: 'provisioning' as const,
+      refCount: 0,
+    };
+    expect(isEarlyStopReconnect(input)).toBe(true);
+    expect(showGpuIdleIntroPanel(input)).toBe(true);
+    expect(poolPanelHeadline(input)).toBe('Resource session');
+  });
+
+  it('A4 user-grace standby is not A3 intro', () => {
+    const input = {
+      userActive: false,
+      reconnectEligible: true,
+      state: 'draining' as const,
+      drainReason: 'user_grace' as const,
+      sessionEndReason: 'user_stop',
+    };
+    expect(isEarlyStopReconnect(input)).toBe(false);
+    expect(isUserGraceStandby(input)).toBe(true);
+    expect(showGpuIdleIntroPanel(input)).toBe(false);
+    expect(poolPanelHeadline(input)).toBe('Resource on standby');
   });
 
   it('shows refund copy only when pool is failed after provision_failed', () => {

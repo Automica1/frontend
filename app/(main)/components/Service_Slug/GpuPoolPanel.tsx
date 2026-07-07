@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Cpu, Play, Square } from 'lucide-react';
 import type { GPUPoolStatus } from '../../lib/apiService';
@@ -8,8 +8,14 @@ import type { GpuCeremonyStep, GpuStartMode } from '../../hooks/useGpuStartCerem
 import type { CeremonyStepView } from '../../hooks/gpuCeremonyState';
 import { formatCeremonyElapsed } from '../../hooks/gpuCeremonyState';
 import GpuCeremonyStepper from './GpuCeremonyStepper';
-import { isPriorProvisionFailed, sharedPoolJoinMode, poolPanelHeadline, poolPanelDetailLine } from './gpuPoolPanelCopy';
+import { isPriorProvisionFailed, poolPanelDetailLine } from './gpuPoolPanelCopy';
 import { getExtraResourceCopy } from '../../lib/extraResourceCopy';
+import {
+  activeSessionBillingLine,
+  buildGpuPoolViewPresentation,
+  deriveGpuPoolScenario,
+  introCostLine,
+} from './gpuPoolViewState';
 
 interface GpuPoolPanelProps {
   status: GPUPoolStatus | null;
@@ -52,37 +58,11 @@ interface GpuPoolPanelProps {
   reconnectUntil?: string | null;
 }
 
-function headline(
-  state?: GPUPoolStatus['state'],
-  userActive?: boolean,
-  inCeremony?: boolean,
-  ceremonyComplete?: boolean,
-  showUserFailure?: boolean,
-  isResume?: boolean,
-  copyInput?: {
-    sessionEndReason?: string | null;
-    refCount?: number;
-    drainReason?: GPUPoolStatus['drainReason'] | null;
-  }
-): string {
-  return poolPanelHeadline({
-    userActive: Boolean(userActive),
-    state,
-    sessionEndReason: copyInput?.sessionEndReason,
-    refCount: copyInput?.refCount,
-    inCeremony,
-    ceremonyComplete,
-    isResume,
-    showActiveFailure: showUserFailure,
-  });
-}
-
 export default function GpuPoolPanel({
   status,
   loading,
   error,
   isReady,
-  isStarting,
   isFailed,
   isDraining,
   userActive,
@@ -113,7 +93,6 @@ export default function GpuPoolPanel({
   sessionEndReason = null,
   drainReason = null,
   destroyAt = null,
-  gracePeriodSec = 300,
   reconnectEligible = false,
   reconnectUntil = null,
 }: GpuPoolPanelProps) {
@@ -150,7 +129,7 @@ export default function GpuPoolPanel({
   }, [isDraining, destroyAt]);
 
   useEffect(() => {
-    if (!reconnectEligible || userActive || isDraining || !reconnectUntil) {
+    if (!reconnectEligible || userActive || !reconnectUntil) {
       setSecondsToReconnect(null);
       return;
     }
@@ -161,7 +140,7 @@ export default function GpuPoolPanel({
     update();
     const id = window.setInterval(update, 1000);
     return () => window.clearInterval(id);
-  }, [reconnectEligible, userActive, isDraining, reconnectUntil]);
+  }, [reconnectEligible, userActive, reconnectUntil]);
 
   const ceremonyComplete = canRunTests || ceremonyStep >= 5;
   const isResume = ceremonyStartMode === 'resume';
@@ -171,42 +150,73 @@ export default function GpuPoolPanel({
     (inCeremony || (userActive && !ceremonyComplete));
   const showAdminElapsed =
     isAdmin && userActive && ceremonyElapsedMs > 0 && !ceremonyComplete;
-  const startupCharged = creditsStartupChargedSession > 0 ? creditsStartupChargedSession : startupCredits;
+  const startupCharged =
+    creditsStartupChargedSession > 0 ? creditsStartupChargedSession : startupCredits;
   const resourceCopy = getExtraResourceCopy();
-  const gpuTimeCharged =
-    creditsGpuTimeSession > 0
-      ? creditsGpuTimeSession
-      : Math.max(0, creditsChargedSession - startupCharged);
-  const showSessionTotal = ceremonyComplete && creditsChargedSession > 0;
-  const sessionTotalLine =
-    gpuTimeCharged > 0
-      ? `Session total: ${creditsChargedSession} credits · ${startupCharged} start + ${gpuTimeCharged} ${resourceCopy.sessionTimeLabel}`
-      : billingActive
-        ? `${startupCharged} credits to start · ${creditsPerMinute}/min while active`
-        : `${startupCharged} credits to start`;
-  const insufficientCredits = sessionEndReason === 'insufficient_credits';
-  const poolNotLive = sessionEndReason === 'pool_not_live';
+
   const copyInput = {
     userActive,
     sessionEndReason,
+    reconnectEligible,
     state: status?.state,
     refCount: status?.refCount,
     drainReason,
   };
-  const sharedJoin = sharedPoolJoinMode(copyInput);
-  const priorProvisionFailed = isPriorProvisionFailed(copyInput);
-  const priorPoolNotLive = !userActive && poolNotLive && !sharedJoin;
-  const priorInsufficientCredits = !userActive && insufficientCredits && !sharedJoin;
+
+  const scenario = deriveGpuPoolScenario({
+    ...copyInput,
+    inCeremony: Boolean(inCeremony),
+    ceremonyComplete,
+    isReady,
+    isResume,
+    isFailed,
+    showCeremonyStepper,
+  });
+
+  const view = useMemo(
+    () =>
+      buildGpuPoolViewPresentation(scenario, resourceCopy, {
+        ceremonySubline,
+        isResume,
+        ceremonyComplete,
+        error,
+        detailLine: poolPanelDetailLine(copyInput),
+        lastError: status?.lastError,
+        showCeremonyStepper,
+      }),
+    [
+      scenario,
+      resourceCopy,
+      ceremonySubline,
+      isResume,
+      ceremonyComplete,
+      error,
+      copyInput,
+      status?.lastError,
+      showCeremonyStepper,
+    ]
+  );
+
+  const showBetaIntro = view.showIntro && !error;
+  const sessionTotalLine =
+    scenario === 'A_ready'
+      ? activeSessionBillingLine({
+          creditsChargedSession,
+          creditsStartupChargedSession,
+          creditsGpuTimeSession,
+          startupCredits,
+          creditsPerMinute,
+          billingActive,
+          sessionTimeLabel: resourceCopy.sessionTimeLabel,
+        })
+      : null;
+
   const showStaleInsufficientCredits =
-    priorInsufficientCredits &&
+    scenario === 'A_insufficient' &&
     creditBalance !== null &&
     creditBalance !== undefined &&
     creditBalance < minCreditsToStart;
-  const stalePool =
-    !userActive &&
-    (status?.state === 'failed' || status?.state === 'idle' || !status?.state);
-  const showUserFailure = (isFailed && userActive) || priorProvisionFailed;
-  const showStaleFailure = priorProvisionFailed || priorPoolNotLive;
+
   const showLowBalanceNudge =
     billingActive &&
     creditBalance !== null &&
@@ -220,61 +230,24 @@ export default function GpuPoolPanel({
   };
 
   const destroyCountdownLine =
-    isDraining && secondsToDestroy !== null
+    view.showDestroyCountdown && isDraining && secondsToDestroy !== null
       ? drainReason === 'admin_grace'
         ? `${resourceCopy.retiredCountdown} ${formatCountdown(secondsToDestroy)}.`
         : `${resourceCopy.shutdownCountdown} ${formatCountdown(secondsToDestroy)} — Start session again to keep it running.`
       : null;
 
   const reconnectCountdownLine =
-    reconnectEligible && !userActive && !isDraining && secondsToReconnect !== null
+    view.showReconnectCountdown && secondsToReconnect !== null
       ? `Save your ${startupCharged} startup credits — Start within ${formatCountdown(secondsToReconnect)}. No extra startup charge.`
       : null;
 
-  const borderClass = showUserFailure || showStaleFailure
-    ? 'border-red-500/30 bg-red-500/10'
-    : ceremonyComplete && isReady && userActive
-      ? 'border-emerald-500/30 bg-emerald-500/10'
-      : 'border-amber-500/30 bg-amber-500/10';
-
-  const textClass = showUserFailure || showStaleFailure
-    ? 'text-red-100'
-    : ceremonyComplete && isReady && userActive
-      ? 'text-emerald-100'
-      : 'text-amber-100';
-
-  const defaultDetail =
-    showUserFailure && status?.lastError
-      ? status.lastError
-      : isResume && !ceremonyComplete
-        ? ceremonySubline
-        : ceremonyComplete && userActive
-          ? 'Compare below when you are ready. Stop session when finished.'
-          : isDraining && drainReason === 'user_grace'
-            ? resourceCopy.keepRunning
-            : isDraining
-            ? resourceCopy.shutdownScheduled
-            : showUserFailure
-              ? 'Please try Start session again in a few minutes.'
-              : stalePool
-                ? resourceCopy.tryBeta
-                : resourceCopy.reserveAndCompare;
-
-  const detailLine = poolPanelDetailLine(copyInput);
-
-  const showBetaIntro =
-    !userActive &&
-    !inCeremony &&
-    !isDraining &&
-    !showCeremonyStepper &&
-    !priorProvisionFailed &&
-    !priorPoolNotLive &&
-    !priorInsufficientCredits &&
-    !showStaleInsufficientCredits &&
-    !reconnectEligible &&
-    !error;
-
-  const betaCostLine = `Cost - ${startupCharged} Credits on Session Start · ${creditsPerMinute} Credits/minute · ${comparisonCost} Credits/compare`;
+  const betaCostLine = introCostLine(
+    scenario,
+    startupCredits,
+    creditsPerMinute,
+    comparisonCost,
+    creditsStartupChargedSession
+  );
 
   const startBlockedReason =
     !hasEnoughCreditsToStart && creditBalance !== null && creditBalance !== undefined
@@ -282,6 +255,20 @@ export default function GpuPoolPanel({
         ? `Need at least ${creditsPerMinute} credits to continue (you have ${creditBalance}).`
         : `Need ${minCreditsToStart} credits to start a session (you have ${creditBalance}).`
       : null;
+
+  const borderClass =
+    view.variant === 'red'
+      ? 'border-red-500/30 bg-red-500/10'
+      : view.variant === 'emerald'
+        ? 'border-emerald-500/30 bg-emerald-500/10'
+        : 'border-amber-500/30 bg-amber-500/10';
+
+  const textClass =
+    view.variant === 'red'
+      ? 'text-red-100'
+      : view.variant === 'emerald'
+        ? 'text-emerald-100'
+        : 'text-amber-100';
 
   return (
     <div className={`rounded-lg border px-3 py-2 text-sm ${compact ? '' : 'mb-0'} ${borderClass} ${textClass}`}>
@@ -295,52 +282,42 @@ export default function GpuPoolPanel({
                   <p>{resourceCopy.betaIntroLine1}</p>
                   <p>{resourceCopy.betaIntroLine2}</p>
                   <p className="font-medium opacity-100">{betaCostLine}</p>
+                  {reconnectCountdownLine && (
+                    <p className="font-medium text-amber-200 opacity-100">{reconnectCountdownLine}</p>
+                  )}
+                  {scenario === 'A1' && isDraining && drainReason !== 'user_grace' && (
+                    <p className="opacity-80">{resourceCopy.shuttingDownWait}</p>
+                  )}
                 </div>
               ) : (
                 <>
-              <p className="font-medium">
-                {headline(
-                  status?.state,
-                  userActive,
-                  inCeremony,
-                  ceremonyComplete,
-                  showUserFailure && userActive,
-                  isResume,
-                  { sessionEndReason, refCount: status?.refCount, drainReason }
-                )}
-              </p>
-              {showStaleInsufficientCredits ? (
-                <p className="text-xs opacity-80">
-                  {resourceCopy.insufficientCreditsDetail}{' '}
-                  <Link href="/subscription" className="underline hover:opacity-100">
-                    Add credits
-                  </Link>{' '}
-                  to start again.
-                </p>
-              ) : priorInsufficientCredits ? (
-                <p className="text-xs opacity-80">
-                  Previous session ended when credits ran out — you can start again.
-                </p>
-              ) : priorProvisionFailed && detailLine ? (
-                <p className="text-xs opacity-80">{detailLine}</p>
-              ) : priorPoolNotLive ? (
-                <p className="text-xs opacity-80">
-                  {resourceCopy.notRunningDetail}
-                </p>
-              ) : (
-                !showCeremonyStepper && (
-                  <p className="text-xs opacity-80">{error ?? defaultDetail}</p>
-                )
-              )}
+                  <p className="font-medium">{view.headline}</p>
+                  {showStaleInsufficientCredits ? (
+                    <p className="text-xs opacity-80">
+                      {resourceCopy.insufficientCreditsDetail}{' '}
+                      <Link href="/subscription" className="underline hover:opacity-100">
+                        Add credits
+                      </Link>{' '}
+                      to start again.
+                    </p>
+                  ) : scenario === 'A_insufficient' ? (
+                    <p className="text-xs opacity-80">
+                      Previous session ended when credits ran out — you can start again.
+                    </p>
+                  ) : view.detail ? (
+                    <p className="text-xs opacity-80">{error ?? view.detail}</p>
+                  ) : error ? (
+                    <p className="text-xs opacity-80">{error}</p>
+                  ) : null}
                 </>
               )}
-              {showSessionTotal && (
+              {sessionTotalLine && (
                 <p className="mt-1 text-xs font-medium opacity-90">{sessionTotalLine}</p>
               )}
-              {reconnectCountdownLine && !showStaleInsufficientCredits && !priorInsufficientCredits && !priorPoolNotLive && !priorProvisionFailed && (
+              {reconnectCountdownLine && !showBetaIntro && (
                 <p className="mt-1 text-xs font-medium text-amber-200">{reconnectCountdownLine}</p>
               )}
-              {destroyCountdownLine && !showStaleInsufficientCredits && !priorInsufficientCredits && !priorPoolNotLive && !priorProvisionFailed && (
+              {destroyCountdownLine && !showBetaIntro && (
                 <p className="mt-1 text-xs font-medium text-amber-200">{destroyCountdownLine}</p>
               )}
               {showLowBalanceNudge && secondsToNextCharge !== null && (

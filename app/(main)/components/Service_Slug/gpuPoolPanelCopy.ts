@@ -10,10 +10,47 @@ export const GPU_RECONNECT_HINT = copy().reconnectHint;
 export type GpuPoolPanelCopyInput = {
   userActive: boolean;
   sessionEndReason?: string | null;
+  reconnectEligible?: boolean;
   state?: GPUPoolStatus['state'];
   refCount?: number;
   drainReason?: GPUPoolStatus['drainReason'] | null;
 };
+
+/** First visit: beta key in, never started or stopped a session on this pool. */
+export function isFreshGpuVisitor(input: GpuPoolPanelCopyInput): boolean {
+  if (input.userActive || input.reconnectEligible) return false;
+  if (input.sessionEndReason) return false;
+  return true;
+}
+
+/** A3: stopped before Compare worked; reconnect window open (not A4 user-grace standby). */
+export function isEarlyStopReconnect(input: GpuPoolPanelCopyInput): boolean {
+  if (input.userActive || !input.reconnectEligible) return false;
+  if (input.state === 'draining' && input.drainReason === 'user_grace') return false;
+  return true;
+}
+
+/** A4: user stopped after Compare — pool in user-grace standby (not A1 intro). */
+export function isUserGraceStandby(input: GpuPoolPanelCopyInput): boolean {
+  return (
+    !input.userActive &&
+    input.state === 'draining' &&
+    input.drainReason === 'user_grace' &&
+    Boolean(input.sessionEndReason)
+  );
+}
+
+/** A1 idle intro panel, or A3 same intro + reconnect countdown (scenario doc). */
+export function showGpuIdleIntroPanel(input: GpuPoolPanelCopyInput): boolean {
+  if (input.userActive) return false;
+  if (isUserGraceStandby(input)) return false;
+  if (input.state === 'draining') {
+    // Fresh / second tester while pool is in user-grace but they have no ended session (A1).
+    if (input.drainReason === 'user_grace' && !input.sessionEndReason) return true;
+    return false;
+  }
+  return true;
+}
 
 export function isOrphanBootReconnect(input: GpuPoolPanelCopyInput): boolean {
   return !input.userActive && input.state === 'provisioning' && (input.refCount ?? 0) === 0;
@@ -80,6 +117,9 @@ export function poolPanelHeadline(
   if (inCeremony) return c.startingSession;
   if (state === 'ready' && userActive && ceremonyComplete) return 'AI Ready';
   if (userActive && !ceremonyComplete) return c.startingSession;
+  if (isUserGraceStandby(input)) {
+    return c.onStandby;
+  }
   if (state === 'draining') {
     return input.drainReason === 'user_grace' ? c.onStandby : c.endingSession;
   }
