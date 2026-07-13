@@ -8,6 +8,7 @@ import {
   resolveWarmPadMs,
   STEP_LABELS,
   STEP_SHORT_LABELS,
+  resolveCeremonyTicker,
   type CeremonyStepView,
   type CeremonyThresholds,
   type GpuCeremonyStep,
@@ -95,6 +96,11 @@ export function useGpuStartCeremony(options: {
       ? 'Resuming your session…'
       : `${startupCredits} credits charged — preparing your session…`;
 
+  const tickerMessage =
+    sessionActive && startedAt !== null && lockedMode !== 'resume' && !ceremony.canRunTests
+      ? resolveCeremonyTicker(elapsedMs, lockedMode)
+      : null;
+
   return {
     step: ceremony.step,
     steps: ceremony.steps,
@@ -102,6 +108,7 @@ export function useGpuStartCeremony(options: {
     canRunTests: sessionActive && ceremony.canRunTests,
     inCeremony,
     subline,
+    tickerMessage,
     elapsedMs: sessionActive ? elapsedMs : 0,
     startMode: lockedMode,
   };

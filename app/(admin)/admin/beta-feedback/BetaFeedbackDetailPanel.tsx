@@ -141,6 +141,12 @@ export default function BetaFeedbackDetailPanel({
 
             {sessionDetail && (
               <>
+                <a
+                  href="/admin/gpu-pools?tab=support&tag=vlm-e2e-gpu"
+                  className="inline-flex text-sm text-sky-300 hover:text-sky-200 underline"
+                >
+                  GPU pool status →
+                </a>
                 {match !== null && sessionDetail.status === 'refunded' && (
                   <div
                     className={`rounded-lg border px-4 py-2 text-sm ${

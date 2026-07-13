@@ -212,3 +212,32 @@ export function formatCeremonyElapsed(ms: number): string {
   const seconds = totalSec % 60;
   return minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
 }
+
+export const CEREMONY_TICKER_INTERVAL_MS = 7_000;
+
+const COLD_CEREMONY_TICKERS = [
+  'Hang tight — your resource is getting ready.',
+  'This can take about 10 minutes on a cold start.',
+  "We're allocating compute and preparing your environment.",
+  "You'll be able to compare as soon as setup finishes.",
+] as const;
+
+const WARM_CEREMONY_TICKERS = [
+  'Hang tight — your resource is getting ready.',
+  'Warming up your session…',
+  'Almost ready — finishing the last steps.',
+] as const;
+
+/** Rotating reassurance copy while the ceremony stepper is visible. */
+export function resolveCeremonyTicker(
+  elapsedMs: number,
+  startMode: GpuStartMode,
+  intervalMs: number = CEREMONY_TICKER_INTERVAL_MS
+): string {
+  const messages =
+    startMode === 'warm_ready' || startMode === 'warm_join'
+      ? WARM_CEREMONY_TICKERS
+      : COLD_CEREMONY_TICKERS;
+  const index = Math.floor(Math.max(0, elapsedMs) / intervalMs) % messages.length;
+  return messages[index];
+}

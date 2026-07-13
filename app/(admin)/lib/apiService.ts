@@ -126,6 +126,11 @@ interface GPUPoolAdminInfo {
   nodeId?: string;
   publicIp?: string;
   previousPublicIp?: string;
+  provider?: string;
+  instanceType?: string;
+  capacityType?: string;
+  region?: string;
+  deployVersion?: string;
   readyAt?: string;
   drainStartedAt?: string;
   drainReason?: 'user_grace' | 'admin_grace';
@@ -133,10 +138,143 @@ interface GPUPoolAdminInfo {
   lastError?: string;
   updatedAt?: string;
   createdAt?: string;
+  sessions?: GPUPoolSessionInfo[];
+  gracePeriodSec?: number;
+  policySummary?: string;
+  activeJob?: GPUPoolJobInfo;
+}
+
+interface GPUPoolSessionInfo {
+  userId: string;
+  startedAt: string;
+  stoppedAt?: string;
+  creditsCharged?: number;
+  creditsStartupCharged?: number;
+  endReason?: string;
+}
+
+interface GPUPoolJobInfo {
+  id: string;
+  type: string;
+  status: string;
+  attempts: number;
+  maxAttempts: number;
+  lastError?: string;
+  createdAt?: string;
+  startedAt?: string;
+}
+
+interface GPUPoolBillingInfo {
+  startupCredits: number;
+  creditsPerMin: number;
+  readOnly: boolean;
+}
+
+type GPUProviderName = 'e2e' | 'aws' | 'gcp' | 'none';
+
+interface GPUProvisionInfrastructure {
+  primaryProvider: GPUProviderName;
+  fallbackProvider?: GPUProviderName;
+  e2e?: { location?: string; gpuCard?: string; plan?: string };
+  aws?: {
+    region?: string;
+    instanceType?: string;
+    capacityType?: 'spot' | 'on-demand';
+    capacityFallback?: 'spot' | 'on-demand' | 'none';
+    fallbackCapacity?: 'spot' | 'on-demand' | 'none';
+    subnetId?: string;
+    securityGroupId?: string;
+  };
+  gcp?: { enabled?: boolean; region?: string; machineType?: string };
+}
+
+interface GPUProvisionTimeouts {
+  sshReadyPrimarySec?: number;
+  sshReadyFallbackSec?: number;
+  e2eWaitSec?: number;
+  e2eStallSec?: number;
+  e2eDestroyWaitSec?: number;
+  deployHealthSec?: number;
+}
+
+interface GPUProvisionRetries {
+  provisionMaxAttempts?: number;
+  destroyMaxAttempts?: number;
+  reuseNodeOnRetry?: boolean;
+}
+
+interface GPUProvisionLifecycle {
+  gracePeriodMin?: number;
+  reconnectCooldownSec?: number;
+  stuckProvisionNoJobMin?: number;
+  stuckProvisionZombieMin?: number;
+  userRetryHintMin?: number;
+}
+
+interface GPUProvisionFlags {
+  maintenanceMode?: boolean;
+  blockNewSessions?: boolean;
+  maintenanceMessage?: string;
+}
+
+interface GPUProvisionConfig {
+  id?: string;
+  serviceTag: string;
+  serviceName?: string;
+  infrastructure: GPUProvisionInfrastructure;
+  timeouts: GPUProvisionTimeouts;
+  retries: GPUProvisionRetries;
+  lifecycle: GPUProvisionLifecycle;
+  flags: GPUProvisionFlags;
+  updatedAt?: string;
+  updatedBy?: string;
+  createdAt?: string;
 }
 
 interface GPUPoolListResponse {
   pools: GPUPoolAdminInfo[];
+  billing?: GPUPoolBillingInfo;
+}
+
+interface GPUPoolPolicyResponse {
+  policy: GPUProvisionConfig;
+  policySummary?: string;
+}
+
+interface GPUPoolDiagnosticsResult {
+  serviceTag: string;
+  state: GPUPoolAdminState;
+  provider?: string;
+  nodeLive: boolean;
+  gatewayHealth: boolean;
+  publicIp?: string;
+  nodeId?: string;
+  policySummary?: string;
+  summary: string[];
+  probedAt: string;
+}
+
+interface GPUPoolSupportView {
+  serviceTag: string;
+  state: GPUPoolAdminState;
+  provider?: string;
+  providerLabel?: string;
+  publicIp?: string;
+  refCount: number;
+  canStart: boolean;
+  userFacingError?: string;
+  lastErrorRaw?: string;
+  maintenanceBlock: boolean;
+  sessions?: GPUPoolSupportSessionInfo[];
+}
+
+interface GPUPoolSupportSessionInfo {
+  userId: string;
+  startedAt: string;
+  stoppedAt?: string;
+  creditsCharged?: number;
+  creditsStartupCharged?: number;
+  active: boolean;
 }
 
 interface GuestPassInfo {
@@ -1381,6 +1519,72 @@ class ApiService {
     return this.makeAuthenticatedRequest<GPUPoolListResponse>('/admin/gpu-pools');
   }
 
+  async getGpuPoolPolicy(serviceTag: string): Promise<GPUPoolPolicyResponse> {
+    return this.makeAuthenticatedRequest<GPUPoolPolicyResponse>(
+      `/admin/gpu-pools/${encodeURIComponent(serviceTag)}/policy`
+    );
+  }
+
+  async putGpuPoolPolicy(serviceTag: string, policy: GPUProvisionConfig): Promise<GPUPoolPolicyResponse> {
+    return this.makeAuthenticatedRequest<GPUPoolPolicyResponse>(
+      `/admin/gpu-pools/${encodeURIComponent(serviceTag)}/policy`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ ...policy, serviceTag }),
+      }
+    );
+  }
+
+  async listGpuPoolJobs(serviceTag: string): Promise<{ jobs: GPUPoolJobInfo[] }> {
+    return this.makeAuthenticatedRequest(`/admin/gpu-pools/${encodeURIComponent(serviceTag)}/jobs`);
+  }
+
+  async getGpuPoolJobLog(serviceTag: string, jobId?: string): Promise<{ lines: string[]; path: string }> {
+    const q = jobId ? `?jobId=${encodeURIComponent(jobId)}` : '';
+    return this.makeAuthenticatedRequest(
+      `/admin/gpu-pools/${encodeURIComponent(serviceTag)}/job-log${q}`
+    );
+  }
+
+  async runGpuPoolDiagnostics(serviceTag: string): Promise<GPUPoolDiagnosticsResult> {
+    return this.makeAuthenticatedRequest<GPUPoolDiagnosticsResult>(
+      `/admin/gpu-pools/${encodeURIComponent(serviceTag)}/diagnostics`,
+      { method: 'POST' }
+    );
+  }
+
+  async abortGpuPoolProvision(serviceTag: string): Promise<{ ok: boolean }> {
+    return this.makeAuthenticatedRequest(
+      `/admin/gpu-pools/${encodeURIComponent(serviceTag)}/abort-provision`,
+      { method: 'POST' }
+    );
+  }
+
+  async retryGpuPoolProvision(serviceTag: string): Promise<{ ok: boolean }> {
+    return this.makeAuthenticatedRequest(
+      `/admin/gpu-pools/${encodeURIComponent(serviceTag)}/retry-provision`,
+      { method: 'POST' }
+    );
+  }
+
+  async getGpuPoolSupport(serviceTag: string): Promise<GPUPoolSupportView> {
+    return this.makeAuthenticatedRequest<GPUPoolSupportView>(
+      `/admin/gpu-pools/${encodeURIComponent(serviceTag)}/support`
+    );
+  }
+
+  /** @deprecated use getGpuPoolPolicy */
+  async getGpuProvisionConfig(serviceTag: string): Promise<GPUProvisionConfig> {
+    const res = await this.getGpuPoolPolicy(serviceTag);
+    return res.policy;
+  }
+
+  /** @deprecated use putGpuPoolPolicy */
+  async putGpuProvisionConfig(payload: GPUProvisionConfig): Promise<GPUProvisionConfig> {
+    const res = await this.putGpuPoolPolicy(payload.serviceTag, payload);
+    return res.policy;
+  }
+
   async shutdownGpuPool(serviceTag: string, immediate = false): Promise<GPUPoolAdminInfo> {
     return this.makeAuthenticatedRequest<GPUPoolAdminInfo>('/admin/gpu-pools/shutdown', {
       method: 'POST',
@@ -1520,6 +1724,11 @@ export type {
   BetaServiceUpdateRequest,
   GPUPoolAdminInfo,
   GPUPoolAdminState,
+  GPUPoolBillingInfo,
+  GPUPoolDiagnosticsResult,
+  GPUPoolJobInfo,
+  GPUPoolSupportView,
+  GPUProvisionConfig,
   GuestPassInfo,
   GuestPassCreateRequest,
   GuestPassCreateResponse,

@@ -463,6 +463,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
     ceremonyStep: ceremony.step,
     ceremonySteps: ceremony.steps,
     ceremonySubline: ceremony.subline,
+    ceremonyTicker: ceremony.tickerMessage,
     ceremonyElapsedMs: ceremony.elapsedMs,
     ceremonyStartMode: ceremony.startMode,
     inCeremony: ceremony.inCeremony,

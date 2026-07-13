@@ -131,10 +131,29 @@ describe('buildGpuPoolViewPresentation', () => {
     expect(p.detail).toContain('Compare below');
     expect(p.variant).toBe('emerald');
   });
+
+  it('A4 exposes destroy countdown for standby grace copy', () => {
+    const p = buildGpuPoolViewPresentation('A4', copy, {
+      ceremonySubline: '',
+      isResume: false,
+      ceremonyComplete: false,
+      error: null,
+      detailLine: null,
+      showCeremonyStepper: false,
+    });
+    expect(p.headline).toBe('Resource on standby');
+    expect(p.showDestroyCountdown).toBe(true);
+    expect(p.detail).toBe('Start session again to keep this resource running.');
+  });
 });
 
 describe('introCostLine', () => {
-  it('A3 shows startup already paid', () => {
-    expect(introCostLine('A3', 20, 2, 2, 6)).toContain('startup already paid');
+  it('A3 shows startup already paid from session bookkeeping', () => {
+    expect(introCostLine('A3', 20, 2, 2, 20)).toContain('20 startup already paid');
+    expect(introCostLine('A3', 20, 2, 2, 20)).not.toContain('(4 startup');
+  });
+
+  it('A3 shows resource time separately when meter ran', () => {
+    expect(introCostLine('A3', 20, 2, 2, 20, 4)).toContain('4 resource time this session');
   });
 });

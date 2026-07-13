@@ -20,6 +20,7 @@ export type ExtraResourceCopy = {
   reconnectHint: string;
   shutdownScheduled: string;
   keepRunning: string;
+  shutdownDue: string;
   tryBeta: string;
   reserveAndCompare: string;
   insufficientCreditsDetail: string;
@@ -55,6 +56,7 @@ const defaultCopy: ExtraResourceCopy = {
   reconnectHint: 'Tap Start to continue — no extra startup charge within 5 minutes.',
   shutdownScheduled: 'Resource shutdown scheduled.',
   keepRunning: 'Start session again to keep this resource running.',
+  shutdownDue: 'Shutdown is due now. Start a new session to request the resource again.',
   tryBeta: 'Start session to try the beta resource.',
   reserveAndCompare: 'Start session to reserve a resource, then compare below.',
   insufficientCreditsDetail: 'Session ended — not enough credits for resource time.',
@@ -69,6 +71,6 @@ const defaultCopy: ExtraResourceCopy = {
   shutdownCountdown: 'Resource shuts down in',
 };
 
-export function getExtraResourceCopy(_serviceTag?: string): ExtraResourceCopy {
+export function getExtraResourceCopy(): ExtraResourceCopy {
   return defaultCopy;
 }

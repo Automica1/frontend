@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildCeremonyThresholds,
+  CEREMONY_TICKER_INTERVAL_MS,
   computeCeremonyState,
   formatCeremonyElapsed,
   resolveCeremonyStartMode,
+  resolveCeremonyTicker,
   type CeremonyThresholds,
 } from './gpuCeremonyState';
 import { deriveGpuCeremonyMode } from './useGpuPool';
@@ -157,5 +159,17 @@ describe('buildCeremonyThresholds', () => {
   it('warm cumulative ends at warm pad', () => {
     const thresholds = buildCeremonyThresholds('warm_ready', 12_000, () => 0.5);
     expect(thresholds.warmCumulativeMs[4]).toBe(12_000);
+  });
+});
+
+describe('resolveCeremonyTicker', () => {
+  it('rotates cold-start messages every interval', () => {
+    expect(resolveCeremonyTicker(0, 'cold')).toContain('getting ready');
+    expect(resolveCeremonyTicker(CEREMONY_TICKER_INTERVAL_MS, 'cold')).toContain('10 minutes');
+  });
+
+  it('uses shorter warm messages', () => {
+    expect(resolveCeremonyTicker(0, 'warm_ready')).toContain('getting ready');
+    expect(resolveCeremonyTicker(CEREMONY_TICKER_INTERVAL_MS, 'warm_join')).toContain('Warming up');
   });
 });

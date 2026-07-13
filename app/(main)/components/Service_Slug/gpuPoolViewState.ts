@@ -185,11 +185,17 @@ export function introCostLine(
   startupCredits: number,
   creditsPerMinute: number,
   comparisonCost: number,
-  creditsStartupChargedSession: number
+  creditsStartupChargedSession: number,
+  creditsGpuTimeSession = 0
 ): string {
   if (scenario === 'A3') {
-    const paid = creditsStartupChargedSession > 0 ? creditsStartupChargedSession : startupCredits;
-    return `Cost - ${creditsPerMinute} Credits/minute · ${comparisonCost} Credits/compare (${paid} startup already paid)`;
+    const reserved =
+      creditsStartupChargedSession > 0 ? creditsStartupChargedSession : startupCredits;
+    const rates = `${creditsPerMinute} Credits/minute · ${comparisonCost} Credits/compare`;
+    if (creditsGpuTimeSession > 0) {
+      return `Cost - ${rates} · ${reserved} startup already paid · ${creditsGpuTimeSession} resource time this session`;
+    }
+    return `Cost - ${rates} · ${reserved} startup already paid`;
   }
   return `Cost - ${startupCredits} Credits on Session Start · ${creditsPerMinute} Credits/minute · ${comparisonCost} Credits/compare`;
 }
@@ -203,15 +209,18 @@ export function activeSessionBillingLine(input: {
   billingActive: boolean;
   sessionTimeLabel: string;
 }): string | null {
-  const startupCharged =
+  const startupBooked =
     input.creditsStartupChargedSession > 0 ? input.creditsStartupChargedSession : input.startupCredits;
+  const startupDebited =
+    input.creditsChargedSession >= startupBooked && startupBooked > 0 ? startupBooked : 0;
   const gpuTimeCharged =
     input.creditsGpuTimeSession > 0
       ? input.creditsGpuTimeSession
-      : Math.max(0, input.creditsChargedSession - startupCharged);
+      : Math.max(0, input.creditsChargedSession - startupDebited);
 
   if (gpuTimeCharged > 0) {
-    return `Session total: ${input.creditsChargedSession} credits · ${startupCharged} start + ${gpuTimeCharged} ${input.sessionTimeLabel}`;
+    const startPart = startupDebited > 0 ? `${startupDebited} start + ` : '';
+    return `Session total: ${input.creditsChargedSession} credits · ${startPart}${gpuTimeCharged} ${input.sessionTimeLabel}`;
   }
   if (input.creditsChargedSession > 0) {
     return `${input.creditsChargedSession} credits charged · ${input.creditsPerMinute}/min while active`;

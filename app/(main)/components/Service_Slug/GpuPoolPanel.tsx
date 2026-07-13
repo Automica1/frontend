@@ -8,7 +8,7 @@ import type { GpuCeremonyStep, GpuStartMode } from '../../hooks/useGpuStartCerem
 import type { CeremonyStepView } from '../../hooks/gpuCeremonyState';
 import { formatCeremonyElapsed } from '../../hooks/gpuCeremonyState';
 import GpuCeremonyStepper from './GpuCeremonyStepper';
-import { isPriorProvisionFailed, poolPanelDetailLine } from './gpuPoolPanelCopy';
+import { poolPanelDetailLine } from './gpuPoolPanelCopy';
 import { getExtraResourceCopy } from '../../lib/extraResourceCopy';
 import {
   activeSessionBillingLine,
@@ -16,6 +16,7 @@ import {
   deriveGpuPoolScenario,
   introCostLine,
 } from './gpuPoolViewState';
+import { destroyCountdownCopy, formatGpuCountdown } from './gpuPoolCountdownCopy';
 
 interface GpuPoolPanelProps {
   status: GPUPoolStatus | null;
@@ -33,6 +34,7 @@ interface GpuPoolPanelProps {
   ceremonyStep?: GpuCeremonyStep;
   ceremonySteps?: CeremonyStepView[];
   ceremonySubline?: string;
+  ceremonyTicker?: string | null;
   ceremonyElapsedMs?: number;
   ceremonyStartMode?: GpuStartMode;
   inCeremony?: boolean;
@@ -73,6 +75,7 @@ export default function GpuPoolPanel({
   ceremonyStep = 0,
   ceremonySteps = [],
   ceremonySubline = '20 credits charged — preparing your session…',
+  ceremonyTicker = null,
   ceremonyElapsedMs = 0,
   ceremonyStartMode,
   inCeremony = false,
@@ -154,14 +157,17 @@ export default function GpuPoolPanel({
     creditsStartupChargedSession > 0 ? creditsStartupChargedSession : startupCredits;
   const resourceCopy = getExtraResourceCopy();
 
-  const copyInput = {
-    userActive,
-    sessionEndReason,
-    reconnectEligible,
-    state: status?.state,
-    refCount: status?.refCount,
-    drainReason,
-  };
+  const copyInput = useMemo(
+    () => ({
+      userActive,
+      sessionEndReason,
+      reconnectEligible,
+      state: status?.state,
+      refCount: status?.refCount,
+      drainReason,
+    }),
+    [userActive, sessionEndReason, reconnectEligible, status?.state, status?.refCount, drainReason]
+  );
 
   const scenario = deriveGpuPoolScenario({
     ...copyInput,
@@ -223,22 +229,14 @@ export default function GpuPoolPanel({
     creditBalance !== undefined &&
     creditBalance < creditsPerMinute;
 
-  const formatCountdown = (totalSec: number) => {
-    const m = Math.floor(totalSec / 60);
-    const s = totalSec % 60;
-    return m > 0 ? `${m}m ${s}s` : `${s}s`;
-  };
-
   const destroyCountdownLine =
     view.showDestroyCountdown && isDraining && secondsToDestroy !== null
-      ? drainReason === 'admin_grace'
-        ? `${resourceCopy.retiredCountdown} ${formatCountdown(secondsToDestroy)}.`
-        : `${resourceCopy.shutdownCountdown} ${formatCountdown(secondsToDestroy)} — Start session again to keep it running.`
+      ? destroyCountdownCopy({ secondsToDestroy, drainReason, copy: resourceCopy })
       : null;
 
   const reconnectCountdownLine =
     view.showReconnectCountdown && secondsToReconnect !== null
-      ? `Save your ${startupCharged} startup credits — Start within ${formatCountdown(secondsToReconnect)}. No extra startup charge.`
+      ? `Save your ${startupCharged} startup credits — Start within ${formatGpuCountdown(secondsToReconnect)}. No extra startup charge.`
       : null;
 
   const betaCostLine = introCostLine(
@@ -246,7 +244,8 @@ export default function GpuPoolPanel({
     startupCredits,
     creditsPerMinute,
     comparisonCost,
-    creditsStartupChargedSession
+    creditsStartupChargedSession,
+    creditsGpuTimeSession
   );
 
   const startBlockedReason =
@@ -334,6 +333,12 @@ export default function GpuPoolPanel({
             </div>
 
             {showCeremonyStepper && <GpuCeremonyStepper steps={ceremonySteps} />}
+
+            {showCeremonyStepper && ceremonyTicker && (
+              <p key={ceremonyTicker} className="text-xs opacity-80">
+                {ceremonyTicker}
+              </p>
+            )}
 
             {showAdminElapsed && (
               <p className="font-mono text-[0.6rem] text-zinc-400">
