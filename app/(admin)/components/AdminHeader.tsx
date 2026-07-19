@@ -3,16 +3,20 @@
 import type { ComponentType } from 'react';
 import { useState } from 'react';
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { KindeUser } from "@kinde-oss/kinde-auth-nextjs/types";
-import { Bell, Search, User, LogOut, Sparkles, Loader2, Users, Coins, Package, Activity, ReceiptText } from "lucide-react";
+import { Bell, Search, User, LogOut, Sparkles, Loader2, Users, Coins, Package, Activity, ReceiptText, Menu } from "lucide-react";
 import { apiService } from "../lib/apiService";
 
 interface AdminHeaderProps {
-  user: KindeUser<any>;
+  user: KindeUser<Record<string, unknown>>;
 }
 
 export default function AdminHeader({ user }: AdminHeaderProps) {
+  const pathname = usePathname() ?? '';
+  const compact = pathname.startsWith('/admin/ai-saas') || pathname.startsWith('/admin/ai-services-preview') || pathname.startsWith('/admin/ai-services');
+  const compactSubtitle = 'AI Services workbench';
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Awaited<ReturnType<typeof apiService.searchAdmin>> | null>(null);
@@ -35,6 +39,57 @@ export default function AdminHeader({ user }: AdminHeaderProps) {
       setLoading(false);
     }
   };
+
+  if (compact) {
+    return (
+      <header className="z-30 border-b border-white/10 bg-black/35 backdrop-blur-2xl">
+        <div className="flex h-11 items-center justify-between gap-3 px-3 md:px-4">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event('automica-admin-nav-open'))}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-gray-200 hover:bg-white/10 lg:hidden"
+            title="Open admin navigation"
+          >
+            <Menu className="h-4 w-4" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-white">Automica Admin</p>
+            <p className="truncate text-[10px] font-medium text-gray-500">{compactSubtitle}</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button className="relative rounded-lg border border-white/10 bg-white/5 p-1.5 text-gray-300 transition-all hover:border-sky-400/30 hover:bg-white/10 hover:text-white">
+              <Bell className="h-4 w-4" />
+              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full border border-black/40 bg-sky-400"></span>
+            </button>
+            <div className="hidden min-w-0 text-right sm:block">
+              <p className="truncate text-xs font-semibold leading-none text-white">{user.given_name || 'Admin'}</p>
+              <p className="mt-0.5 max-w-[220px] truncate text-[10px] font-medium text-gray-500">{user.email}</p>
+            </div>
+            <div className="group relative">
+              <div className="flex h-8 w-8 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 ring-2 ring-transparent transition-all group-hover:ring-sky-400/25">
+                {user.picture ? (
+                  <img src={user.picture} alt="profile" className="h-full w-full object-cover" />
+                ) : (
+                  <User className="h-4 w-4 text-gray-300" />
+                )}
+              </div>
+              <div className="invisible absolute right-0 top-full mt-2 w-52 origin-top-right scale-95 overflow-hidden rounded-xl border border-white/10 bg-black/90 py-1 opacity-0 shadow-2xl transition-all duration-200 group-hover:visible group-hover:scale-100 group-hover:opacity-100">
+                <Link href="/admin/settings" className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-200 transition-colors hover:bg-white/5">
+                  <User className="h-4 w-4" />
+                  My Profile
+                </Link>
+                <div className="my-1 h-px bg-white/10"></div>
+                <LogoutLink postLogoutRedirectURL="/" className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-300 transition-colors hover:bg-red-500/10">
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </LogoutLink>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="sticky top-0 z-30 border-b border-white/10 bg-black/35 backdrop-blur-2xl">
@@ -184,7 +239,7 @@ function ResultGroup({
           <p className="text-sm font-semibold text-white">{title}</p>
         </div>
         <Link href={href} className="text-xs font-semibold uppercase tracking-[0.22em] text-purple-200 hover:text-white">
-          Open
+          Open {count}
         </Link>
       </div>
       <div className="mt-3 space-y-2">

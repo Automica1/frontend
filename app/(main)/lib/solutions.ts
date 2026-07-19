@@ -1,5 +1,5 @@
 // lib/solutions.ts
-import { Table, QrCode, User, Scissors, Code, Zap, Shield, Globe, FileCheck, Cpu, Mic, Volume2 } from 'lucide-react';
+import { Table, QrCode, User, Scissors, Code, Zap, Shield, Globe, FileCheck, Mic, Volume2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export type SolutionKey =
@@ -7,6 +7,7 @@ export type SolutionKey =
   | 'qr-extract'
   | 'id-crop'
   | 'document-enhancement'
+  | 'ocr'
   | 'qr-masking'
   | 'face-verify'
   | 'face-cropping'
@@ -17,6 +18,40 @@ export interface UseCase {
   title: string;
   description: string;
   icon: LucideIcon;
+}
+
+export interface ServicePolicyLimit {
+  key?: string;
+  label: string;
+  value: string;
+  unit?: string;
+  hint?: string;
+}
+
+export interface ServicePolicyPricing {
+  key?: string;
+  label: string;
+  value: string;
+  cadence?: 'hit' | 'page' | 'session' | 'minute' | 'token';
+  unit?: string;
+  hint?: string;
+}
+
+export interface ServicePolicy {
+  source?: 'catalog' | 'override';
+  pricingMode?: 'per_hit' | 'per_page' | 'session' | 'hybrid';
+  editable?: boolean;
+  maxUploadSizeMB?: number | null;
+  maxPages?: number | null;
+  maxFiles?: number | null;
+  allowedFormats?: string[];
+  creditsPerHit?: number | null;
+  creditsPerPage?: number | null;
+  sessionStartCredits?: number | null;
+  creditsPerMinute?: number | null;
+  limits?: ServicePolicyLimit[];
+  pricing?: ServicePolicyPricing[];
+  notes?: string[];
 }
 
 export interface PricingTier {
@@ -41,6 +76,8 @@ export interface Solution {
   hasBeta?: boolean;
   requiresGpuPool?: boolean;
   betaServiceTag?: string;
+  gpuServiceTag?: string;
+  servicePolicy?: ServicePolicy;
   tagline: string;
   description: string;
   icon: LucideIcon;
@@ -52,12 +89,184 @@ export interface Solution {
   documentation: string;
 }
 
+const SOLUTION_POLICY_STORAGE_KEY = 'automica.solutionPolicyOverrides.v1';
+
+function canUseBrowserStorage(): boolean {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+}
+
+function cloneServicePolicy(policy?: ServicePolicy): ServicePolicy | undefined {
+  if (!policy) return undefined;
+  return {
+    ...policy,
+    allowedFormats: policy.allowedFormats ? [...policy.allowedFormats] : undefined,
+    limits: policy.limits?.map((item) => ({ ...item })),
+    pricing: policy.pricing?.map((item) => ({ ...item })),
+    notes: policy.notes ? [...policy.notes] : undefined,
+  };
+}
+
+function isSetNumber(value?: number | null): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function buildServicePolicyLimitRows(policy?: ServicePolicy): ServicePolicyLimit[] {
+  const rows: ServicePolicyLimit[] = [];
+
+  if (isSetNumber(policy?.maxUploadSizeMB)) {
+    rows.push({ key: 'max_upload_size_mb', label: 'Upload size', value: `${policy.maxUploadSizeMB} MB` });
+  }
+  if (isSetNumber(policy?.maxPages)) {
+    rows.push({ key: 'max_pages', label: 'Page count', value: `${policy.maxPages} pages` });
+  }
+  if (isSetNumber(policy?.maxFiles)) {
+    rows.push({ key: 'max_files', label: 'File count', value: `${policy.maxFiles} file${policy.maxFiles === 1 ? '' : 's'}` });
+  }
+  if (policy?.allowedFormats?.length) {
+    rows.push({ key: 'allowed_formats', label: 'Formats', value: policy.allowedFormats.join(', ') });
+  }
+
+  return [...rows, ...(policy?.limits || [])].reduce<ServicePolicyLimit[]>((acc, row) => {
+    const dedupeKey = (row.key || row.label).trim().toLowerCase();
+    if (!dedupeKey) return acc;
+    if (acc.some((item) => (item.key || item.label).trim().toLowerCase() === dedupeKey)) return acc;
+    acc.push({ ...row });
+    return acc;
+  }, []);
+}
+
+function buildServicePolicyPricingRows(policy?: ServicePolicy): ServicePolicyPricing[] {
+  const rows: ServicePolicyPricing[] = [];
+
+  if (isSetNumber(policy?.creditsPerHit)) {
+    rows.push({ key: 'credits_per_hit', label: 'API hit', value: `${policy.creditsPerHit} credits`, cadence: 'hit' });
+  }
+  if (isSetNumber(policy?.creditsPerPage)) {
+    rows.push({ key: 'credits_per_page', label: 'Per page', value: `${policy.creditsPerPage} credits / page`, cadence: 'page' });
+  }
+  if (isSetNumber(policy?.sessionStartCredits)) {
+    rows.push({ key: 'session_start_credits', label: 'Session start', value: `${policy.sessionStartCredits} credits`, cadence: 'session' });
+  }
+  if (isSetNumber(policy?.creditsPerMinute)) {
+    rows.push({ key: 'credits_per_minute', label: 'Runtime', value: `${policy.creditsPerMinute} credits / minute`, cadence: 'minute' });
+  }
+
+  return [...rows, ...(policy?.pricing || [])].reduce<ServicePolicyPricing[]>((acc, row) => {
+    const dedupeKey = (row.key || row.label).trim().toLowerCase();
+    if (!dedupeKey) return acc;
+    if (acc.some((item) => (item.key || item.label).trim().toLowerCase() === dedupeKey)) return acc;
+    acc.push({ ...row });
+    return acc;
+  }, []);
+}
+
+export function materializeServicePolicy(policy?: ServicePolicy): ServicePolicy | undefined {
+  if (!policy) return undefined;
+  return {
+    ...cloneServicePolicy(policy),
+    limits: buildServicePolicyLimitRows(policy),
+    pricing: buildServicePolicyPricingRows(policy),
+  };
+}
+
+function loadPolicyOverrides(): Partial<Record<SolutionKey, ServicePolicy>> {
+  if (!canUseBrowserStorage()) return {};
+
+  try {
+    const raw = window.localStorage.getItem(SOLUTION_POLICY_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Partial<Record<SolutionKey, ServicePolicy>>;
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePolicyOverrides(overrides: Partial<Record<SolutionKey, ServicePolicy>>): void {
+  if (!canUseBrowserStorage()) return;
+
+  try {
+    window.localStorage.setItem(SOLUTION_POLICY_STORAGE_KEY, JSON.stringify(overrides));
+    window.dispatchEvent(new Event('automica-solution-policy-changed'));
+  } catch {
+    // Ignore browser quota or privacy restrictions.
+  }
+}
+
+export function saveSolutionPolicyOverride(slug: SolutionKey, policy: ServicePolicy): void {
+  const overrides = loadPolicyOverrides();
+  overrides[slug] = cloneServicePolicy({
+    ...policy,
+    source: 'override',
+    editable: true,
+  });
+  savePolicyOverrides(overrides);
+}
+
+export function clearSolutionPolicyOverride(slug: SolutionKey): void {
+  const overrides = loadPolicyOverrides();
+  if (!(slug in overrides)) return;
+  delete overrides[slug];
+  savePolicyOverrides(overrides);
+}
+
+export function getSolutionPolicyOverride(slug: SolutionKey): ServicePolicy | undefined {
+  return cloneServicePolicy(loadPolicyOverrides()[slug]);
+}
+
+export function resolveSolutionWithPolicy<T extends { slug: string; servicePolicy?: ServicePolicy }>(solution: T): T {
+  const override = getSolutionPolicyOverride(solution.slug as SolutionKey);
+  if (!override) {
+    return {
+      ...solution,
+      servicePolicy: solution.servicePolicy ? materializeServicePolicy({ ...solution.servicePolicy, source: solution.servicePolicy.source || 'catalog' }) : undefined,
+    } as T;
+  }
+
+  return {
+    ...solution,
+    servicePolicy: materializeServicePolicy({
+      ...cloneServicePolicy(solution.servicePolicy),
+      ...override,
+      source: 'override',
+    }),
+  } as T;
+}
+
+export function summarizeServicePolicy(policy?: ServicePolicy): string {
+  if (!policy) return 'No policy configured';
+
+  const limitCount = [
+    isSetNumber(policy.maxUploadSizeMB),
+    isSetNumber(policy.maxPages),
+    isSetNumber(policy.maxFiles),
+    Boolean(policy.allowedFormats?.length),
+    ...(policy.limits || []),
+  ].filter(Boolean).length;
+  const pricingCount = [
+    isSetNumber(policy.creditsPerHit),
+    isSetNumber(policy.creditsPerPage),
+    isSetNumber(policy.sessionStartCredits),
+    isSetNumber(policy.creditsPerMinute),
+    ...(policy.pricing || []),
+  ].filter(Boolean).length;
+
+  const parts: string[] = [];
+  if (limitCount) parts.push(`${limitCount} limit${limitCount === 1 ? '' : 's'}`);
+  if (pricingCount) parts.push(`${pricingCount} price item${pricingCount === 1 ? '' : 's'}`);
+  if (policy.notes?.length) parts.push(`${policy.notes.length} note${policy.notes.length === 1 ? '' : 's'}`);
+  if (policy.pricingMode) parts.push(policy.pricingMode.replace('_', ' '));
+  return parts.length ? parts.join(' · ') : 'Policy configured';
+}
+
 export const rawSolutions: Record<SolutionKey, Solution> = {
   'signature-verification': {
     title: "Signature Verification",
     slug: "signature-verification",
     popular: true,
     hasBeta: true,
+    requiresGpuPool: true,
+    gpuServiceTag: "vlm-gpu",
     tagline: "Authenticate Signatures—Fast and Flawless.",
     description: "A concise, AI-driven service that authenticates both handwritten and digital signatures in real time, ensuring document integrity and preventing fraud. With seamless API integration and industry-leading accuracy, it automates your verification workflows to boost compliance and reduce operational risk.",
     icon: FileCheck,
@@ -207,6 +416,66 @@ export const rawSolutions: Record<SolutionKey, Solution> = {
     ],
     apiEndpoint: "https://api.yourcompany.com/v1/document-enhancement",
     documentation: "/docs/document-enhancement"
+  },
+  'ocr': {
+    title: "OCR",
+    slug: "ocr",
+    tagline: "Extract searchable text from documents with an active ocr-gpu session.",
+    available: true,
+    popular: true,
+    requiresGpuPool: true,
+    gpuServiceTag: "ocr-gpu",
+    servicePolicy: {
+      source: 'catalog',
+      pricingMode: 'hybrid',
+      editable: true,
+      maxUploadSizeMB: 100,
+      maxPages: null,
+      maxFiles: 1,
+      allowedFormats: ['PDF', 'JPG', 'PNG', 'JPEG'],
+      creditsPerHit: 4,
+      creditsPerPage: 1,
+      sessionStartCredits: 20,
+      creditsPerMinute: 2,
+      limits: [
+        { key: 'page_count_policy', label: 'Page count', value: 'Configured by backend policy' },
+      ],
+      notes: [
+        "OCR is session-backed today and also exposes a per-hit view for Try API clarity.",
+        "Keep page limits aligned with the worker and PDF parser before tightening enforcement.",
+      ],
+    },
+    description: "Convert scanned PDFs and document images into clean text and structured blocks using the ocr-gpu session. Built for document automation workflows that need reliable extraction from complex layouts.",
+    icon: FileCheck,
+    gradient: "from-emerald-600 to-cyan-600",
+    heroImage: "/api/placeholder/800/400",
+    imageSrc: "/images/id-crop.png",
+    gifSrc: "/images/id-crop_gif.gif",
+    features: [
+      "GPU-accelerated OCR extraction",
+      "PDF and image document support",
+      "Structured text and block output",
+      "Requires an active ocr-gpu session"
+    ],
+    useCases: [
+      {
+        title: "Document Digitization",
+        description: "Turn scanned PDFs into searchable text for downstream workflows",
+        icon: Shield
+      },
+      {
+        title: "Operations Automation",
+        description: "Extract text from forms, statements, and submitted documents",
+        icon: Zap
+      },
+      {
+        title: "Compliance Review",
+        description: "Normalize document text for audit and review pipelines",
+        icon: Globe
+      }
+    ],
+    apiEndpoint: "https://automica.ai/go/api/v1/ocr",
+    documentation: "/docs/ocr"
   },
   'qr-masking': {
     title: "QR Masking",
@@ -402,8 +671,8 @@ export const solutions: Record<string, Solution> = Object.fromEntries(
       key,
       {
         ...sol,
-        imageSrc: `/images/${sol.slug}.png`,
-        gifSrc: `/images/${sol.slug}_gif.gif`
+        imageSrc: sol.imageSrc || `/images/${sol.slug}.png`,
+        gifSrc: sol.gifSrc || `/images/${sol.slug}_gif.gif`
       }
     ]
   )
@@ -434,7 +703,7 @@ export const getSolutionsByCategory = (category: 'qr' | 'face' | 'document' | 's
   const categoryMap = {
     qr: ['qr-extract', 'qr-masking'],
     face: ['face-verify', 'face-cropping'],
-    document: ['id-crop', 'document-enhancement'],
+    document: ['id-crop', 'document-enhancement', 'ocr'],
     signature: ['signature-verification']
   };
   
@@ -454,7 +723,7 @@ export const generateSolutionStaticParams = () => {
 };
 
 export const getPopularSolutions = (): Solution[] => {
-  return Object.values(solutions).filter(sol => {
+  return Object.values(solutions).map(resolveSolutionWithPolicy).filter(sol => {
     if (sol.soon === true) return false
     if (sol.available === false) return false
     return sol.popular === true
@@ -462,7 +731,7 @@ export const getPopularSolutions = (): Solution[] => {
 };
 
 export const getAvailableSolutions = (): Solution[] => {
-  return Object.values(solutions).filter(sol => {
+  return Object.values(solutions).map(resolveSolutionWithPolicy).filter(sol => {
     if (sol.soon === true) return false
     if (sol.available === false) return false
     // Exclude speech-to-text and text-to-speech from available solutions
@@ -483,7 +752,7 @@ export const getSoonSolutions = (): Solution[] => {
 };
 
 export const getLiveSolutions = (): Solution[] => {
-  const all = Object.values(solutions)
+  const all = Object.values(solutions).map(resolveSolutionWithPolicy)
   
   // Filter by available === true and soon === false (live services)
   const live = all.filter(sol => sol.available === true && sol.soon === false)

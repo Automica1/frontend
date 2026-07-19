@@ -1,10 +1,10 @@
 // Fixed TryAPIComponent.tsx with proper face verification support
 "use client";
 import React, { useCallback, useEffect, useState } from 'react';
-import { Solution, SolutionType } from '../../types/solution';
 import { useSolutionType } from '../../hooks/useSolutionType';
 import { useSolutionApi } from '../../hooks/useSolutionApi';
 import { useCredits } from '../../hooks/useCredits';
+import type { LucideIcon } from 'lucide-react';
 import { fileToBase64, filesToBase64 } from '../../../utils/fileUtils';
 import { extractProcessedImageBase64 } from '../../../utils/solutionHelpers';
 import { FileUpload2 } from '../ui/file-upload2';
@@ -22,6 +22,7 @@ import {
   apiService,
   createThumbnail,
   type BetaFeedbackSessionSummary,
+  type PublicServicePolicyResponse,
 } from '../../lib/apiService';
 import {
   clearBetaSessionCache,
@@ -34,14 +35,48 @@ import { useBetaKeyResolve } from '../../hooks/useBetaKeyResolve';
 import { useGpuStartCeremony } from '../../hooks/useGpuStartCeremony';
 import { sharedPoolJoinMode } from './gpuPoolPanelCopy';
 import { getExtraResourceCopy } from '../../lib/extraResourceCopy';
+import { materializeServicePolicy, resolveSolutionWithPolicy, type ServicePolicy } from '../../lib/solutions';
 
 interface TryAPIComponentProps {
-  solution: Solution;
+  solution: {
+    title: string;
+    slug: string;
+    gradient: string;
+    icon?: LucideIcon;
+    IconComponent?: React.ComponentType<any>;
+    hasBeta?: boolean;
+    requiresGpuPool?: boolean;
+    betaServiceTag?: string;
+    gpuServiceTag?: string;
+    servicePolicy?: ServicePolicy;
+    available?: boolean;
+    soon?: boolean;
+  };
   initialAccessCode?: string;
   isAdmin?: boolean;
 }
 
+function publicPolicyToServicePolicy(policy?: PublicServicePolicyResponse['servicePolicy']): ServicePolicy | undefined {
+  if (!policy) return undefined;
+  return materializeServicePolicy({
+    source: 'catalog',
+    editable: true,
+    pricingMode: (policy.pricing?.mode as ServicePolicy['pricingMode']) || 'hybrid',
+    maxUploadSizeMB: policy.limits?.maxUploadSizeMB ?? null,
+    maxPages: policy.limits?.maxPages ?? null,
+    maxFiles: policy.limits?.maxFiles ?? null,
+    allowedFormats: policy.limits?.allowedFormats ? [...policy.limits.allowedFormats] : [],
+    creditsPerHit: policy.pricing?.creditsPerHit ?? null,
+    creditsPerPage: policy.pricing?.creditsPerPage ?? null,
+    sessionStartCredits: policy.pricing?.startupCredits ?? null,
+    creditsPerMinute: policy.pricing?.creditsPerMinute ?? null,
+    notes: policy.notes ? policy.notes.split('\n').map((note) => note.trim()).filter(Boolean) : [],
+  });
+}
+
 export default function TryAPIComponent({ solution, initialAccessCode, isAdmin = false }: TryAPIComponentProps) {
+  const baseSolution = React.useMemo(() => resolveSolutionWithPolicy(solution), [solution]);
+  const [remotePolicy, setRemotePolicy] = useState<ServicePolicy | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [hasStartedProcessing, setHasStartedProcessing] = useState(false);
   const [uploadKey, setUploadKey] = useState(0);
@@ -54,29 +89,59 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
   const [guestPassReady, setGuestPassReady] = useState(false);
   const [guestServiceAllowed, setGuestServiceAllowed] = useState<boolean | null>(null);
   const [guestValidationFailed, setGuestValidationFailed] = useState(false);
+  const [inputPreviewUrl, setInputPreviewUrl] = useState<string | null>(null);
+  const [inputFileType, setInputFileType] = useState<'image' | 'pdf' | undefined>(undefined);
   const { isAuthenticated } = useKindeBrowserClient();
-  const solutionType = useSolutionType(solution);
+  const currentSolution = React.useMemo(() => ({
+    ...baseSolution,
+    servicePolicy: materializeServicePolicy(remotePolicy ?? baseSolution.servicePolicy),
+  }), [baseSolution, remotePolicy]);
+  const solutionType = useSolutionType(currentSolution);
+  const serviceSlug = baseSolution.slug || solutionType;
   const currentApi = useSolutionApi(solutionType);
   const { credits, updateCredits, refreshCredits } = useCredits();
   const runCost = getServiceRunCost(solutionType);
-  const serviceSlug = solution.slug || solutionType;
+  const responseSolution = React.useMemo(
+    () => ({ ...currentSolution, IconComponent: currentSolution.icon }),
+    [currentSolution]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    setRemotePolicy(null);
+
+    apiService.getPublicServicePolicy(serviceSlug)
+      .then((response: PublicServicePolicyResponse) => {
+        if (cancelled) return;
+        setRemotePolicy(publicPolicyToServicePolicy(response.servicePolicy) ?? null);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setRemotePolicy(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [serviceSlug]);
 
   const betaResolve = useBetaKeyResolve({
     serviceName: serviceSlug,
     betaKey,
-    enabled: Boolean(isAuthenticated && solution.hasBeta && betaEnabled),
+    enabled: Boolean(isAuthenticated && currentSolution.hasBeta && betaEnabled),
   });
 
-  const needsGpu = Boolean(
-    isAuthenticated &&
-      solution.hasBeta &&
+  const productGpuServiceTag = currentSolution.requiresGpuPool ? (currentSolution.gpuServiceTag || currentSolution.betaServiceTag || '') : '';
+  const betaNeedsGpu = Boolean(
+    currentSolution.hasBeta &&
       betaEnabled &&
       betaResolve.result?.valid &&
       betaResolve.result.requiresGpuPool
   );
+  const needsGpu = Boolean(isAuthenticated && (productGpuServiceTag || betaNeedsGpu));
   const resourceCopy = getExtraResourceCopy();
 
-  const gpuServiceTag = needsGpu ? (betaResolve.result?.betaServiceTag ?? '') : '';
+  const gpuServiceTag = needsGpu ? (productGpuServiceTag || betaResolve.result?.betaServiceTag || '') : '';
 
   const gpuPool = useGpuPool({
     serviceTag: gpuServiceTag,
@@ -96,7 +161,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
 
   const betaKeyBlocked =
     Boolean(
-      solution.hasBeta &&
+      currentSolution.hasBeta &&
         betaEnabled &&
         betaKey.trim() &&
         !betaResolve.loading &&
@@ -170,7 +235,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
   };
 
   const refreshPendingFeedback = useCallback(async () => {
-    if (!isAuthenticated || !solution.hasBeta || !serviceSlug) return;
+    if (!isAuthenticated || !currentSolution.hasBeta || !serviceSlug) return;
 
     try {
       const response = await apiService.getPendingBetaFeedback(serviceSlug);
@@ -190,7 +255,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
     } catch (error) {
       console.error('Failed to load pending beta feedback:', error);
     }
-  }, [isAuthenticated, solution.hasBeta, serviceSlug]);
+  }, [isAuthenticated, currentSolution.hasBeta, serviceSlug]);
 
   useEffect(() => {
     refreshPendingFeedback();
@@ -201,6 +266,26 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
       void refreshPendingFeedback();
     }
   }, [betaEnabled, refreshPendingFeedback]);
+
+  useEffect(() => {
+    const file = files[0];
+    if (!file) {
+      setInputPreviewUrl(null);
+      setInputFileType(undefined);
+      return;
+    }
+
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      setInputPreviewUrl(null);
+      setInputFileType(undefined);
+      return;
+    }
+
+    const nextUrl = URL.createObjectURL(file);
+    setInputPreviewUrl(nextUrl);
+    setInputFileType(file.type === 'application/pdf' ? 'pdf' : 'image');
+    return () => URL.revokeObjectURL(nextUrl);
+  }, [files]);
 
   const handleFeedbackSubmitted = async (remainingCredits: number) => {
     updateCredits(remainingCredits);
@@ -227,7 +312,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
     (needsGpu && !gpuReadyForCompare);
   const canShowFeedback = Boolean(
     isAuthenticated &&
-      solution.hasBeta &&
+      currentSolution.hasBeta &&
       betaEnabled &&
       pendingSession &&
       (insufficientCredits || hasStartedProcessing)
@@ -275,7 +360,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
       : insufficientCredits
         ? !isAuthenticated
           ? 'No credits remain on this access link.'
-          : 'Not enough credits for a comparison (2 credits).'
+          : `Not enough credits for this run (${runCost} credits).`
         : betaKeyBlocked
           ? betaResolve.error ?? 'This beta key is invalid for your account.'
         : needsGpu && ceremony.inCeremony
@@ -308,7 +393,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
   const handleSubmit = async () => {
     if (files.length === 0) return;
 
-    if (solution.hasBeta && betaEnabled && !betaKey.trim()) {
+    if (currentSolution.hasBeta && betaEnabled && !betaKey.trim()) {
       setSubmitValidationError('Enter your beta key to continue.');
       return;
     }
@@ -321,7 +406,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
     }
 
     if (insufficientCredits) {
-      setSubmitValidationError('Not enough credits for a comparison (2 credits).');
+      setSubmitValidationError(`Not enough credits for this run (${runCost} credits).`);
       return;
     }
 
@@ -342,7 +427,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
           const base64Images = await filesToBase64(files);
           await currentApi.execute(
             base64Images,
-            solution.hasBeta && betaEnabled ? { betaKey: betaKey.trim() } : undefined
+            currentSolution.hasBeta && betaEnabled ? { betaKey: betaKey.trim() } : undefined
           );
           break;
 
@@ -374,6 +459,11 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
           await currentApi.execute(enhanceBase64);
           break;
 
+        case 'ocr':
+          const ocrBase64 = await fileToBase64(files[0]);
+          await currentApi.execute(ocrBase64);
+          break;
+
         case 'face-cropping':
           const faceCropBase64 = await fileToBase64(files[0]);
           await currentApi.execute(faceCropBase64);
@@ -389,7 +479,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
 
   const cacheBetaSessionThumbnails = useCallback(
     async (sessionId: string) => {
-      if (!solution.hasBeta || !betaEnabled || !serviceSlug) return;
+      if (!currentSolution.hasBeta || !betaEnabled || !serviceSlug) return;
       if (solutionType !== 'signature-verification' || files.length !== 2) return;
 
       try {
@@ -407,7 +497,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
         console.error('Failed to cache beta session thumbnails:', error);
       }
     },
-    [betaEnabled, files, refreshPendingFeedback, serviceSlug, solution.hasBeta, solutionType]
+    [betaEnabled, files, refreshPendingFeedback, runCost, serviceSlug, currentSolution.hasBeta, solutionType]
   );
 
   useEffect(() => {
@@ -486,6 +576,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
     gracePeriodSec: gpuPool.gracePeriodSec,
     reconnectEligible: gpuPool.reconnectEligible,
     reconnectUntil: gpuPool.reconnectUntil,
+    useStockCopy: !currentSolution.hasBeta,
   };
 
   const gpuPanel = needsGpu ? <GpuPoolPanel {...gpuPanelProps} /> : null;
@@ -494,7 +585,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
   const setupCard = (
     <>
       <ProcessingActionCard
-      solution={solution}
+      solution={currentSolution}
       solutionType={solutionType}
       files={files}
       onSubmit={handleSubmit}
@@ -506,7 +597,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
       compactRequirements={needsGpu && (gpuPool.userActive || ceremony.inCeremony)}
       gpuSessionPending={needsGpu && !gpuPool.userActive && !gpuReadyForCompare}
       betaControls={
-        isAuthenticated && solution.hasBeta && solution.slug ? (
+        isAuthenticated && currentSolution.hasBeta && currentSolution.slug ? (
           <BetaAccessPanel
             enabled={betaEnabled}
             betaKey={betaKey}
@@ -517,7 +608,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
             keyResolveError={betaResolve.error}
             gpuPanel={gpuPanel}
           />
-        ) : undefined
+        ) : needsGpu ? gpuPanel : undefined
       }
     />
     </>
@@ -533,11 +624,16 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
                 <FileUpload2
                   key={uploadKey}
                   onChange={handleFileUpload}
-                  compactPanel={solution.hasBeta}
+                  compactPanel={currentSolution.hasBeta}
                   allowGuestAccess={guestPassReady}
                 />
               ) : (
-                <FileUpload key={uploadKey} onChange={handleFileUpload} allowGuestAccess={guestPassReady} />
+                <FileUpload
+                  key={uploadKey}
+                  onChange={handleFileUpload}
+                  allowGuestAccess={guestPassReady}
+                  maxFileSizeMB={solutionType === 'ocr' ? 100 : 10}
+                />
               )}
             </div>
           </div>
@@ -559,7 +655,7 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
                 )}
                 <div className="flex-1 min-h-0">
                   <TabbedResponseSection
-                    solution={solution}
+                    solution={responseSolution}
                     solutionType={solutionType}
                     data={currentApi.data}
                     loading={currentApi.loading}
@@ -567,10 +663,12 @@ export default function TryAPIComponent({ solution, initialAccessCode, isAdmin =
                     errorDetails={currentApi.errorData}
                     maskedBase64={maskedBase64}
                     fileName={files[0]?.name}
+                    inputPreviewUrl={inputPreviewUrl ?? undefined}
+                    inputFileType={inputFileType}
                     onRetry={handleRetry}
                     onReset={handleReset}
                     hideRetry={Boolean(canShowFeedback && insufficientCredits)}
-                    showFeedbackTab={Boolean(solution.hasBeta && betaEnabled && postRunShowFeedback)}
+                    showFeedbackTab={Boolean(currentSolution.hasBeta && betaEnabled && postRunShowFeedback)}
                     feedbackTab={feedbackPanel('post-run')}
                     feedbackTabBadge={feedbackBadge}
                     defaultTab={postRunShowFeedback ? 'feedback' : 'result'}

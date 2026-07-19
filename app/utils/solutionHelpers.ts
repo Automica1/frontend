@@ -83,6 +83,8 @@ export const getFileRequirementText = (solutionType: SolutionType): string => {
       return 'Upload an ID document image';
     case 'document-enhancement':
       return 'Upload a signature crop or document scan to enhance';
+    case 'ocr':
+      return 'Upload a PDF or document image to extract text';
     case 'face-verify':
       return 'Upload an image for face verification';
     case 'face-cropping':
@@ -102,6 +104,8 @@ export const getProcessingMessage = (solutionType: SolutionType): string => {
       return 'Processing ID document...';
     case 'document-enhancement':
       return 'Enhancing image...';
+    case 'ocr':
+      return 'Extracting text...';
     case 'face-verify':
       return 'Verifying face...';
     case 'face-cropping':
@@ -121,6 +125,8 @@ export const getButtonText = (solutionType: SolutionType): string => {
       return 'Crop ID';
     case 'document-enhancement':
       return 'Enhance Image';
+    case 'ocr':
+      return 'Extract Text';
     case 'face-verify':
       return 'Verify Face';
     case 'face-cropping':

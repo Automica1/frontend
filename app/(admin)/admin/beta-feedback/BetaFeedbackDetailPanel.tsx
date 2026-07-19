@@ -142,7 +142,7 @@ export default function BetaFeedbackDetailPanel({
             {sessionDetail && (
               <>
                 <a
-                  href="/admin/gpu-pools?tab=support&tag=vlm-e2e-gpu"
+                  href="/admin/gpu-pools?tab=support&tag=vlm-gpu"
                   className="inline-flex text-sm text-sky-300 hover:text-sky-200 underline"
                 >
                   GPU pool status →

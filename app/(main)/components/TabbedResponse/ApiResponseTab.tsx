@@ -1,13 +1,17 @@
 // components/TabbedResponseSection/ApiResponseTab.tsx
 import React, { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
-import { Solution, SolutionType } from '../../types/solution';
+import { SolutionType } from '../../types/solution';
 import { getFileRequirementText, getProcessingMessage } from '../../../utils/solutionHelpers';
 // import { EnhancedErrorDisplay } from './EnhancedErrorDisplay';
 import '../terminal.css';
 
 interface ApiResponseTabProps {
-  solution: Solution;
+  solution: {
+    IconComponent?: React.ComponentType<any>;
+    icon?: React.ComponentType<any>;
+    [key: string]: any;
+  };
   solutionType: SolutionType;
   data: any;
   loading: boolean;
@@ -24,7 +28,7 @@ export const ApiResponseTab: React.FC<ApiResponseTabProps> = ({
   errorDetails
 }) => {
   const [copiedApiResponse, setCopiedApiResponse] = useState(false);
-  const Icon = solution.IconComponent;
+  const Icon = solution.IconComponent || solution.icon || (() => null);
 
   const reorderJsonKeys = (obj: any): any => {
     if (!obj || typeof obj !== 'object') return obj;

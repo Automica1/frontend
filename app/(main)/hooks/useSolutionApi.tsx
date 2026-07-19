@@ -9,6 +9,7 @@ export const useSolutionApi = (solutionType: SolutionType) => {
   const signatureVerify = useApi(apiService.verifySignatures.bind(apiService));
   const idCrop = useApi(apiService.processIdCrop.bind(apiService));
   const documentEnhancement = useApi(apiService.processDocumentEnhancement.bind(apiService));
+  const ocr = useApi(apiService.processOCR.bind(apiService));
   const faceVerify = useApi(apiService.verifyFace.bind(apiService));
   const faceCrop = useApi(apiService.detectFace.bind(apiService));
 
@@ -24,6 +25,8 @@ export const useSolutionApi = (solutionType: SolutionType) => {
         return idCrop;
       case 'document-enhancement':
         return documentEnhancement;
+      case 'ocr':
+        return ocr;
       case 'face-verify':
         return faceVerify;
       case 'face-cropping':

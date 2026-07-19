@@ -13,6 +13,7 @@ export function deriveGpuCeremonyMode(
 ): GpuStartMode {
   if (status.state === 'ready') return 'warm_ready';
   if (status.state === 'draining' && status.drainReason === 'user_grace') return 'warm_ready';
+  if (status.state === 'draining' && status.drainReason === 'failed_bootstrap') return 'warm_join';
   if (status.state === 'provisioning') {
     if (opts?.orphanBootReconnect) return 'warm_join';
     if (opts?.poolWasProvisioning || status.refCount > 1) return 'warm_join';
@@ -39,22 +40,26 @@ export function canStartGpuSession(input: {
   state?: GPUPoolStatus['state'];
   refCount?: number;
   hasStatus: boolean;
+  drainReason?: GPUPoolStatus['drainReason'] | null;
 }): boolean {
   const canJoinPoolBoot =
     input.state === 'provisioning' && (input.refCount ?? 0) > 0 && !input.userActive;
   const orphanBootReconnect =
     input.state === 'provisioning' && (input.refCount ?? 0) === 0 && !input.userActive;
+  const canResumeFailedBootstrap =
+    input.state === 'draining' && input.drainReason === 'failed_bootstrap' && !input.userActive;
 
   return (
     input.available &&
     !input.loading &&
     !input.userActive &&
-    (!input.isDraining || input.isUserGraceDraining) &&
+    (!input.isDraining || input.isUserGraceDraining || canResumeFailedBootstrap) &&
     input.hasEnoughCreditsToStart &&
     (input.state === 'idle' ||
       input.state === 'failed' ||
       input.state === 'ready' ||
       input.isUserGraceDraining ||
+      canResumeFailedBootstrap ||
       orphanBootReconnect ||
       canJoinPoolBoot ||
       !input.hasStatus)
@@ -122,11 +127,14 @@ export function useGpuPool({ serviceTag, available, creditBalance = null, refres
     const poolWasProvisioning =
       status?.state === 'provisioning' && (status?.refCount ?? 0) > 0 && !status?.userActive;
     const orphanBootReconnect = isOrphanBootReconnectStatus(status, Boolean(status?.userActive));
-    const isGraceReuse =
-      status?.state === 'draining' && status?.drainReason === 'user_grace';
+  const isGraceReuse =
+      status?.state === 'draining' &&
+      (status?.drainReason === 'user_grace' || status?.drainReason === 'failed_bootstrap');
     const optimisticMode: GpuStartMode | null =
-      status?.state === 'ready' || isGraceReuse
+      status?.state === 'ready' || (status?.state === 'draining' && status?.drainReason === 'user_grace')
         ? 'warm_ready'
+        : status?.state === 'draining' && status?.drainReason === 'failed_bootstrap'
+          ? 'warm_join'
         : orphanBootReconnect || poolWasProvisioning || (status?.state === 'provisioning' && (status?.refCount ?? 0) > 0)
           ? 'warm_join'
           : 'cold';
@@ -223,6 +231,7 @@ export function useGpuPool({ serviceTag, available, creditBalance = null, refres
     state: status?.state,
     refCount: status?.refCount,
     hasStatus: Boolean(status),
+    drainReason,
   });
 
   const canStop = available && !loading && userActive;

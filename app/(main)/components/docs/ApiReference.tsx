@@ -57,6 +57,22 @@ const getResponseExample = (slug: string): string => {
     "similarity_percentage": 70.72,
     "classification": "Forged"
   }
+}`,
+    'ocr': `{
+  "req_id": "ocr-1754379820114-2k9m4p1zn",
+  "success": true,
+  "status": "completed",
+  "message": "OCR completed successfully",
+  "data": {
+    "text": "Invoice #1042\\nTotal: $240.00",
+    "blocks": [
+      {
+        "text": "Invoice #1042",
+        "confidence": 0.98,
+        "bbox": [72, 96, 260, 124]
+      }
+    ]
+  }
 }`
   };
 
@@ -118,7 +134,7 @@ Content-Type: application/json`}
                 <div>
                   <span className="text-blue-400 font-mono">doc_base64</span>
                   <span className="text-gray-500 mx-2">string</span>
-                  <span className="text-gray-300">Base64 encoded image data</span>
+                  <span className="text-gray-300">{solution.slug === 'ocr' ? 'Base64 encoded PDF or document image data' : 'Base64 encoded image data'}</span>
                 </div>
               )}
 
@@ -240,6 +256,24 @@ Content-Type: application/json`}
                       <span className="text-green-400 font-mono">classification</span>
                       <span className="text-gray-500 mx-2">string</span>
                       <span className="text-gray-300">Classification result (e.g., "Genuine", "Forged")</span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {solution.slug === 'ocr' && (
+                <>
+                  <div className="border-t border-gray-700 pt-3 mt-3">
+                    <div className="text-gray-400 text-xs mb-2">OCR Data Fields:</div>
+                    <div>
+                      <span className="text-green-400 font-mono">text</span>
+                      <span className="text-gray-500 mx-2">string</span>
+                      <span className="text-gray-300">Extracted document text</span>
+                    </div>
+                    <div>
+                      <span className="text-green-400 font-mono">blocks</span>
+                      <span className="text-gray-500 mx-2">array</span>
+                      <span className="text-gray-300">Structured OCR layout blocks returned by the engine</span>
                     </div>
                   </div>
                 </>

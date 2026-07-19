@@ -47,6 +47,7 @@ export function showGpuIdleIntroPanel(input: GpuPoolPanelCopyInput): boolean {
   if (input.state === 'draining') {
     // Fresh / second tester while pool is in user-grace but they have no ended session (A1).
     if (input.drainReason === 'user_grace' && !input.sessionEndReason) return true;
+    if (input.drainReason === 'failed_bootstrap') return true;
     return false;
   }
   return true;
@@ -102,14 +103,14 @@ export function poolPanelHeadline(
   const priorInsufficientCredits =
     !userActive && sessionEndReason === 'insufficient_credits' && !sharedJoin;
 
-  if (priorProvisionFailed) return c.busyHeadline;
+	if (priorProvisionFailed) return c.couldNotStart;
   if (
     !userActive &&
     sessionEndReason === 'provision_failed' &&
     !sharedJoin &&
     (state === 'provisioning' || state === 'draining')
   ) {
-    return c.busyHeadline;
+    return c.couldNotStart;
   }
   if (priorPoolNotLive) return c.notRunning;
   if (priorInsufficientCredits) return 'Session ended — low credits';
@@ -121,7 +122,9 @@ export function poolPanelHeadline(
     return c.onStandby;
   }
   if (state === 'draining') {
-    return input.drainReason === 'user_grace' ? c.onStandby : c.endingSession;
+    if (input.drainReason === 'user_grace') return c.onStandby;
+    if (input.drainReason === 'failed_bootstrap') return c.couldNotStart;
+    return c.endingSession;
   }
   if (showActiveFailure) return c.couldNotStart;
   if (userActive) return c.sessionActive;
@@ -130,7 +133,10 @@ export function poolPanelHeadline(
 
 export function poolPanelDetailLine(input: GpuPoolPanelCopyInput): string | null {
   if (isPriorProvisionFailed(input)) {
-    return GPU_BUSY_RETRY_HINT;
+    return 'The previous startup failed. Start again to retry.';
+  }
+  if (input.state === 'draining' && input.drainReason === 'failed_bootstrap') {
+    return 'The previous startup failed. Start again to retry on the same node while recovery is still available.';
   }
   return null;
 }

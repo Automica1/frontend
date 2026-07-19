@@ -70,6 +70,25 @@ export interface DocumentEnhancementResponse {
   processedAt: string;
 }
 
+export interface OCRResult {
+  req_id: string;
+  success: boolean;
+  status: 'completed' | 'processing' | 'failed' | string;
+  message?: string;
+  data: {
+    text: string;
+    blocks: Array<Record<string, unknown>>;
+  };
+}
+
+export interface OCRResponse {
+  message: string;
+  userId: string;
+  remainingCredits: number;
+  ocrResult: OCRResult;
+  processedAt: string;
+}
+
 export interface FaceVerificationResponse extends ApiResponse {
   data?: {
     similarity_percentage: number;

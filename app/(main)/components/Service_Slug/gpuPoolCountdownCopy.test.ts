@@ -12,7 +12,7 @@ describe('gpuPoolCountdownCopy', () => {
         drainReason: 'user_grace',
         copy,
       })
-    ).toBe('Shutdown is due now. Start a new session to request the resource again.');
+    ).toBe('It is due to shut down now. Start again to request it.');
   });
 
   it('keeps the positive grace countdown copy before shutdown is due', () => {

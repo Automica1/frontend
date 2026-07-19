@@ -1,7 +1,9 @@
 // x:\Web Dev\Automica\frontend\app\(main)\lib\apiService.ts
-import { ApiResponse, QRExtractResponse, SignatureVerificationResponse, FaceDetectionResponse, FaceVerificationResponse, IdCropResponse, DocumentEnhancementResponse } from '../types/api';
+import { ApiResponse, QRExtractResponse, SignatureVerificationResponse, FaceDetectionResponse, FaceVerificationResponse, IdCropResponse, DocumentEnhancementResponse, OCRResponse } from '../types/api';
 import { useCreditsStore } from '../stores/creditsStore';
 import { loadGuestPassKey, normalizeGuestPassKey } from './guestPassStorage';
+import { formatApiErrorResponse } from './apiErrorUtils';
+import type { ServicePolicy } from './solutions';
 
 // Extended response types that include credits
 interface ApiResponseWithCredits extends ApiResponse {
@@ -59,6 +61,29 @@ export interface BetaFeedbackPendingResponse {
   session?: BetaFeedbackSessionSummary | null;
 }
 
+export interface PublicServicePolicyResponse {
+  message: string;
+  serviceName: string;
+  betaServiceTag?: string;
+  label?: string;
+  servicePolicy?: {
+    limits?: {
+      maxUploadSizeMB?: number;
+      maxPages?: number;
+      maxFiles?: number;
+      allowedFormats?: string[];
+    };
+    pricing?: {
+      mode?: string;
+      creditsPerHit?: number;
+      creditsPerPage?: number;
+      startupCredits?: number;
+      creditsPerMinute?: number;
+    };
+    notes?: string;
+  };
+}
+
 export interface SubmitBetaFeedbackResponse {
   message: string;
   sessionId: string;
@@ -77,7 +102,7 @@ export interface GPUPoolStatus {
   nodeId?: string;
   readyAt?: string;
   drainStartedAt?: string;
-  drainReason?: 'user_grace' | 'admin_grace';
+  drainReason?: 'user_grace' | 'admin_grace' | 'failed_bootstrap';
   destroyAt?: string;
   gracePeriodSec?: number;
   lastError?: string;
@@ -122,6 +147,11 @@ interface IdCropResponseWithCredits extends IdCropResponse {
 }
 
 interface DocumentEnhancementResponseWithCredits extends DocumentEnhancementResponse {
+  remainingCredits: number;
+  userId: string;
+}
+
+interface OCRResponseWithCredits extends OCRResponse {
   remainingCredits: number;
   userId: string;
 }
@@ -293,6 +323,26 @@ class ApiService {
     return response.json();
   }
 
+  async getPublicServicePolicy(serviceName: string): Promise<PublicServicePolicyResponse> {
+    const response = await fetch(`${this.baseUrl}/services/${encodeURIComponent(serviceName)}/policy`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store',
+    });
+
+    if (response.status === 404) {
+      throw new Error('Service policy not found');
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to load service policy: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
   async getPublicBillingConfig(): Promise<{
     razorpayKeyId?: string;
     supportedCurrencies?: string[];
@@ -389,7 +439,14 @@ class ApiService {
           } else {
             const textContent = await response.text();
             console.error('Non-JSON error response:', textContent.slice(0, 500));
-            errorMessage = `${errorMessage} - ${textContent.slice(0, 200)}`;
+            const formatted = formatApiErrorResponse({
+              status: response.status,
+              statusText: response.statusText,
+              contentType,
+              bodyText: textContent,
+            });
+            errorMessage = formatted.message;
+            errorData = formatted.errorData;
           }
         } catch (parseError) {
           console.error('Failed to parse error response:', parseError);
@@ -707,6 +764,24 @@ class ApiService {
     const cleanBase64 = base64Image.replace(/^data:image\/[a-z]+;base64,/, '');
 
     return this.makeRequest<DocumentEnhancementResponseWithCredits>('/document-enhancement', {
+      method: 'POST',
+      body: JSON.stringify({
+        req_id: reqId,
+        doc_base64: cleanBase64,
+      }),
+    });
+  }
+
+  async processOCR(base64Document: string): Promise<OCRResponseWithCredits> {
+    const reqId = this.generateReqId('ocr');
+
+    if (!base64Document || typeof base64Document !== 'string') {
+      throw new Error('Invalid base64 document data');
+    }
+
+    const cleanBase64 = base64Document.replace(/^data:[^;]+;base64,/, '');
+
+    return this.makeRequest<OCRResponseWithCredits>('/ocr', {
       method: 'POST',
       body: JSON.stringify({
         req_id: reqId,

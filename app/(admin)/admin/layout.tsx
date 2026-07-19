@@ -2,6 +2,7 @@ import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import AdminAuthGuard from "../components/AdminAuthGuard";
 import { AdminFeedbackProvider } from "../components/AdminFeedback";
 import AdminHeader from "../components/AdminHeader";
+import AdminMainFrame from "../components/AdminMainFrame";
 import AdminSidebar from "../components/AdminSidebar";
 
 export const dynamic = "force-dynamic";
@@ -24,9 +25,7 @@ export default async function AdminLayout({
           <AdminSidebar />
           <div className="relative z-10 flex flex-col flex-1 min-w-0">
             <AdminHeader user={user!} />
-            <main className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
-              <div className="mx-auto h-full max-w-7xl">{children}</div>
-            </main>
+            <AdminMainFrame>{children}</AdminMainFrame>
           </div>
         </div>
       </AdminFeedbackProvider>

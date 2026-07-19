@@ -141,9 +141,9 @@ describe('buildGpuPoolViewPresentation', () => {
       detailLine: null,
       showCeremonyStepper: false,
     });
-    expect(p.headline).toBe('Resource on standby');
+    expect(p.headline).toBe('Try API ready');
     expect(p.showDestroyCountdown).toBe(true);
-    expect(p.detail).toBe('Start session again to keep this resource running.');
+    expect(p.detail).toBe('Start again to keep it running.');
   });
 });
 
@@ -153,7 +153,7 @@ describe('introCostLine', () => {
     expect(introCostLine('A3', 20, 2, 2, 20)).not.toContain('(4 startup');
   });
 
-  it('A3 shows resource time separately when meter ran', () => {
-    expect(introCostLine('A3', 20, 2, 2, 20, 4)).toContain('4 resource time this session');
+  it('A3 shows runtime separately when meter ran', () => {
+    expect(introCostLine('A3', 20, 2, 2, 20, 4)).toContain('4 runtime this session');
   });
 });

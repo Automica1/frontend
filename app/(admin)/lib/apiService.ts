@@ -90,6 +90,8 @@ interface BetaServiceInfo {
   label: string;
   apiUrl: string;
   isActive: boolean;
+  registrySettings?: BetaServiceRegistrySettings;
+  servicePolicy?: BetaServicePolicy;
   createdAt: string;
   updatedAt: string;
 }
@@ -106,12 +108,85 @@ interface BetaServiceCreateRequest {
   label: string;
   apiUrl: string;
   isActive?: boolean;
+  registrySettings?: BetaServiceRegistrySettings;
+  servicePolicy?: BetaServicePolicy;
 }
 
 interface BetaServiceUpdateRequest {
   label?: string;
   apiUrl?: string;
   isActive?: boolean;
+  registrySettings?: BetaServiceRegistrySettings;
+  servicePolicy?: BetaServicePolicy;
+}
+
+type BetaServiceRegistryProvider =
+  | 'ghcr'
+  | 'ecr'
+  | 'gcr'
+  | 'gar'
+  | 'dockerhub'
+  | 'acr'
+  | 'quay'
+  | 'custom';
+
+type BetaServiceRegistryAuth =
+  | 'none'
+  | 'basic'
+  | 'token'
+  | 'aws'
+  | 'gcp'
+  | 'azure';
+
+interface BetaServiceRegistrySettings {
+  provider?: BetaServiceRegistryProvider;
+  auth?: BetaServiceRegistryAuth;
+  server?: string;
+  namespace?: string;
+  region?: string;
+  imageTag?: string;
+  preferRegistryPull?: boolean;
+  loginRequired?: boolean;
+}
+
+interface RegistryImageTag {
+  name: string;
+  pushedAt?: string;
+  sizeBytes?: number;
+  digest?: string;
+}
+
+interface RegistryImageCatalog {
+  provider: string;
+  server?: string;
+  namespace?: string;
+  repository: string;
+  region?: string;
+  tags: RegistryImageTag[];
+  relatedRepos?: string[];
+  source?: string;
+  message?: string;
+}
+
+interface BetaServicePolicyLimits {
+  maxUploadSizeMB?: number;
+  maxPages?: number;
+  maxFiles?: number;
+  allowedFormats?: string[];
+}
+
+interface BetaServicePolicyPricing {
+  mode?: string;
+  creditsPerHit?: number;
+  creditsPerPage?: number;
+  startupCredits?: number;
+  creditsPerMinute?: number;
+}
+
+export interface BetaServicePolicy {
+  limits?: BetaServicePolicyLimits;
+  pricing?: BetaServicePolicyPricing;
+  notes?: string;
 }
 
 type GPUPoolAdminState = 'idle' | 'provisioning' | 'ready' | 'draining' | 'failed';
@@ -133,9 +208,11 @@ interface GPUPoolAdminInfo {
   deployVersion?: string;
   readyAt?: string;
   drainStartedAt?: string;
-  drainReason?: 'user_grace' | 'admin_grace';
+  destroyAt?: string;
+  drainReason?: 'user_grace' | 'admin_grace' | 'failed_bootstrap';
   adminWarmHold?: boolean;
   lastError?: string;
+  lastErrorRaw?: string;
   updatedAt?: string;
   createdAt?: string;
   sessions?: GPUPoolSessionInfo[];
@@ -249,8 +326,50 @@ interface GPUPoolDiagnosticsResult {
   gatewayHealth: boolean;
   publicIp?: string;
   nodeId?: string;
+  providerNodeCount?: number;
+  providerNodes?: { id: string; name?: string; status?: string; publicIp?: string }[];
   policySummary?: string;
   summary: string[];
+  probedAt: string;
+}
+
+interface GPUPoolRecoveryNode {
+  id: string;
+  name?: string;
+  status?: string;
+  publicIp?: string;
+}
+
+interface GPUPoolRecoveryReport {
+  serviceTag: string;
+  state: GPUPoolAdminState;
+  provider?: string;
+  providerLabel?: string;
+  sshReachable: boolean;
+  providerNodeCount: number;
+  providerNodes?: GPUPoolRecoveryNode[];
+  action: string;
+  recovered: boolean;
+  message?: string;
+  notes?: string[];
+  probedAt: string;
+  pool?: GPUPoolAdminInfo;
+}
+
+interface GPUPoolInventory {
+  serviceTag: string;
+  provider: string;
+  providerLabel: string;
+  providerNodeCount: number;
+  providerNodes: GPUPoolRecoveryNode[];
+  sshHost?: string;
+  sshReachable: boolean;
+  mongoState?: GPUPoolAdminState;
+  mongoNodeId?: string;
+  mongoPublicIp?: string;
+  source: string;
+  rawPreview?: string;
+  notes?: string[];
   probedAt: string;
 }
 
@@ -275,6 +394,217 @@ interface GPUPoolSupportSessionInfo {
   creditsCharged?: number;
   creditsStartupCharged?: number;
   active: boolean;
+}
+
+interface AISaaSDateRange {
+  startDate?: string;
+  endDate?: string;
+}
+
+interface AISaaSSourceStatus {
+  name: string;
+  status: 'ok' | 'partial' | 'error' | 'limited' | string;
+  count: number;
+  warning?: string;
+}
+
+interface AISaaSWarning {
+  code: string;
+  severity: 'info' | 'warn' | 'error' | string;
+  message: string;
+  source?: string;
+  apiId?: string;
+}
+
+interface AISaaSFleetSummary {
+  totalServices: number;
+  publicServices: number;
+  betaServices: number;
+  gpuBackedServices: number;
+  readyRuntimes: number;
+  provisioning: number;
+  failedRuntimes: number;
+  activeSessions: number;
+  activeBetaKeys: number;
+  totalCalls: number;
+  totalCredits: number;
+  partialSourceCount: number;
+}
+
+interface AISaaSAliases {
+  catalogSlugs: string[];
+  usageNames: string[];
+  betaServiceNames: string[];
+  betaServiceTags: string[];
+  gpuServiceTags: string[];
+  pipelineServices: string[];
+  feedbackServiceNames: string[];
+}
+
+interface AISaaSPublicSummary {
+  status: string;
+  endpoint?: string;
+  docsPath?: string;
+  tryApiPath?: string;
+  source?: string;
+  configurable: boolean;
+  blockedBy?: string;
+}
+
+interface AISaaSPolicySummary {
+  source?: string;
+  hasPolicy: boolean;
+  summary?: string;
+  maxUploadSizeMB?: number;
+  maxPages?: number;
+  maxFiles?: number;
+  allowedFormats?: string[];
+  pricingMode?: string;
+  creditsPerHit?: number;
+  creditsPerPage?: number;
+  startupCredits?: number;
+  creditsPerMinute?: number;
+  notes?: string;
+  configurable: boolean;
+  blockedBy?: string;
+}
+
+interface AISaaSAccessSummary {
+  model: string;
+  betaSupported: boolean;
+  totalBetaKeys: number;
+  activeBetaKeys: number;
+  revokedBetaKeys: number;
+  expiredBetaKeys: number;
+  betaServiceTags?: string[];
+  configurable: boolean;
+  blockedBy?: string;
+}
+
+interface AISaaSUsageSummary {
+  source?: string;
+  totalCalls: number;
+  successCalls: number;
+  failedCalls: number;
+  totalCredits: number;
+}
+
+interface AISaaSFeedbackSummary {
+  source?: string;
+  recentSessions: number;
+  pendingSessions: number;
+  refundedCredits: number;
+  lastCreatedAt?: string;
+}
+
+interface AISaaSRegistrySummary {
+  source: string;
+  provider?: string;
+  authMode?: string;
+  server?: string;
+  namespace?: string;
+  region?: string;
+  imageTag?: string;
+  preferRegistryPull?: boolean;
+  loginRequired?: boolean;
+}
+
+interface AISaaSProvisionSummary {
+  source: string;
+  primaryProvider?: string;
+  fallbackProvider?: string;
+  awsRegion?: string;
+  awsInstanceType?: string;
+  awsCapacityType?: string;
+  e2eLocation?: string;
+  e2eGpuCard?: string;
+  gcpRegion?: string;
+  gcpMachineType?: string;
+  maintenanceMode: boolean;
+  blockNewSessions: boolean;
+  maintenanceMessage?: string;
+  gracePeriodMin?: number;
+  deployHealthSec?: number;
+  provisionMaxAttempts?: number;
+}
+
+interface AISaaSJobSummary {
+  id: string;
+  type: string;
+  status: string;
+  attempts: number;
+  maxAttempts: number;
+  runAfter: string;
+  createdAt: string;
+  completedAt?: string;
+  lastError?: string;
+  idempotencyKey?: string;
+}
+
+interface AISaaSRuntimeProfile {
+  runtimeId: string;
+  serviceTag?: string;
+  serviceName?: string;
+  routeAliases?: string[];
+  state: string;
+  readiness: string;
+  provider?: string;
+  region?: string;
+  instanceType?: string;
+  capacityType?: string;
+  deployVersion?: string;
+  refCount: number;
+  activeSessions: number;
+  nodeOwner?: string;
+  nodeId?: string;
+  publicIp?: string;
+  readyAt?: string;
+  destroyAt?: string;
+  updatedAt?: string;
+  lastError?: string;
+  registry?: AISaaSRegistrySummary;
+  provision?: AISaaSProvisionSummary;
+  jobs?: AISaaSJobSummary[];
+}
+
+interface AISaaSLink {
+  label: string;
+  href: string;
+  kind: string;
+}
+
+interface AISaaSServiceRecord {
+  apiId: string;
+  slug: string;
+  displayName: string;
+  lifecycle: string;
+  readiness: string;
+  nextSafeAction: string;
+  public: AISaaSPublicSummary;
+  aliases: AISaaSAliases;
+  sources: AISaaSSourceStatus[];
+  warnings?: AISaaSWarning[];
+  policy: AISaaSPolicySummary;
+  access: AISaaSAccessSummary;
+  usage: AISaaSUsageSummary;
+  feedback: AISaaSFeedbackSummary;
+  runtime: AISaaSRuntimeProfile[];
+  links: AISaaSLink[];
+}
+
+interface AISaaSListResponse {
+  schemaVersion: string;
+  generatedAt: string;
+  dateRange: AISaaSDateRange;
+  sources: AISaaSSourceStatus[];
+  warnings?: AISaaSWarning[];
+  fleet: AISaaSFleetSummary;
+  services: AISaaSServiceRecord[];
+}
+
+interface AISaaSQueryParams {
+  start_date?: string;
+  end_date?: string;
 }
 
 interface GuestPassInfo {
@@ -1468,6 +1798,116 @@ class ApiService {
     };
   }
 
+  async listAISaaSServices(params?: AISaaSQueryParams): Promise<AISaaSListResponse> {
+    return this.makeAuthenticatedRequest<AISaaSListResponse>(
+      `/admin/ai-saas/services${this.buildQueryString(params || {})}`
+    );
+  }
+
+  /** Canonical AI Services aggregate (alias of AI SaaS ledger). */
+  async listAIServices(params?: AISaaSQueryParams): Promise<AISaaSListResponse> {
+    return this.makeAuthenticatedRequest<AISaaSListResponse>(
+      `/admin/ai-services/services${this.buildQueryString(params || {})}`
+    );
+  }
+
+  async getAIService(apiId: string, params?: AISaaSQueryParams): Promise<AISaaSServiceRecord> {
+    const response = await this.makeAuthenticatedRequest<{ service: AISaaSServiceRecord }>(
+      `/admin/ai-services/${encodeURIComponent(apiId)}${this.buildQueryString(params || {})}`
+    );
+    return response.service;
+  }
+
+  async updateAIServicePolicy(apiId: string, servicePolicy: BetaServicePolicy): Promise<AISaaSServiceRecord> {
+    const response = await this.makeAuthenticatedRequest<{ service: AISaaSServiceRecord }>(
+      `/admin/ai-services/${encodeURIComponent(apiId)}/policy`,
+      { method: 'PUT', body: JSON.stringify({ servicePolicy }) },
+    );
+    return response.service;
+  }
+
+  async updateAIServiceRegistry(
+    apiId: string,
+    registrySettings: BetaServiceRegistrySettings,
+    runtimeProfile?: string,
+  ): Promise<AISaaSServiceRecord> {
+    const response = await this.makeAuthenticatedRequest<{ service: AISaaSServiceRecord }>(
+      `/admin/ai-services/${encodeURIComponent(apiId)}/registry`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          runtimeProfile: runtimeProfile || undefined,
+          registrySettings,
+        }),
+      },
+    );
+    return response.service;
+  }
+
+  async listAIServiceRegistryImages(
+    apiId: string,
+    params?: { runtimeProfile?: string; provider?: string; image?: string },
+  ): Promise<RegistryImageCatalog> {
+    const response = await this.makeAuthenticatedRequest<{ catalog: RegistryImageCatalog }>(
+      `/admin/ai-services/${encodeURIComponent(apiId)}/registry/images${this.buildQueryString(params || {})}`,
+    );
+    return response.catalog;
+  }
+
+  async updateAIServiceProvision(
+    apiId: string,
+    config: GPUProvisionConfig,
+    options?: { runtimeProfile?: string; expectedUpdatedAt?: string },
+  ): Promise<GPUProvisionConfig> {
+    const response = await this.makeAuthenticatedRequest<{ policy: GPUProvisionConfig }>(
+      `/admin/ai-services/${encodeURIComponent(apiId)}/provision`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          runtimeProfile: options?.runtimeProfile || config.serviceTag,
+          expectedUpdatedAt: options?.expectedUpdatedAt || undefined,
+          policy: config,
+        }),
+      },
+    );
+    return response.policy;
+  }
+
+  async issueAIServiceBetaKey(
+    apiId: string,
+    payload: Partial<BetaKeyGenerateRequest> = {},
+  ): Promise<BetaKeyGenerateResponse> {
+    return this.makeAuthenticatedRequest<BetaKeyGenerateResponse>(
+      `/admin/ai-services/${encodeURIComponent(apiId)}/access/keys`,
+      { method: 'POST', body: JSON.stringify(payload) },
+    );
+  }
+
+  async revokeAIServiceBetaKey(apiId: string, keyId: string): Promise<{ message: string; apiId: string; keyId: string }> {
+    return this.makeAuthenticatedRequest(
+      `/admin/ai-services/${encodeURIComponent(apiId)}/access/keys/${encodeURIComponent(keyId)}`,
+      { method: 'DELETE' },
+    );
+  }
+
+  async runAIServiceRuntimeAction(
+    apiId: string,
+    body: {
+      action: string;
+      runtimeProfile?: string;
+      confirm?: string;
+      immediate?: boolean;
+      extendMinutes?: number;
+      expectedState?: string;
+      reason?: string;
+    },
+  ): Promise<{ apiId: string; action: string; result: unknown }> {
+    return this.makeAuthenticatedRequest(
+      `/admin/ai-services/${encodeURIComponent(apiId)}/runtime/actions`,
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+  }
+
   // Beta key management (Admin only)
   async getSupportedBetaServices(): Promise<{ message: string; services: string[] }> {
     return this.makeAuthenticatedRequest('/admin/beta-keys/services');
@@ -1506,6 +1946,10 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  }
+
+  async getBetaService(tag: string): Promise<{ message: string; service: BetaServiceInfo }> {
+    return this.makeAuthenticatedRequest(`/admin/beta-services/${encodeURIComponent(tag)}`);
   }
 
   async updateBetaService(tag: string, payload: BetaServiceUpdateRequest): Promise<{ message: string; service: BetaServiceInfo }> {
@@ -1553,6 +1997,13 @@ class ApiService {
     );
   }
 
+  async getGpuPoolInventory(serviceTag: string, provider?: string): Promise<GPUPoolInventory> {
+    const q = provider ? `?provider=${encodeURIComponent(provider)}` : '';
+    return this.makeAuthenticatedRequest<GPUPoolInventory>(
+      `/admin/gpu-pools/${encodeURIComponent(serviceTag)}/inventory${q}`
+    );
+  }
+
   async abortGpuPoolProvision(serviceTag: string): Promise<{ ok: boolean }> {
     return this.makeAuthenticatedRequest(
       `/admin/gpu-pools/${encodeURIComponent(serviceTag)}/abort-provision`,
@@ -1563,6 +2014,20 @@ class ApiService {
   async retryGpuPoolProvision(serviceTag: string): Promise<{ ok: boolean }> {
     return this.makeAuthenticatedRequest(
       `/admin/gpu-pools/${encodeURIComponent(serviceTag)}/retry-provision`,
+      { method: 'POST' }
+    );
+  }
+
+  async recoverGpuPool(serviceTag: string): Promise<GPUPoolRecoveryReport> {
+    return this.makeAuthenticatedRequest<GPUPoolRecoveryReport>(
+      `/admin/gpu-pools/${encodeURIComponent(serviceTag)}/recover`,
+      { method: 'POST' }
+    );
+  }
+
+  async warmStartGpuPool(serviceTag: string): Promise<GPUPoolAdminInfo> {
+    return this.makeAuthenticatedRequest<GPUPoolAdminInfo>(
+      `/admin/gpu-pools/${encodeURIComponent(serviceTag)}/warm-start`,
       { method: 'POST' }
     );
   }
@@ -1596,6 +2061,13 @@ class ApiService {
     return this.makeAuthenticatedRequest<GPUPoolAdminInfo>('/admin/gpu-pools/cancel-grace', {
       method: 'POST',
       body: JSON.stringify({ serviceTag }),
+    });
+  }
+
+  async extendGpuPoolGrace(serviceTag: string, extendMin: number): Promise<GPUPoolAdminInfo> {
+    return this.makeAuthenticatedRequest<GPUPoolAdminInfo>('/admin/gpu-pools/extend-grace', {
+      method: 'POST',
+      body: JSON.stringify({ serviceTag, extendMin }),
     });
   }
 
@@ -1722,13 +2194,39 @@ export type {
   BetaServiceListResponse,
   BetaServiceCreateRequest,
   BetaServiceUpdateRequest,
+  BetaServiceRegistryProvider,
+  BetaServiceRegistryAuth,
+  BetaServiceRegistrySettings,
+  RegistryImageTag,
+  RegistryImageCatalog,
   GPUPoolAdminInfo,
   GPUPoolAdminState,
   GPUPoolBillingInfo,
   GPUPoolDiagnosticsResult,
+  GPUPoolInventory,
   GPUPoolJobInfo,
+  GPUPoolRecoveryNode,
+  GPUPoolRecoveryReport,
   GPUPoolSupportView,
   GPUProvisionConfig,
+  AISaaSDateRange,
+  AISaaSSourceStatus,
+  AISaaSWarning,
+  AISaaSFleetSummary,
+  AISaaSAliases,
+  AISaaSPublicSummary,
+  AISaaSPolicySummary,
+  AISaaSAccessSummary,
+  AISaaSUsageSummary,
+  AISaaSFeedbackSummary,
+  AISaaSRegistrySummary,
+  AISaaSProvisionSummary,
+  AISaaSJobSummary,
+  AISaaSRuntimeProfile,
+  AISaaSLink,
+  AISaaSServiceRecord,
+  AISaaSListResponse,
+  AISaaSQueryParams,
   GuestPassInfo,
   GuestPassCreateRequest,
   GuestPassCreateResponse,

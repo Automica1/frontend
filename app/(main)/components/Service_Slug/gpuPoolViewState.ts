@@ -56,6 +56,7 @@ export function deriveGpuPoolScenario(input: GpuPoolViewInput): GpuPoolScenario 
 
   if (input.state === 'draining') {
     if (input.drainReason === 'user_grace' && !input.sessionEndReason) return 'A1';
+    if (input.drainReason === 'failed_bootstrap') return 'A1';
     return 'A_draining_end';
   }
 
@@ -102,7 +103,7 @@ export function buildGpuPoolViewPresentation(
       return {
         ...base,
         headline: 'AI Ready',
-        detail: 'Compare below when you are ready. Stop session when finished.',
+        detail: 'Compare below when you are ready. Stop when finished.',
         variant: 'emerald',
       };
     case 'A2':
@@ -193,7 +194,7 @@ export function introCostLine(
       creditsStartupChargedSession > 0 ? creditsStartupChargedSession : startupCredits;
     const rates = `${creditsPerMinute} Credits/minute · ${comparisonCost} Credits/compare`;
     if (creditsGpuTimeSession > 0) {
-      return `Cost - ${rates} · ${reserved} startup already paid · ${creditsGpuTimeSession} resource time this session`;
+      return `Cost - ${rates} · ${reserved} startup already paid · ${creditsGpuTimeSession} runtime this session`;
     }
     return `Cost - ${rates} · ${reserved} startup already paid`;
   }

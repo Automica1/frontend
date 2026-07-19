@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Power, Shield, Timer } from 'lucide-react';
+import { Power, RefreshCw, Shield, Timer } from 'lucide-react';
 import type { GPUPoolAdminInfo } from '../../lib/apiService';
 
 function providerLabel(code: string | undefined): string {
@@ -24,7 +24,10 @@ function hasLiveNode(pool: GPUPoolAdminInfo): boolean {
 }
 
 function hasScheduledGrace(pool: GPUPoolAdminInfo): boolean {
-  return pool.state === 'draining' && (pool.drainReason === 'user_grace' || pool.drainReason === 'admin_grace');
+  return (
+    pool.state === 'draining' &&
+    (pool.drainReason === 'user_grace' || pool.drainReason === 'admin_grace' || pool.drainReason === 'failed_bootstrap')
+  );
 }
 
 function poolCostState(pool: GPUPoolAdminInfo): { label: string; tone: string } {
@@ -35,12 +38,24 @@ function poolCostState(pool: GPUPoolAdminInfo): { label: string; tone: string } 
     return { label: pool.refCount > 0 ? 'Starting for users' : 'Starting · no active sessions', tone: 'text-sky-200' };
   }
   if (hasScheduledGrace(pool)) {
-    return { label: pool.drainReason === 'admin_grace' ? 'Admin grace shutdown' : 'User grace shutdown', tone: 'text-amber-200' };
+    if (pool.drainReason === 'admin_grace') {
+      return { label: 'Admin grace shutdown', tone: 'text-amber-200' };
+    }
+    if (pool.drainReason === 'failed_bootstrap') {
+      return { label: 'Failed bootstrap grace reuse window', tone: 'text-amber-200' };
+    }
+    return { label: 'User grace shutdown', tone: 'text-amber-200' };
   }
   if (pool.state === 'failed') {
     return { label: 'Needs attention', tone: 'text-red-200' };
   }
   if (!hasLiveNode(pool)) {
+    if (pool.state === 'idle') {
+      return {
+        label: 'Idle in Mongo · provider may still be billing — Recover orphan',
+        tone: 'text-amber-200',
+      };
+    }
     return { label: 'Idle · zero GPU cost', tone: 'text-emerald-200' };
   }
   return { label: 'Check pool state', tone: 'text-gray-300' };
@@ -51,14 +66,20 @@ function canAbortBoot(pool: GPUPoolAdminInfo): boolean {
   return pool.state === 'provisioning' || pool.state === 'failed';
 }
 
+function isOrphanCandidate(pool: GPUPoolAdminInfo): boolean {
+  return !hasLiveNode(pool) && (pool.state === 'idle' || pool.state === 'failed');
+}
+
 function canRetryProvision(pool: GPUPoolAdminInfo): boolean {
   if (pool.activeJob) return false;
   return pool.state === 'failed' || (pool.state === 'idle' && Boolean(pool.lastError));
 }
 
 function destroyAtFromPool(pool: GPUPoolAdminInfo): Date | null {
-  if (pool.state !== 'draining' || !pool.drainStartedAt) return null;
-  if (pool.drainReason !== 'user_grace' && pool.drainReason !== 'admin_grace') return null;
+  if (pool.state !== 'draining') return null;
+  if (!hasScheduledGrace(pool)) return null;
+  if (pool.destroyAt) return new Date(pool.destroyAt);
+  if (!pool.drainStartedAt) return null;
   return new Date(new Date(pool.drainStartedAt).getTime() + graceSec(pool) * 1000);
 }
 
@@ -93,7 +114,9 @@ type Props = {
   onSelectTag: (tag: string) => void;
   onShutdown: (pool: GPUPoolAdminInfo, immediate: boolean) => void;
   onCancelGrace: (pool: GPUPoolAdminInfo) => void;
+  onExtendGrace: (pool: GPUPoolAdminInfo, extendMin: number) => void;
   onRetry: (pool: GPUPoolAdminInfo) => void;
+  onRecover: (pool: GPUPoolAdminInfo) => void;
   busyTag: string | null;
 };
 
@@ -103,7 +126,9 @@ export default function GpuPoolOpsTable({
   onSelectTag,
   onShutdown,
   onCancelGrace,
+  onExtendGrace,
   onRetry,
+  onRecover,
   busyTag,
 }: Props) {
   if (pools.length === 0) {
@@ -127,6 +152,15 @@ export default function GpuPoolOpsTable({
           {pools.map((pool) => (
             (() => {
               const costState = poolCostState(pool);
+              const isBusy =
+                busyTag === pool.serviceTag ||
+                busyTag === 'recover' ||
+                busyTag === 'diag' ||
+                busyTag === 'abort' ||
+                busyTag === 'hold' ||
+                busyTag === 'extend' ||
+                busyTag === 'destroy' ||
+                busyTag === 'grace';
               return (
             <tr
               key={pool.serviceTag}
@@ -162,17 +196,51 @@ export default function GpuPoolOpsTable({
                   {canRetryProvision(pool) && (
                     <button
                       type="button"
-                      disabled={busyTag === pool.serviceTag}
+                      disabled={isBusy}
                       onClick={() => onRetry(pool)}
                       className="rounded-md border border-sky-500/40 bg-sky-500/10 px-2 py-1 text-xs text-sky-100"
                     >
                       Retry
                     </button>
                   )}
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() => onRecover(pool)}
+                    className="inline-flex items-center gap-1 rounded-md border border-sky-500/40 bg-sky-500/10 px-2 py-1 text-xs text-sky-100"
+                    title={
+                      isOrphanCandidate(pool)
+                        ? 'Reattach a live provider VM Mongo forgot (orphan recovery)'
+                        : 'Sync pool state from provider truth'
+                    }
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    {isOrphanCandidate(pool) ? 'Recover orphan' : 'Sync'}
+                  </button>
+                  {hasScheduledGrace(pool) && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => onExtendGrace(pool, 5)}
+                        className="rounded-md border border-sky-500/40 px-2 py-1 text-xs text-sky-100"
+                      >
+                        +5m
+                      </button>
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        onClick={() => onExtendGrace(pool, 15)}
+                        className="rounded-md border border-sky-500/40 px-2 py-1 text-xs text-sky-100"
+                      >
+                        +15m
+                      </button>
+                    </>
+                  )}
                   {hasScheduledGrace(pool) && (
                     <button
                       type="button"
-                      disabled={busyTag === pool.serviceTag}
+                      disabled={isBusy}
                       onClick={() => onCancelGrace(pool)}
                       className="inline-flex items-center gap-1 rounded-md border border-emerald-500/40 px-2 py-1 text-xs text-emerald-100"
                     >
@@ -181,7 +249,7 @@ export default function GpuPoolOpsTable({
                   )}
                   <button
                     type="button"
-                    disabled={busyTag === pool.serviceTag}
+                    disabled={isBusy}
                     onClick={() => onShutdown(pool, false)}
                     className="inline-flex items-center gap-1 rounded-md border border-amber-500/40 px-2 py-1 text-xs text-amber-100"
                   >
@@ -189,7 +257,7 @@ export default function GpuPoolOpsTable({
                   </button>
                   <button
                     type="button"
-                    disabled={busyTag === pool.serviceTag}
+                    disabled={isBusy}
                     onClick={() => onShutdown(pool, true)}
                     className="inline-flex items-center gap-1 rounded-md border border-red-500/40 px-2 py-1 text-xs text-red-100"
                   >

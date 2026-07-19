@@ -37,9 +37,9 @@ const ACCEPTED_FILE_TYPES = [
   'application/pdf'
 ];
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+const DEFAULT_MAX_FILE_SIZE_MB = 10;
 
-const validateFile = (file: File): { isValid: boolean; error?: string } => {
+const validateFile = (file: File, maxFileSizeMB = DEFAULT_MAX_FILE_SIZE_MB): { isValid: boolean; error?: string } => {
   if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
     return { 
       isValid: false, 
@@ -47,10 +47,10 @@ const validateFile = (file: File): { isValid: boolean; error?: string } => {
     };
   }
   
-  if (file.size > MAX_FILE_SIZE) {
+  if (file.size > maxFileSizeMB * 1024 * 1024) {
     return { 
       isValid: false, 
-      error: `File size ${(file.size / (1024 * 1024)).toFixed(2)}MB exceeds 10MB limit.` 
+      error: `File size ${(file.size / (1024 * 1024)).toFixed(2)}MB exceeds ${maxFileSizeMB}MB limit.` 
     };
   }
   
@@ -60,9 +60,11 @@ const validateFile = (file: File): { isValid: boolean; error?: string } => {
 export const FileUpload = ({
   onChange,
   allowGuestAccess = false,
+  maxFileSizeMB = DEFAULT_MAX_FILE_SIZE_MB,
 }: {
   onChange?: (files: File[]) => void;
   allowGuestAccess?: boolean;
+  maxFileSizeMB?: number;
 }) => {
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
@@ -89,9 +91,9 @@ export const FileUpload = ({
     return encodeURIComponent('/services');
   };
 
-  // Create preview URLs for image files
+  // Create preview URLs for image and PDF files
   const createPreview = (file: File): FileWithPreview => {
-    if (file.type.startsWith('image/')) {
+    if (file.type.startsWith('image/') || file.type === 'application/pdf') {
       const fileWithPreview = file as FileWithPreview;
       fileWithPreview.preview = URL.createObjectURL(file);
       return fileWithPreview;
@@ -129,7 +131,7 @@ export const FileUpload = ({
     let firstError: string | null = null;
     
     for (const file of newFiles) {
-      const validation = validateFile(file);
+      const validation = validateFile(file, maxFileSizeMB);
       if (validation.isValid) {
         validFiles.push(file);
       } else if (!firstError) {
@@ -287,7 +289,7 @@ export const FileUpload = ({
                   </p>
                   {canUpload && (
                     <p className="relative z-20 font-sans font-normal text-neutral-500 text-xs mt-1">
-                      Supports PDF, JPEG, JPG, PNG (max 10MB)
+                      Supports PDF, JPEG, JPG, PNG (max {maxFileSizeMB}MB)
                     </p>
                   )}
                 </div>
@@ -347,17 +349,25 @@ export const FileUpload = ({
                     <X className="h-3 w-3 sm:h-4 sm:w-4" />
                   </button>
 
-                  {isImageFile(file) && file.preview ? (
+                  {file.preview && (isImageFile(file) || isPDFFile(file)) ? (
                     // Image preview with fixed container size
                     <div className="p-3 sm:p-4 h-full flex flex-col">
                       <div className="relative bg-neutral-800 rounded-lg overflow-hidden mb-3 sm:mb-4 flex-1 flex items-center justify-center">
-                        <motion.img
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          src={file.preview}
-                          alt={file.name}
-                          className="max-w-full max-h-full object-contain"
-                        />
+                        {isPDFFile(file) ? (
+                          <iframe
+                            src={file.preview}
+                            title={file.name}
+                            className="h-full w-full rounded-md border-0"
+                          />
+                        ) : (
+                          <motion.img
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            src={file.preview}
+                            alt={file.name}
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        )}
                       </div>
                       
                       {/* File details - fixed at bottom */}

@@ -8,7 +8,7 @@ export function formatGpuCountdown(totalSec: number): string {
 
 export function destroyCountdownCopy(input: {
   secondsToDestroy: number | null;
-  drainReason?: 'user_grace' | 'admin_grace' | null;
+  drainReason?: 'user_grace' | 'admin_grace' | 'failed_bootstrap' | null;
   copy: ExtraResourceCopy;
 }): string | null {
   if (input.secondsToDestroy === null) return null;
@@ -16,5 +16,8 @@ export function destroyCountdownCopy(input: {
   if (input.drainReason === 'admin_grace') {
     return `${input.copy.retiredCountdown} ${formatGpuCountdown(input.secondsToDestroy)}.`;
   }
-  return `${input.copy.shutdownCountdown} ${formatGpuCountdown(input.secondsToDestroy)} — Start session again to keep it running.`;
+  if (input.drainReason === 'failed_bootstrap') {
+    return `Startup recovery expires in ${formatGpuCountdown(input.secondsToDestroy)} — Start again to retry on this node.`;
+  }
+  return `${input.copy.shutdownCountdown} ${formatGpuCountdown(input.secondsToDestroy)} — Start again to keep it running.`;
 }

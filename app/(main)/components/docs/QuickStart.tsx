@@ -75,6 +75,22 @@ const getQuickStartResponse = (slug: string): string => {
     "similarity_percentage": 70.72,
     "classification": "Forged"
   }
+}`,
+    'ocr': `{
+  "req_id": "ocr-1754379820114-2k9m4p1zn",
+  "success": true,
+  "status": "completed",
+  "message": "OCR completed successfully",
+  "data": {
+    "text": "Invoice #1042\\nTotal: $240.00",
+    "blocks": [
+      {
+        "text": "Invoice #1042",
+        "confidence": 0.98,
+        "bbox": [72, 96, 260, 124]
+      }
+    ]
+  }
 }`
   };
   
@@ -97,7 +113,7 @@ export const QuickStart: React.FC<QuickStartProps> = ({
     <div>
       <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Getting Started</h3>
       <p className="text-gray-300 mb-4 sm:mb-6 text-sm sm:text-base">
-        Get up and running with our {solution.title} API in just a few steps. No complex setup required.
+        Get up and running with our {solution.title} API in just a few steps.{solution.slug === 'ocr' ? ' OCR requests require an active ocr-gpu session.' : ' No complex setup required.'}
       </p>
       
       <div className="space-y-4 sm:space-y-6">

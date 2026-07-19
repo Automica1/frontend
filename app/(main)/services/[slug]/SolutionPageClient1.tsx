@@ -50,6 +50,7 @@ interface SerializableSolution {
   hasBeta?: boolean;
   requiresGpuPool?: boolean;
   betaServiceTag?: string;
+  gpuServiceTag?: string;
 }
 
 interface SerializableService {
@@ -78,6 +79,7 @@ const getIconForSolution = (slug: string) => {
     'qr-masking': QrCode,
     'face-verify': User,
     'face-cropping': Scissors,
+    'ocr': FileText,
     'ocr-engine': Cpu,
   };
   
@@ -184,6 +186,7 @@ export default function SolutionPageClient({
       hasBeta: solution.hasBeta,
       requiresGpuPool: solution.requiresGpuPool,
       betaServiceTag: solution.betaServiceTag,
+      gpuServiceTag: solution.gpuServiceTag,
     };
 
     switch (activeSection) {

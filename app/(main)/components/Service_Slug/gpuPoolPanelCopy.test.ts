@@ -31,7 +31,7 @@ describe('gpuPoolPanelCopy', () => {
     };
     expect(isPriorProvisionFailed(input)).toBe(false);
     expect(sharedPoolJoinMode(input)).toBe('provisioning');
-    expect(poolPanelHeadline(input)).toBe('Resource session');
+    expect(poolPanelHeadline(input)).toBe('Try API');
     expect(poolPanelDetailLine(input)).toBeNull();
   });
 
@@ -71,7 +71,7 @@ describe('gpuPoolPanelCopy', () => {
         drainReason: 'user_grace',
         sessionEndReason: 'user_stop',
       })
-    ).toBe('Resource on standby');
+    ).toBe('Try API ready');
     expect(showGpuIdleIntroPanel({
       userActive: false,
       state: 'draining',
@@ -100,7 +100,7 @@ describe('gpuPoolPanelCopy', () => {
     };
     expect(isEarlyStopReconnect(input)).toBe(true);
     expect(showGpuIdleIntroPanel(input)).toBe(true);
-    expect(poolPanelHeadline(input)).toBe('Resource session');
+    expect(poolPanelHeadline(input)).toBe('Try API');
   });
 
   it('A4 user-grace standby is not A3 intro', () => {
@@ -114,7 +114,7 @@ describe('gpuPoolPanelCopy', () => {
     expect(isEarlyStopReconnect(input)).toBe(false);
     expect(isUserGraceStandby(input)).toBe(true);
     expect(showGpuIdleIntroPanel(input)).toBe(false);
-    expect(poolPanelHeadline(input)).toBe('Resource on standby');
+    expect(poolPanelHeadline(input)).toBe('Try API ready');
   });
 
   it('shows refund copy only when pool is failed after provision_failed', () => {
@@ -125,7 +125,7 @@ describe('gpuPoolPanelCopy', () => {
       refCount: 0,
     };
     expect(isPriorProvisionFailed(input)).toBe(true);
-    expect(poolPanelHeadline(input)).toBe('Resources busy — try again soon');
-    expect(poolPanelDetailLine(input)).toContain('15 minutes');
+    expect(poolPanelHeadline(input)).toBe('Could not prepare Try API');
+    expect(poolPanelDetailLine(input)).toContain('Start again');
   });
 });

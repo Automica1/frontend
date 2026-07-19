@@ -269,6 +269,7 @@ export default async function SolutionPage({ params }: SolutionPageProps) {
     hasBeta: solution.hasBeta ?? false,
     requiresGpuPool: solution.requiresGpuPool ?? false,
     betaServiceTag: solution.betaServiceTag,
+    gpuServiceTag: solution.gpuServiceTag,
   };
 
   // Extract serializable services data (exclude icons, will be resolved client-side)

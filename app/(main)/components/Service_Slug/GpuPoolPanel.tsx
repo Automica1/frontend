@@ -53,11 +53,12 @@ interface GpuPoolPanelProps {
   hasEnoughCreditsToStart?: boolean;
   nextMeterChargeAt?: string | null;
   sessionEndReason?: string | null;
-  drainReason?: 'user_grace' | 'admin_grace' | null;
+  drainReason?: 'user_grace' | 'admin_grace' | 'failed_bootstrap' | null;
   destroyAt?: string | null;
   gracePeriodSec?: number;
   reconnectEligible?: boolean;
   reconnectUntil?: string | null;
+  useStockCopy?: boolean;
 }
 
 export default function GpuPoolPanel({
@@ -98,6 +99,7 @@ export default function GpuPoolPanel({
   destroyAt = null,
   reconnectEligible = false,
   reconnectUntil = null,
+  useStockCopy = false,
 }: GpuPoolPanelProps) {
   const [secondsToNextCharge, setSecondsToNextCharge] = useState<number | null>(null);
   const [secondsToDestroy, setSecondsToDestroy] = useState<number | null>(null);
@@ -179,31 +181,59 @@ export default function GpuPoolPanel({
     showCeremonyStepper,
   });
 
-  const view = useMemo(
-    () =>
-      buildGpuPoolViewPresentation(scenario, resourceCopy, {
-        ceremonySubline,
-        isResume,
-        ceremonyComplete,
-        error,
-        detailLine: poolPanelDetailLine(copyInput),
-        lastError: status?.lastError,
-        showCeremonyStepper,
-      }),
-    [
-      scenario,
-      resourceCopy,
+  const view = useMemo(() => {
+    if (useStockCopy) {
+      const headline = (() => {
+        if (userActive && ceremonyComplete) return 'AI Ready';
+        if (userActive && !ceremonyComplete) return resourceCopy.startingSession;
+        if (status?.state === 'provisioning') return resourceCopy.startingSession;
+        if (status?.state === 'draining' && drainReason === 'user_grace') return resourceCopy.onStandby;
+        if (status?.state === 'draining' && drainReason === 'failed_bootstrap') return resourceCopy.couldNotStart;
+        if (status?.state === 'draining') return resourceCopy.endingSession;
+        return resourceCopy.session;
+      })();
+      const detail =
+        error ??
+        (status?.state === 'failed' ? resourceCopy.couldNotStart : null);
+      return {
+        scenario,
+        showIntro: false,
+        headline,
+        detail,
+        showReconnectCountdown: false,
+        showDestroyCountdown: false,
+        variant: (status?.state === 'failed' ? 'red' : status?.state === 'ready' ? 'emerald' : 'amber') as
+          | 'amber'
+          | 'emerald'
+          | 'red',
+      };
+    }
+    return buildGpuPoolViewPresentation(scenario, resourceCopy, {
       ceremonySubline,
       isResume,
       ceremonyComplete,
       error,
-      copyInput,
-      status?.lastError,
+      detailLine: poolPanelDetailLine(copyInput),
+      lastError: status?.lastError,
       showCeremonyStepper,
-    ]
-  );
+    });
+  }, [
+    useStockCopy,
+    scenario,
+    resourceCopy,
+    ceremonySubline,
+    isResume,
+    ceremonyComplete,
+    error,
+    copyInput,
+    status?.lastError,
+    showCeremonyStepper,
+    userActive,
+    status?.state,
+    drainReason,
+  ]);
 
-  const showBetaIntro = view.showIntro && !error;
+  const showBetaIntro = !useStockCopy && view.showIntro && !error;
   const sessionTotalLine =
     scenario === 'A_ready'
       ? activeSessionBillingLine({
@@ -284,7 +314,7 @@ export default function GpuPoolPanel({
                   {reconnectCountdownLine && (
                     <p className="font-medium text-amber-200 opacity-100">{reconnectCountdownLine}</p>
                   )}
-                  {scenario === 'A1' && isDraining && drainReason !== 'user_grace' && (
+                  {scenario === 'A1' && isDraining && drainReason === 'admin_grace' && (
                     <p className="opacity-80">{resourceCopy.shuttingDownWait}</p>
                   )}
                 </div>

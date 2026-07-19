@@ -1,44 +1,50 @@
 // hooks/useSolutionType.ts
 import { useMemo } from 'react';
-import { Solution, SolutionType } from '../types/solution';
+import { SolutionType } from '../types/solution';
 
-export const useSolutionType = (solution: Solution): SolutionType => {
+type SolutionLike = {
+  slug?: string;
+  title: string;
+};
+
+export function resolveSolutionType({ slug, title }: SolutionLike): SolutionType {
+  const normalizedSlug = slug?.toLowerCase();
+  const normalizedTitle = title.toLowerCase();
+
+  if (normalizedSlug === 'qr-extract' || normalizedTitle.includes('qr extract')) {
+    return 'qr-extract';
+  }
+  if (
+    normalizedSlug === 'qr-mask' ||
+    normalizedSlug === 'qr-masking' ||
+    normalizedTitle.includes('qr mask')
+  ) {
+    return 'qr-mask';
+  }
+  if (normalizedSlug === 'signature-verification' || normalizedTitle.includes('signature verification')) {
+    return 'signature-verification';
+  }
+  if (normalizedSlug === 'id-crop' || normalizedSlug === 'id-cropping' || normalizedTitle.includes('id crop')) {
+    return 'id-crop';
+  }
+  if (normalizedSlug === 'document-enhancement' || normalizedTitle.includes('document enhancement')) {
+    return 'document-enhancement';
+  }
+  if (normalizedSlug === 'ocr' || normalizedTitle.includes('ocr')) {
+    return 'ocr';
+  }
+  if (normalizedSlug === 'face-verify' || normalizedSlug === 'face-verification' || normalizedTitle.includes('face verify')) {
+    return 'face-verify';
+  }
+  if (normalizedSlug === 'face-cropping' || normalizedSlug === 'face-crop' || normalizedTitle.includes('face crop')) {
+    return 'face-cropping';
+  }
+
+  return 'unknown';
+}
+
+export const useSolutionType = (solution: SolutionLike): SolutionType => {
   return useMemo(() => {
-    const slug = solution.slug?.toLowerCase();
-    const title = solution.title.toLowerCase();
-    
-    console.log('Solution detection:', { slug, title });
-    
-    if (slug === 'qr-extract' || title.includes('qr extract')) {
-      console.log('Detected: QR Extract');
-      return 'qr-extract';
-    }
-    if (slug === 'qr-mask' || title.includes('qr mask')) {
-      console.log('Detected: QR Mask');
-      return 'qr-mask';
-    }
-    if (slug === 'signature-verification' || title.includes('signature verification')) {
-      console.log('Detected: Signature Verification');
-      return 'signature-verification';
-    }
-    if (slug === 'id-crop' || slug === 'id-cropping' || title.includes('id crop')) {
-      console.log('Detected: ID Crop');
-      return 'id-crop';
-    }
-    if (slug === 'document-enhancement' || title.includes('document enhancement')) {
-      console.log('Detected: Document Enhancement');
-      return 'document-enhancement';
-    }
-    if (slug === 'face-verify' || slug === 'face-verification' || title.includes('face verify')) {
-      console.log('Detected: Face Verify');
-      return 'face-verify';
-    }
-    if (slug === 'face-cropping' || slug === 'face-crop' || title.includes('face crop')) {
-      console.log('Detected: Face Cropping');
-      return 'face-cropping';
-    }
-    
-    console.warn('Unknown solution type, defaulting to unknown');
-    return 'unknown';
+    return resolveSolutionType(solution);
   }, [solution.slug, solution.title]);
 };

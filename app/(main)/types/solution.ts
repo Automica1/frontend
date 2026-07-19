@@ -8,9 +8,45 @@ export interface Solution {
   hasBeta?: boolean;
   requiresGpuPool?: boolean;
   betaServiceTag?: string;
+  gpuServiceTag?: string;
+  servicePolicy?: ServicePolicy;
 }
 
-export type SolutionType = 'qr-extract' | 'signature-verification' | 'id-crop' | 'document-enhancement' | 'face-verify' | 'face-cropping' | 'qr-mask' | 'unknown';
+export interface ServicePolicyLimit {
+  key?: string;
+  label: string;
+  value: string;
+  unit?: string;
+  hint?: string;
+}
+
+export interface ServicePolicyPricing {
+  key?: string;
+  label: string;
+  value: string;
+  cadence?: 'hit' | 'page' | 'session' | 'minute' | 'token';
+  unit?: string;
+  hint?: string;
+}
+
+export interface ServicePolicy {
+  source?: 'catalog' | 'override';
+  pricingMode?: 'per_hit' | 'per_page' | 'session' | 'hybrid';
+  editable?: boolean;
+  maxUploadSizeMB?: number | null;
+  maxPages?: number | null;
+  maxFiles?: number | null;
+  allowedFormats?: string[];
+  creditsPerHit?: number | null;
+  creditsPerPage?: number | null;
+  sessionStartCredits?: number | null;
+  creditsPerMinute?: number | null;
+  limits?: ServicePolicyLimit[];
+  pricing?: ServicePolicyPricing[];
+  notes?: string[];
+}
+
+export type SolutionType = 'qr-extract' | 'signature-verification' | 'id-crop' | 'document-enhancement' | 'ocr' | 'face-verify' | 'face-cropping' | 'qr-mask' | 'unknown';
 
 export interface SerializableSolution {
   title: string;
@@ -30,6 +66,8 @@ export interface SerializableSolution {
   hasBeta?: boolean;
   requiresGpuPool?: boolean;
   betaServiceTag?: string;
+  gpuServiceTag?: string;
+  servicePolicy?: ServicePolicy;
 }
 
 export interface SerializableService {

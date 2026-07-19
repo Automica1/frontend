@@ -1,7 +1,9 @@
 // components/TabbedResponseSection/ResultTab.tsx
-import React from 'react';
-import { QrCode, Shield, AlertCircle } from 'lucide-react';
-import { Solution, SolutionType } from '../../types/solution';
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { Check, Copy, QrCode, Shield, AlertCircle, Maximize2, Minimize2, WrapText } from 'lucide-react';
+import { SolutionType } from '../../types/solution';
 import {
   extractProcessedImageBase64,
   getFileRequirementText,
@@ -16,12 +18,18 @@ interface ResultTabProps {
   solutionType: SolutionType;
   data: any;
   loading: boolean;
-  solution: Solution;
+  solution: {
+    [key: string]: any;
+    IconComponent?: React.ComponentType<any>;
+    icon?: React.ComponentType<any>;
+  };
   error?: string | null;
   errorDetails?: any | null;
   compactResult?: boolean;
   processedImageBase64?: string;
   fileName?: string;
+  inputPreviewUrl?: string;
+  inputFileType?: 'image' | 'pdf';
   copiedBase64?: boolean;
   onCopyBase64?: (base64: string) => void;
   fileType?: 'image' | 'pdf';
@@ -38,14 +46,45 @@ export const ResultTab: React.FC<ResultTabProps> = ({
   compactResult = false,
   processedImageBase64,
   fileName,
+  inputPreviewUrl,
+  inputFileType,
   copiedBase64 = false,
   onCopyBase64,
   fileType = 'image',
   mimeType,
 }) => {
+  const [copiedText, setCopiedText] = useState(false);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [wrapText, setWrapText] = useState(false);
   const isVerificationSolution = solutionType === 'face-verify' || solutionType === 'signature-verification';
   const isQrExtractSolution = solutionType === 'qr-extract';
   const imageBase64 = processedImageBase64 || extractProcessedImageBase64(solutionType, data);
+
+  useEffect(() => {
+    if (!isInspectorOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsInspectorOpen(false);
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isInspectorOpen]);
+
+  const copyText = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedText(true);
+      window.setTimeout(() => setCopiedText(false), 1800);
+    }).catch((err) => {
+      console.error('Failed to copy OCR text:', err);
+    });
+  };
 
   if (error) {
     return (
@@ -127,6 +166,148 @@ export const ResultTab: React.FC<ResultTabProps> = ({
         data={data}
         compact={compactResult}
       />
+    );
+  }
+
+  if (solutionType === 'ocr') {
+    const result = data?.ocrResult ?? data;
+    const text = result?.data?.text ?? '';
+    const displayText = text || 'No text was returned for this document.';
+    return (
+      <>
+      <div className="h-full overflow-y-auto p-4 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold text-white">Extracted Text</h3>
+            <p className="text-sm text-gray-400">Text extraction completed</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsInspectorOpen(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-100 hover:border-cyan-400/40 hover:bg-cyan-500/15"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+              <span>Open larger</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => copyText(displayText)}
+              className="inline-flex shrink-0 items-center gap-2 rounded-md border border-gray-700 bg-gray-800/70 px-3 py-1.5 text-xs font-medium text-gray-200 hover:border-gray-600 hover:bg-gray-800"
+            >
+              {copiedText ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-gray-400" />}
+              <span>{copiedText ? 'Copied' : 'Copy text'}</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-gray-700 bg-gray-950 p-4">
+          <pre className="overflow-x-auto whitespace-pre-wrap break-words text-sm leading-6 text-gray-100">
+            {displayText}
+          </pre>
+        </div>
+      </div>
+      {isInspectorOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onClick={() => setIsInspectorOpen(false)}
+          role="presentation"
+        >
+          <div
+            className="flex h-[92vh] w-full max-w-7xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0b1020] shadow-2xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ocr-inspector-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
+              <div className="min-w-0">
+                <h3 id="ocr-inspector-title" className="text-lg font-semibold text-white">
+                  Document and extracted text
+                </h3>
+                <p className="text-sm text-gray-400">
+                  Input document alongside the full OCR text
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setWrapText((value) => !value)}
+                  className="inline-flex items-center gap-2 rounded-md border border-gray-700 bg-gray-800/70 px-3 py-2 text-xs font-medium text-gray-200 hover:border-gray-600 hover:bg-gray-800"
+                >
+                  <WrapText className="h-3.5 w-3.5 text-gray-400" />
+                  <span>{wrapText ? 'No wrap' : 'Wrap lines'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => copyText(displayText)}
+                  className="inline-flex items-center gap-2 rounded-md border border-gray-700 bg-gray-800/70 px-3 py-2 text-xs font-medium text-gray-200 hover:border-gray-600 hover:bg-gray-800"
+                >
+                  {copiedText ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5 text-gray-400" />}
+                  <span>{copiedText ? 'Copied' : 'Copy text'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsInspectorOpen(false)}
+                  className="inline-flex items-center gap-2 rounded-md border border-gray-700 bg-gray-800/70 px-3 py-2 text-xs font-medium text-gray-200 hover:border-gray-600 hover:bg-gray-800"
+                >
+                  <Minimize2 className="h-3.5 w-3.5 text-gray-400" />
+                  <span>Close</span>
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={`grid min-h-0 flex-1 gap-0 overflow-hidden ${
+                inputPreviewUrl ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]' : ''
+              }`}
+            >
+              {inputPreviewUrl && (
+                <div className="min-h-0 overflow-auto border-b border-white/10 lg:border-b-0 lg:border-r lg:border-white/10">
+                  <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-white/10 bg-[#0b1020]/95 px-5 py-3 backdrop-blur">
+                    <p className="text-xs uppercase tracking-wide text-gray-500">Input</p>
+                    <span className="text-xs text-gray-500">
+                      {inputFileType === 'pdf' ? 'PDF preview' : 'Image preview'}
+                    </span>
+                  </div>
+                  <div className="flex min-h-full items-center justify-center p-4">
+                    {inputFileType === 'pdf' ? (
+                      <iframe
+                        src={inputPreviewUrl}
+                        title={fileName || 'Input PDF'}
+                        className="h-[78vh] w-full rounded-lg border border-white/10 bg-black"
+                      />
+                    ) : (
+                      <img
+                        src={inputPreviewUrl}
+                        alt={fileName || 'Input preview'}
+                        className="max-h-[78vh] max-w-full rounded-lg border border-white/10 object-contain"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="min-h-0 overflow-auto bg-black/20">
+                <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-white/10 bg-[#0b1020]/95 px-5 py-3 backdrop-blur">
+                  <p className="text-xs uppercase tracking-wide text-gray-500">Extracted text</p>
+                  <span className="text-xs text-gray-500">
+                    {wrapText ? 'Wrapped for reading' : 'Preserving line structure'}
+                  </span>
+                </div>
+                <pre
+                  className={`min-h-full px-5 py-4 text-sm leading-6 text-gray-100 ${
+                    wrapText ? 'whitespace-pre-wrap break-words' : 'whitespace-pre overflow-x-auto'
+                  }`}
+                >
+                  {displayText}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
     );
   }
 

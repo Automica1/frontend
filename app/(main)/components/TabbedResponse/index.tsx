@@ -1,6 +1,6 @@
 // components/TabbedResponseSection/index.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Solution, SolutionType } from '../../types/solution';
+import { SolutionType } from '../../types/solution';
 import { TabType } from '../../types/tabTypes';
 import { TabNavigation } from './TabNavigation';
 import { ApiResponseTab } from './ApiResponseTab';
@@ -14,7 +14,11 @@ import {
 } from '../../../utils/solutionHelpers';
 
 interface TabbedResponseSectionProps {
-  solution: Solution;
+  solution: {
+    IconComponent?: React.ComponentType<any>;
+    icon?: React.ComponentType<any>;
+    [key: string]: any;
+  };
   solutionType: SolutionType;
   data: any;
   loading: boolean;
@@ -22,6 +26,8 @@ interface TabbedResponseSectionProps {
   errorDetails?: any | null;
   maskedBase64?: string;
   fileName?: string;
+  inputPreviewUrl?: string;
+  inputFileType?: 'image' | 'pdf';
   onRetry?: () => void;
   onReset?: () => void;
   feedbackTab?: React.ReactNode;
@@ -40,6 +46,8 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
   errorDetails,
   maskedBase64,
   fileName,
+  inputPreviewUrl,
+  inputFileType,
   onRetry,
   onReset,
   feedbackTab,
@@ -50,8 +58,9 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
 }) => {
   const isVerificationSolution = solutionType === 'face-verify' || solutionType === 'signature-verification';
   const isQrExtractSolution = solutionType === 'qr-extract';
-  const showProcessedImageTab = !isVerificationSolution && !isQrExtractSolution && !isImageOutputSolution(solutionType);
-  const showResultTab = isVerificationSolution || isQrExtractSolution || isImageOutputSolution(solutionType);
+  const isTextResultSolution = solutionType === 'ocr';
+  const showProcessedImageTab = !isVerificationSolution && !isQrExtractSolution && !isTextResultSolution && !isImageOutputSolution(solutionType);
+  const showResultTab = isVerificationSolution || isQrExtractSolution || isTextResultSolution || isImageOutputSolution(solutionType);
 
   const resolveInitialTab = (): TabType => {
     if (loading) return 'result';
@@ -89,7 +98,7 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
       if (['png', 'jpg', 'jpeg'].includes(extension || '')) return 'image';
     }
 
-    const pdfSolutionTypes: SolutionType[] = [];
+    const pdfSolutionTypes: SolutionType[] = ['ocr'];
     if (pdfSolutionTypes.includes(solutionType)) return 'pdf';
 
     if (data?.mimeType) {
@@ -162,6 +171,8 @@ export const TabbedResponseSection: React.FC<TabbedResponseSectionProps> = ({
               errorDetails={errorDetails}
               processedImageBase64={imageBase64}
               fileName={fileName}
+              inputPreviewUrl={inputPreviewUrl}
+              inputFileType={inputFileType}
               copiedBase64={copiedBase64}
               onCopyBase64={copyBase64}
               fileType={fileType}

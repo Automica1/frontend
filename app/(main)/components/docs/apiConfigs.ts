@@ -22,6 +22,14 @@ export const configs: Record<string, ApiConfig> = {
     },
     description: "Enhance signature crops and document scans for clearer verification"
   },
+  'ocr': {
+    endpoint: 'https://automica.ai/go/api/v1/ocr',
+    requestBody: {
+      req_id: "ocr_001",
+      doc_base64: "JVBERi0xLjQKJ..."
+    },
+    description: "Extract text and structured blocks from PDFs or document images. Requires an active ocr-gpu session."
+  },
   'face-cropping': {
     endpoint: 'https://automica.ai/go/api/v1/face-detect',
     requestBody: {
